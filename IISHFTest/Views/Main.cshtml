@@ -1,0 +1,77 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Website</title>
+
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+    <!-- jQuery (first) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <!-- Popper.js (second) -->
+    <script src="scripts/popper.min.js"></script>
+    <script src="scripts/animatedHeadlines.js"></script>
+    <script type="text/javascript" src="scripts/slick.min.js"></script>
+    <script type="text/javascript" src="scripts/cookiealert.js"></script>
+    <!-- Bootstrap JS (optional, if you need JavaScript features) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <!-- icons -->
+    <script src="scripts/fontawesome.js"></script>
+    <link rel="stylesheet" href="css/fontawesome.css">
+    <link rel="stylesheet" href="css/all.css">
+
+    <!-- Bootstrap JavaScript (third) -->
+
+    <link rel="stylesheet" href="css/mainStyles.css">
+    <link rel="stylesheet" href="css/fonts.css">
+    <link rel="stylesheet" href="css/cards.css">
+    <link rel="stylesheet" href="css/imagesStyles.css">
+    <link rel="stylesheet" href="css/sections.css">
+    <link rel="stylesheet" href="css/textStyles.css">
+    <link rel="stylesheet" href="css/animatedHeadlines.css">
+    <link rel="stylesheet" href="css/colours.css">
+    <link rel="stylesheet" href="css/pe-icon-7-stroke.css">
+    <link rel="stylesheet" href="css/icons.css">
+    <link rel="stylesheet" type="text/css" href="css/slick.css" />
+    <link rel="stylesheet" type="text/css" href="css/slick-theme.css" />
+    <link rel="stylesheet" type="text/css" href="css/cookiealert.css" />
+
+
+</head>
+<body>
+
+    @await Html.PartialAsync("Navigation/NavBar")
+
+    <main>
+        @RenderBody()
+    </main>
+
+    @await Html.PartialAsync("Footer/Footer")
+
+    <div id="cookieConsentBanner" class="orange fixed-bottom p-3 bg-secondary text-white" style="display: none;">
+        <div class="container container-custom mt-1">
+            <div class="d-flex justify-content-between">
+                <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                    <div>
+                        We use cookies to improve your experience on our website. By browsing this website, you agree to our use of cookies. Read more about our Privacy Policy.
+                    </div>
+                    
+                </div>
+                <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                    <div>
+                        <button id="cookieConsentAccept" class="btn btn-light">Got it!</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html> 

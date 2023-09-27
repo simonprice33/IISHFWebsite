@@ -1,0 +1,21 @@
+h1, h2, h3, h4 {
+    font-family: 'Raleway Light', Arial, sans-serif;
+    font-weight: 300;
+}
+
+.fs63{
+    font-size: 63px;
+}
+
+.fs22 {
+    font-size: 22px;
+}
+
+.serif {
+    font-family: Open Sans, sans-serif, Arial;
+    font-size: 34px;
+    line-height: 1.8;
+    color: #DEDEDE;
+    text-shadow: 1px 2px 5px #222;
+}
+

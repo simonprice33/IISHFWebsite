@@ -1,0 +1,42 @@
+.card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+}
+
+.card {
+    position: relative;
+    transition: transform 0.3s;
+}
+
+.card-link:hover .card {
+    transform: scale(1.02); /* Optional: Add a slight zoom effect on hover */
+}
+
+.card-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7); /* Grey overlay */
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none; /* To ensure the overlay doesn't interfere with clicks */
+    
+    /* Center content vertically and horizontally */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card-link:hover .card-overlay {
+    opacity: 1;
+}
+
+.overlay-text {
+    color: white;
+    font-size: 18px; /* You can adjust this size as needed */
+    font-weight: bold; /* Makes the text stand out more */
+}

@@ -1,0 +1,11 @@
+.igen-icon .icon {
+    display: inline-block;
+}
+
+.icon-lg {
+    font-size: 122px;
+}
+.icon {
+    font-size: 28px;
+    margin: 0 5px;
+}

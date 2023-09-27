@@ -1,0 +1,54 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@using Newtonsoft.Json.Linq
+
+<section class="home-news-section">
+<h1 class="text-center mb-4"><span class="orange">LATEST</span> NEWS</h1>
+
+    @{
+        var newsArticles = Umbraco.Content(Guid.Parse("6627a7e1-7f4d-467e-a29e-cc71a885a27f"))
+        .ChildrenOfType("newsArticle")
+        .Where(x => x.IsVisible())
+        .OrderByDescending(x => x.CreateDate)
+        .Take(6);
+    }
+
+    <div class="container custom-container">
+        <div class="row">
+            @foreach (var article in newsArticles)
+            {
+                var imageCropperJson = article.Value<string>("articleImage");
+                var imageCropperObj = JObject.Parse(imageCropperJson);
+                var originalImageUrl = imageCropperObj["src"].ToString();
+
+
+                var thumbCrop = imageCropperObj["crops"]?.FirstOrDefault(c => c["alias"].ToString() == "Thumb");
+                var thumbUrl = string.Empty;
+                if (thumbCrop != null)
+                {
+                    var width = thumbCrop["width"].ToString();
+                    var height = thumbCrop["height"].ToString();
+                    thumbUrl = $"{originalImageUrl}?mode=crop&width={width}&height={height}";
+                }
+
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <a href="@article.Url()" class="card-link">
+                        <div class="card">
+                            <img class="card-img-top" src="@thumbUrl" alt="Card image cap">
+                            <div class="card-body">
+                                <h5 class="card-title">@article.Name</h5>
+                                <p class="card-text">@article.Value("leadIn")</p>
+                            </div>
+                            <div class="card-overlay">
+                                <i class="fa-regular fa-eye fa-flip-vertical text-white mr-3"></i>
+                                <span class="overlay-text">Read Now</span>
+                            </div>
+
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+</section>

@@ -1,0 +1,42 @@
+body, section {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1;
+}
+
+footer {
+    flex-shrink: 0;
+}
+
+.navbar-brand img {
+    max-height: 40px; /* Adjust the logo height as needed */
+}
+
+/* Custom CSS for sticky navbar */
+.navbar {
+    background-color: rgb(48, 48, 48); /* Initial background with 60% opacity */
+    transition: background-color 0.3s ease; /* Transition effect for opacity change */
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar.sticky {
+     background-color: rgba(0, 0, 0, 0.6); /* Initial background with 60% opacity */
+    opacity: 1; /* Restore full opacity when sticky */
+}
+
+.custom-container {
+    width: 80%; /* Increase the width by 15% */
+    max-width: none; /* Disable the max-width constraint */
+    
+  }
