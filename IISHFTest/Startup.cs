@@ -35,6 +35,12 @@ namespace IISHFTest
                 .AddDeliveryApi()
                 .AddComposers()
                 .Build();
+
+             services.AddMvc()
+            .AddViewOptions(options =>
+            {
+                options.HtmlHelperOptions.ClientValidationEnabled = true;
+            });
         }
 
         /// <summary>

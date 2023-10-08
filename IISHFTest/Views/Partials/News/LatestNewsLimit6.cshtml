@@ -8,12 +8,12 @@
     @{
         var newsArticles = Umbraco.Content(Guid.Parse("6627a7e1-7f4d-467e-a29e-cc71a885a27f"))
         .ChildrenOfType("newsArticle")
-        .Where(x => x.IsVisible())
-        .OrderByDescending(x => x.CreateDate)
+        .Where(x => x.IsVisible() && x.Value<DateTime>("postDate") <= DateTime.UtcNow)
+        .OrderByDescending(x => x.Value<DateTime>("postDate"))
         .Take(6);
     }
 
-    <div class="container custom-container">
+    <div class="container ">
         <div class="row">
             @foreach (var article in newsArticles)
             {

@@ -20,6 +20,18 @@
     background-image: url('https://iishf.com/images/svg/section-background-stripes2.svg'); /* Replace 'your-image.jpg' with your image file path */
 }
 
+.hero {
+    background: no-repeat center center;
+    background-attachment: scroll;
+    position: relative;
+    background-size: cover;
+    color: #fff;
+}
+
+.hero-large {
+    min-height: 400px;
+}
+
 .overlay {
     position: absolute;
     top: 0;
@@ -28,6 +40,11 @@
     height: 100%;
     background-color: rgba(0, 0, 0, 0.3); /* 50% black overlay */
     z-index: 2;
+}
+
+.inner {
+    position: relative;
+    z-index: 3;
 }
 
 .content-on-top {

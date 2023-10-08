@@ -6,4 +6,11 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms.Core" Version="12.2.0" />
+    <PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="12.2.0" />
+    <PackageReference Include="Umbraco.Cms.Web.Common" Version="12.2.0" />
+    <PackageReference Include="Umbraco.Cms.Web.Website" Version="12.2.0" />
+  </ItemGroup>
+
 </Project>

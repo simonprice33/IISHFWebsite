@@ -7,6 +7,7 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    background-color: #f0f0f0;
 }
 
 main {
@@ -40,3 +41,14 @@ footer {
     max-width: none; /* Disable the max-width constraint */
     
   }
+
+.bg-orange {
+    background-color: #FF7C1F;
+}
+
+.page-item.active-orange .page-link {
+    z-index: 3;
+    color: #fff;
+    background-color: #FF7C1F;
+    border-color: #FF7C1F;
+}

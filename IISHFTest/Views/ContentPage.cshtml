@@ -1,0 +1,30 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.ContentPage>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@{
+    Layout = "Main.cshtml";
+    var heroImageObj = Model.HeroImage;
+    var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
+}
+
+<div class="jumbotron jumbotron-fluid hero" style="background-image: url('@heroImage')">
+    <div class="overlay"></div>
+    <div class="inner">
+        <div class="container custom-container">
+            <h1 class="display-4">@Model.Value("heroTitle")</h1>
+            <p class="lead">@Model.Value("heroSubtitle")</p>
+        </div>
+    </div>
+</div>
+
+<div class="container custom-container">
+    <div class="row">
+        <div class="col col-sm-12 col-md-12 col-lg-12">
+            @if (Model.HasValue("pageContent"))
+            {
+                @Model.Value("pageContent")
+            }
+        </div>
+    </div>
+</div>
+

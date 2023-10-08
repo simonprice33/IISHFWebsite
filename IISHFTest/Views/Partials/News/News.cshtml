@@ -12,7 +12,7 @@
         .OrderByDescending(x => x.CreateDate);
     }
 
-    <div class="container custom-container">
+    <div class="container">
         <div class="row">
             @foreach (var article in newsArticles)
             {
@@ -30,7 +30,7 @@
                     thumbUrl = $"{originalImageUrl}?mode=crop&width={width}&height={height}";
                 }
 
-                <div class="col-12 col-sm-6 col-lg-4">
+                <div class="col-12 col-sm-6 col-md-4 col-lg-4">
                     <a href="@article.Url()" class="card-link">
                         <div class="card">
                             <img class="card-img-top" src="@thumbUrl" alt="Card image cap">

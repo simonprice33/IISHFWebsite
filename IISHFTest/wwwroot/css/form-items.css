@@ -1,0 +1,31 @@
+.custom-input {
+    background-color: transparent;
+    border: 1px solid white;
+    color: #ffffff;
+}
+
+::placeholder {
+    color: white;
+    opacity: 1; /* Firefox */
+}
+
+:-ms-input-placeholder { /* Internet Explorer 10-11 */
+    color: white;
+}
+
+::-ms-input-placeholder { /* Microsoft Edge */
+    color: white;
+}
+
+/* Custom Submit Button Styles */
+.btn-custom-submit {
+    background-color: #FF7C1F;
+    border: none;
+    color: white; /* Change this to desired text color */
+    transition: background-color 0.3s ease; /* Smooth transition on hover */
+}
+
+    .btn-custom-submit:hover {
+        background-color: #B25716;
+        color: white; /* Change this to desired text color */
+    }
