@@ -1,0 +1,82 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.NationalMemberAssociations>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@{
+    Layout = "Main.cshtml";
+    var id = Model.Id;
+    var nationalMemberAssociations = Umbraco.Content(id).Children();
+    var heroImageObj = Model.HeroImage;
+    var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
+}
+
+<div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
+    <div class="overlay"></div>
+    <div class="inner">
+        <div class="container custom-container">
+            <h1 class="display-4">@Model.Value("heroTitle")</h1>
+            <p class="lead">@Model.Value("heroSubtitle")</p>
+        </div>
+    </div>
+</div>
+
+
+@{
+    if (nationalMemberAssociations != null)
+    {
+        <div class="container">
+            <div class="row">
+                @foreach (var child in nationalMemberAssociations)
+                {
+                    <div class="col-md-4 mb-3">  <!-- Adjust this for your desired column width -->
+                        <div class="card">
+                            <img src="@child.GetProperty("image").GetValue()" class="card-img-top p-2" alt="...">
+                            <div class="card-body">
+                                <h5 class="text-center">@child.Value("title")</h5>
+                                <h6 class="text-center">@child.Value("country") - (@child.Value("iso3"))</h6>
+                                <div class="col-12 text-center">
+                                    @if (@child.Value("web") != null && !string.IsNullOrWhiteSpace(@child.Value("web").ToString()))
+                                    {
+                                        var link = child.Value<Umbraco.Cms.Core.Models.Link>("web");
+                                        <a href="@link.Url" target="@link.Target"><i class="fa-duotone fa-globe-pointer text-black fa-lg m-2"></i></a>
+                                    } 
+                                    @if (@child.Value("email") != null && !string.IsNullOrWhiteSpace(@child.Value("email").ToString()))
+                                    {
+                                        <a href="mailto:@child.Value("email")"><i class="fa-regular fa-at text-black fa-lg m-2"></i></a>
+                                    }
+                                    @if (@child.Value("facebook") != null && !string.IsNullOrWhiteSpace(@child.Value("facebook").ToString()))
+                                    {
+                                        var link = child.Value<Umbraco.Cms.Core.Models.Link>("facebook");
+                                        <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-facebook text-black fa-lg m-2"></i></a>
+                                    }
+                                    @if (@child.Value("twitter") != null && !string.IsNullOrWhiteSpace(@child.Value("twitter").ToString()))
+                                    {
+                                        var link = child.Value<Umbraco.Cms.Core.Models.Link>("twitter");
+                                        <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-x-twitter text-black fa-lg m-2"></i></a>
+                                    }
+                                    @if (@child.Value("instagram") != null && !string.IsNullOrWhiteSpace(@child.Value("instagram").ToString()))
+                                    {
+                                        var link = child.Value<Umbraco.Cms.Core.Models.Link>("instagram");
+                                        <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-instagram text-black fa-lg m-2"></i></a>
+                                    }
+                                    @if (@child.Value("youtube") != null && !string.IsNullOrWhiteSpace(@child.Value("youtube").ToString()))
+                                    {
+                                        var link = child.Value<Umbraco.Cms.Core.Models.Link>("youtube");
+                                        <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-youtube text-black fa-lg m-2"></i></a>
+                                    }
+                                    @if (@child.Value("telephone") != null && !string.IsNullOrWhiteSpace(@child.Value("telephone").ToString()))
+                                    {
+                                        var link = child.Value<Umbraco.Cms.Core.Models.Link>("telephone");
+                                        <a href="tel:@child.Value("telephone")">
+                                            <i class="fa-duotone fa-square-phone-flip text-black fa-lg m-2"></i>
+                                            
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}

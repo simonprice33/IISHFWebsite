@@ -8,7 +8,7 @@
     Layout = "Main.cshtml";
 
     var imageCropper = Model.Value<ImageCropperValue>("articleImage");
-    var thumbCrop = imageCropper.Crops.FirstOrDefault(x => x.Alias == "Narrow");
+    var thumbCrop = imageCropper.Crops.FirstOrDefault(x => x.Alias == "Main");
     var thumbUrl = string.Empty;
     if (thumbCrop != null)
     {
@@ -30,8 +30,6 @@
     <meta property="og:description" content="@Model.LeadIn"/>
     <meta property="og:type" content="News Article"/>
 }
-
-
 <div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@thumbUrl')">
     <div class="overlay"></div>
     <div class="inner">

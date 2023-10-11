@@ -63,8 +63,28 @@
 <div class="container mt-5 mb-5">
     <div class="row">
 
+        <div id="filter" class="col-12 col-sm-12 col-md-2 col-lg-2 order-1 order-md-2 mb-3">
+            <div class="row">
+                <div class="col-12">
+                <h1>Filters</h1>
+                @if (!string.IsNullOrWhiteSpace(catValue))
+                {
+                    <a href="@Model.UrlSegment" class="badge bg-secondary text-white">Clear Filters</a>
+                }
+                @foreach (var tag in tags.OrderBy(x => x))
+                {
+                    var activeClass = "bg-secondary";
+                    if (catValue.ToLower().Equals(tag, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        activeClass = "bg-orange";
+                    }
+                    <a href="@Model.UrlSegment?cat=@tag" class="badge @activeClass text-white">@tag.CapitalizeFirstLetter()</a>
+                }
+            </div>
+            </div>
+        </div>
 
-        <div id="news-stories" class="col-12 col-sm-12 col-md-10 col-lg-10">
+        <div id="news-stories" class="col-12 col-sm-12 col-md-10 col-lg-10 order-2 order-md-1">
             <div class="row">
                 <div class="col-12">
                     <h1>Articles</h1>
@@ -84,7 +104,7 @@
                         thumbUrl = $"{originalImageUrl}?mode=crop&width={width}&height={height}";
                     }
 
-                    <div class="col-12 col-sm-6 col-md-4 col-lg-4">
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-4 mb-3">
                         <a href="@article.Url()" class="card-link">
                             <div class="card">
                                 <img class="card-img-top" src="@thumbUrl" alt="Card image cap">
@@ -156,7 +176,7 @@
             }
 
         </div>
-        <div id="filter" class="col-12 col-sm-12 col-md-2 col-lg-2">
+       @* <div id="filter" class="col-12 col-sm-12 col-md-2 col-lg-2">
             <div class="col-12">
                 <h1>Filters</h1>
 
@@ -175,7 +195,7 @@
                     <a href="@Model.UrlSegment?cat=@tag" class="badge @activeClass text-white">@tag.CapitalizeFirstLetter()</a>
                 }
             </div>
-        </div>
+        </div>*@
     </div>
 </div>
 

@@ -26,10 +26,11 @@
     position: relative;
     background-size: cover;
     color: #fff;
+    min-height: 200px;
 }
 
 .hero-large {
-    min-height: 400px;
+    min-height: 200px;
 }
 
 .overlay {
