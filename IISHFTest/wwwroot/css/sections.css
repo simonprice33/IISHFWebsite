@@ -27,6 +27,9 @@
     background-size: cover;
     color: #fff;
     min-height: 200px;
+    display: flex;
+    justify-content: flex-start; /* aligns children to the left */
+    align-items: center; /* centers children vertically */
 }
 
 .hero-large {
@@ -46,6 +49,7 @@
 .inner {
     position: relative;
     z-index: 3;
+    width: 100%;
 }
 
 .content-on-top {

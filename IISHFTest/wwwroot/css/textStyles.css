@@ -19,3 +19,22 @@ h1, h2, h3, h4 {
     text-shadow: 1px 2px 5px #222;
 }
 
+.custom-input::placeholder {
+    color: white;
+}
+
+.custom-input::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+    color: white;
+}
+
+.custom-input::-moz-placeholder { /* Firefox 19+ */
+    color: white;
+}
+
+.custom-input:-ms-input-placeholder { /* IE 10+ */
+    color: white;
+}
+
+.custom-input:-moz-placeholder { /* Firefox 18- */
+    color: white;
+}
