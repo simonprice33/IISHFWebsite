@@ -1,9 +1,9 @@
-﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+﻿@using IISHFTest.Helpers
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
 @{
     Layout = null;
 
     var homePage = Model.AncestorOrSelf<Home>();
-    var b = true;
 }
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-black-opacity">
@@ -25,12 +25,58 @@
                         {
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="/@child.UrlSegment" id="navbarDropdownMenuLink-@child.Id" data-bs-toggle="dropdown" aria-expanded="false">@child.Name</a>
-                                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink-@child.Id">
-                                    @foreach (var grandChild in child.Children().Where(x => x.IsVisible()))
-                                    {
-                                        <a class="dropdown-item" href="@grandChild.Url()">@grandChild.Name</a>
-                                    }
-                                </div>
+
+                                @if (child.Name == "Tournaments")
+                                {
+                                    var grandChildren = child.Children().Where(x => x.IsVisible()).ToList();
+                                    int itemsPerColumn = (int)Math.Ceiling(grandChildren.Count / 3.0);
+
+                                    <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink-@child.Id">
+                                        <div class="row">
+                                            
+                                            @for (int col = 0; col < 3; col++)
+                                            {
+                                                <div class="col-md-4">
+                                                    @for (int i = col * itemsPerColumn; i < (col + 1) * itemsPerColumn && i < grandChildren.Count; i++)
+                                                    {
+                                                        var grandChild = grandChildren[i];
+                                                        <a class="dropdown-item" href="@grandChild.Url()">@grandChild.Name</a>
+                    
+                                                        // Loop through each great-grandchild and display under grandchild
+                                                        foreach(var greatGrandChild in grandChild.Children().Where(x => x.IsVisible()))
+                                                        {
+                                                            <a class="dropdown-item ml-3" href="@greatGrandChild.Url()">@greatGrandChild.Name</a>
+                                                        }
+                                                    }
+                                                </div>
+                                            }
+
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink-@child.Id">
+                                        @foreach (var grandChild in child.Children().Where(x => x.IsVisible()))
+                                        {
+                                            if (child.Name == "Documents")
+                                            {
+                                                var file = grandChild.Value<IPublishedContent>("FileDownload");
+                                                var fileUrl = file?.Url();
+                                                var iconClass = FileIconHelper.GetIcon(fileUrl);
+
+                                                <a class="dropdown-item" href="@fileUrl" target="_blank">
+                                                    <i class="@iconClass p-1"></i>
+                                                    @grandChild.Name
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <a class="dropdown-item" href="@grandChild.Url()">@grandChild.Name</a>
+                                            }
+                                        }
+                                    </div>
+                                }
                             </li>
                         }
                         else
@@ -40,6 +86,62 @@
                             </li>
                         }
                     }
+
+                    //foreach (var child in children.Where(x => x.IsVisible()))
+                    //{
+                    //    if (child.Children().Any() && child.Name != "News")
+                    //    {
+                    //        <li class="nav-item dropdown">
+                    //            <a class="nav-link dropdown-toggle" href="/@child.UrlSegment" id="navbarDropdownMenuLink-@child.Id" data-bs-toggle="dropdown" aria-expanded="false">@child.Name</a>
+                    //            <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink-@child.Id">
+                    //                @foreach (var grandChild in child.Children().Where(x => x.IsVisible()))
+                    //                {
+                    //                    if (child.Name == "Documents")
+                    //                    {
+                    //                        var file = grandChild.Value<IPublishedContent>("FileDownload");
+                    //                        var fileUrl = file?.Url();
+                    //                        var iconClass = FileIconHelper.GetIcon(fileUrl);
+
+                    //                        <a class="dropdown-item" href="@fileUrl" target="_blank">
+                    //                            <i class="@iconClass p-1"></i>
+                    //                            @grandChild.Name
+                    //                        </a>
+                    //                    }
+                    //                    else if (child.Name == "Tournaments")
+                    //                    {
+                    //                        //<a class="dropdown-item" href="@grandChild.Url()">@grandChild.Name</a>
+                    //                        var grandChildren = child.Children().Where(x => x.IsVisible()).ToList();
+                    //                        int itemsPerColumn = (int)Math.Ceiling(grandChildren.Count / 3.0);
+
+                    //                        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink-@child.Id">
+                    //                            <div class="row">
+                    //                                @for (int col = 0; col < 3; col++)
+                    //                                {
+                    //                                    <div class="col-md-4">
+                    //                                        @for (int i = col * itemsPerColumn; i < (col + 1) * itemsPerColumn && i < grandChildren.Count; i++)
+                    //                                        {
+                    //                                            <a class="dropdown-item" href="@grandChildren[i].Url()">@grandChildren[i].Name</a>
+                    //                                        }
+                    //                                    </div>
+                    //                                }
+                    //                            </div>
+                    //                        </div>
+                    //                    }
+                    //                    else
+                    //                    {
+                    //                        <a class="dropdown-item" href="@grandChild.Url()">@grandChild.Name</a>
+                    //                    }
+                    //                }
+                    //            </div>
+                    //        </li>
+                    //    }
+                    //    else
+                    //    {
+                    //        <li class="nav-item active">
+                    //            <a class="nav-link" href="/@child.UrlSegment">@child.Name</a>
+                    //        </li>
+                    //    }
+                    //}
 
                 }
             </ul>

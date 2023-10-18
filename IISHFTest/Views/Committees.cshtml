@@ -1,0 +1,91 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.Committees>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@{
+    Layout = "Main.cshtml";
+    var id = Model.Id;
+
+    var committees = Umbraco.Content(id).Children();
+    var content = Umbraco.Content(id);
+
+    var heroImageObj = Model.HeroImage;
+    var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
+
+}
+
+<div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
+    <div class="overlay"></div>
+    <div class="inner">
+        <div class="container custom-container">
+            <h1 class="display-4">@Model.Value("heroTitle")</h1>
+            <p class="lead">@Model.Value("heroSubtitle")</p>
+        </div>
+    </div>
+</div>
+
+@{
+    if (committees != null)
+    {
+        <div class="container mt-5 mb-5">
+            <div class="row">
+                @foreach (var committee in committees)
+                {
+                    <h1>@committee.Name</h1>
+                    <p>@committee.Value("content")</p>
+                    @foreach (var officer in committee.Children())
+                    {
+                        <div class="col-md-3 mb-3">
+                            <!-- Adjust this for your desired column width -->
+                            <div class="card">
+                                <img src="@officer.GetProperty("image").GetValue()" class="card-img-top p-2" alt="...">
+                                <div class="card-body">
+                                    <h5 class="text-center">@officer.Value("presidiumMemberName")</h5>
+                                    <h6 class="text-center">@officer.Value("title")</h6>
+                                    <div class="col-12 text-center">
+                                        @if (officer.Value("web") != null && !string.IsNullOrWhiteSpace(officer.Value("web").ToString()))
+                                        {
+                                            var link = officer.Value<Umbraco.Cms.Core.Models.Link>("web");
+                                            <a href="@link.Url" target="@link.Target"><i class="fa-duotone fa-globe-pointer text-black fa-lg m-2"></i></a>
+                                        }
+                                        @if (officer.Value("email") != null && !string.IsNullOrWhiteSpace(officer.Value("email").ToString()))
+                                        {
+                                            <a href="mailto:@officer.Value("email")"><i class="fa-regular fa-at text-black fa-lg m-2"></i></a>
+                                        }
+                                        @if (officer.Value("facebook") != null && !string.IsNullOrWhiteSpace(officer.Value("facebook").ToString()))
+                                        {
+                                            var link = officer.Value<Umbraco.Cms.Core.Models.Link>("facebook");
+                                            <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-facebook text-black fa-lg m-2"></i></a>
+                                        }
+                                        @if (officer.Value("twitter") != null && !string.IsNullOrWhiteSpace(officer.Value("twitter").ToString()))
+                                        {
+                                            var link = officer.Value<Umbraco.Cms.Core.Models.Link>("twitter");
+                                            <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-x-twitter text-black fa-lg m-2"></i></a>
+                                        }
+                                        @if (officer.Value("instagram") != null && !string.IsNullOrWhiteSpace(officer.Value("instagram").ToString()))
+                                        {
+                                            var link = officer.Value<Umbraco.Cms.Core.Models.Link>("instagram");
+                                            <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-instagram text-black fa-lg m-2"></i></a>
+                                        }
+                                        @if (officer.Value("youtube") != null && !string.IsNullOrWhiteSpace(officer.Value("youtube").ToString()))
+                                        {
+                                            var link = officer.Value<Umbraco.Cms.Core.Models.Link>("youtube");
+                                            <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-youtube text-black fa-lg m-2"></i></a>
+                                        }
+                                        @if (officer.Value("telephone") != null && !string.IsNullOrWhiteSpace(officer.Value("telephone").ToString()))
+                                        {
+                                            var link = officer.Value<Umbraco.Cms.Core.Models.Link>("telephone");
+                                            <a href="tel:@officer.Value("telephone")">
+                                                <i class="fa-duotone fa-square-phone-flip text-black fa-lg m-2"></i>
+
+                                            </a>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+}

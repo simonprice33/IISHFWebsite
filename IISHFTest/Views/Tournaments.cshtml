@@ -1,0 +1,21 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.Tournaments>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@{
+    Layout = "Main.cshtml";
+    var id = Model.Id;
+    var content = Umbraco.Content(id);
+    var heroImageObj = Model.HeroImage;
+    var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
+}
+
+<div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
+    <div class="overlay"></div>
+    <div class="inner">
+        <div class="container custom-container">
+            <h1 class="display-4">@Model.Value("heroTitle")</h1>
+            <p class="lead">@Model.Value("heroSubtitle")</p>
+        </div>
+    </div>
+</div>
+
