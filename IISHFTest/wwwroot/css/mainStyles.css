@@ -56,3 +56,18 @@ footer {
 #navbarDropdownMenuLink-2284 + .dropdown-menu {
     width: 650px; /* Adjust this value based on your requirements */
 }
+
+@media (max-width: 767px) {
+    .h2-mobile {
+        margin-bottom: 1rem; /* equivalent to Bootstrap's mb-5 */
+        margin-top: 1rem; /* equivalent to Bootstrap's mb-5 */
+        text-align: center;
+    }
+}
+
+@media (min-width: 768px) {
+    .h2-desktop {
+        margin-bottom: 0.5rem; /* equivalent to Bootstrap's mb-2 */
+        margin-top: 0.5rem; /* equivalent to Bootstrap's mb-5 */
+    }
+}

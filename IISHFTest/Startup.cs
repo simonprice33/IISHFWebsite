@@ -1,3 +1,5 @@
+using IISHFTest.Core.Settings;
+
 namespace IISHFTest
 {
     public class Startup
@@ -29,6 +31,10 @@ namespace IISHFTest
         /// </remarks>
         public void ConfigureServices(IServiceCollection services)
         {
+            var apiKeySettings = new ApiKeySettings();
+            _config.Bind("ApiKeySettings", apiKeySettings);
+            services.AddSingleton(apiKeySettings);
+
             services.AddUmbraco(_env, _config)
                 .AddBackOffice()
                 .AddWebsite()

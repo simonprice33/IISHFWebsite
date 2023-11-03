@@ -1,0 +1,49 @@
+﻿/*
+*
+* ==========================================
+* CUSTOM UTIL CLASSES
+* ==========================================
+*/
+.nav-pills-custom .nav-link {
+    color: #000000;
+    background: #fff;
+    position: relative;
+}
+
+    .nav-pills-custom .nav-link.active {
+        color: #ffffff;
+        background: #0095DA;
+    }
+
+
+/* Add indicator arrow for the active tab */
+@media (min-width: 992px) {
+    .nav-pills-custom .nav-link::before {
+        content: '';
+        display: block;
+        border-top: 8px solid transparent;
+        border-left: 10px solid #0095DA;
+        border-bottom: 8px solid transparent;
+        position: absolute;
+        top: 50%;
+        right: -10px;
+        transform: translateY(-50%);
+        opacity: 0;
+    }
+}
+
+.nav-pills-custom .nav-link.active::before {
+    opacity: 1;
+
+}
+
+.circle {
+    width: 100px; /* Adjust based on your preference */
+    height: 100px; /* Adjust based on your preference */
+    border-radius: 50%; /* Makes it a circle */
+    background-size: cover; /* Ensures image covers the entire circle */
+    margin: 10px; /* Some space between circles */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: Adds a subtle shadow */
+}
+
+.placement

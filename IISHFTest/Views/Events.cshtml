@@ -1,0 +1,114 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.Events>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@{
+    Layout = "Main.cshtml";
+    var id = Model.Id;
+    var events = Umbraco.Content(id).Children();
+    var selectedEvent = events.FirstOrDefault(x => x.Name == DateTime.Now.Year.ToString());
+
+    var heroImageObj = Model.HeroImage;
+    var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
+
+    var year = DateTime.Now.Year;
+    int.TryParse(selectedEvent.Name, out year);
+
+    //var eventShortCode = selectedEvent.Parent.Value<IPublishedContent>("EventShortCode");
+    var eventShortCode = selectedEvent.Parent.Value<string>("EventShotCode"); // Assuming it's a content picker property
+
+}
+
+<div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
+    <div class="overlay"></div>
+    <div class="inner">
+        <div class="container custom-container">
+            <h1 class="display-4">@Model.Value("heroTitle")</h1>
+            <p class="lead">@Model.Value("heroSubtitle")</p>
+        </div>
+    </div>
+</div>
+
+@*@Html.Partial("~/Views/Partials/Events/SchedulAndResults.cshtml" )*@
+
+<div class="container mt-5 mb-5">
+    <div class="row">
+        <div class="col-md-3">
+            <!-- Tabs nav -->
+            <div class="nav flex-column nav-pills nav-pills-custom" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                <a class="nav-link mb-3 p-3 shadow active" id="v-pills-info-tab" data-bs-toggle="pill" href="#v-pills-info" role="tab" aria-controls="v-pills-info" aria-selected="true">
+                    <span class="font-weight-bold small text-uppercase">Tournament information</span>
+                </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-standings-tab" data-bs-toggle="pill" href="#v-pills-standings" role="tab" aria-controls="v-pills-standings" aria-selected="false">
+                    <span class="font-weight-bold small text-uppercase">Group Standings</span>
+                </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-schedule-tab" data-bs-toggle="pill" href="#v-pills-schedule" role="tab" aria-controls="v-pills-schedule" aria-selected="false">
+                    <span class="font-weight-bold small text-uppercase">Schedule and Results</span>
+                </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-placements-tab" data-bs-toggle="pill" href="#v-pills-placements" role="tab" aria-controls="v-pills-placements" aria-selected="false">
+                    <span class="font-weight-bold small text-uppercase">Final Placements</span>
+                </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-media-tab" data-bs-toggle="pill" href="#v-pills-media" role="tab" aria-controls="v-pills-media" aria-selected="false">
+                    <span class="font-weight-bold small text-uppercase">Media</span>
+                </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-documents-tab" data-bs-toggle="pill" href="#v-pills-documents" role="tab" aria-controls="v-pills-documents" aria-selected="false">
+                    <span class="font-weight-bold small text-uppercase">Documents</span>
+                </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-news-tab" data-bs-toggle="pill" href="#v-pills-news" role="tab" aria-controls="v-pills-news" aria-selected="false">
+                    <span class="font-weight-bold small text-uppercase">Related News</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <!-- Tabs content -->
+            <div class="tab-content" id="v-pills-tabContent">
+                <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-info" role="tabpanel" aria-labelledby="v-pills-info-tab">
+                    @await Html.PartialAsync("~/Views/Partials/Events/EventInformation.cshtml")
+                </div>
+                <div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-standings" role="tabpanel" aria-labelledby="v-pills-standings-tab">
+                    @await Html.PartialAsync("~/Views/Partials/Events/EventStandings.cshtml")
+
+                </div>
+                <div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-schedule" role="tabpanel" aria-labelledby="v-pills-schedule-tab">
+                    <div id="scheduleResultsContainer"></div>
+                </div>
+                <div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-placements" role="tabpanel" aria-labelledby="v-pills-placements-tab">
+                    @*@await Html.PartialAsync("~/Views/Partials/Events/EventPlacements.cshtml")*@
+                    <div id="eventPlacements"></div>
+
+                </div>
+                <div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-media" role="tabpanel" aria-labelledby="v-pills-settings-tab">
+                    @await Html.PartialAsync("~/Views/Partials/Events/EvenMedia.cshtml")
+
+                </div>
+                <div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-documents" role="tabpanel" aria-labelledby="v-pills-settings-tab">
+                    @await Html.PartialAsync("~/Views/Partials/Events/EventDocuments.cshtml")
+
+                </div>
+                <div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-news" role="tabpanel" aria-labelledby="v-pills-settings-tab">
+                    @await Html.PartialAsync("~/Views/Partials/Events/EventNews.cshtml")
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+<script>
+    $(document).ready(function () {
+        $.get('/umbraco/surface/events/getsheduleandresults', function (data) {
+            $('#scheduleResultsContainer').html(data);
+        });
+
+        $.get('/umbraco/surface/events/GetPlacements', { year: '@year', titleEvent: '@eventShortCode' }, function (data) {
+            $('#eventPlacements').html(data);
+        });
+    });
+</script>
+
+

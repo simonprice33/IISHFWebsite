@@ -1,0 +1,48 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.EuropeanCups>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@{
+    Layout = "Main.cshtml";
+    var id = Model.Id;
+    var events = Umbraco.Content(id).Children();
+    var content = Umbraco.Content(id);
+    var heroImageObj = Model.HeroImage;
+    var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
+
+    string GetImageUrlFromMediaWithCrops(object mediaItem)
+    {
+        var mediaWithCrops = mediaItem as Umbraco.Cms.Core.Models.MediaWithCrops;
+        return mediaWithCrops != null ? mediaWithCrops.Url() : "";
+    }
+}
+<div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
+    <div class="overlay"></div>
+    <div class="inner">
+        <div class="container custom-container">
+            <h1 class="display-4">@Model.Value("heroTitle")</h1>
+            <p class="lead">@Model.Value("heroSubtitle")</p>
+        </div>
+    </div>
+</div>
+@{
+    if (events != null)
+    {
+        <div class="container mt-5">
+            <div class="row">
+                @foreach (var child in events)
+                {
+                    var imageUrl = GetImageUrlFromMediaWithCrops(child.GetProperty("image").GetValue());  // Call helper function
+
+                    <div class="col-12 col-sm-12 col-md-3 col-lg-3 mb-3">
+                        <!-- Adjust this for your desired column width -->
+                        <a href="@child.Url()" class="text-decoration-none">
+                            <div class="card">
+                                <img src="@imageUrl" class="card-img-top p-2" alt="...">
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}

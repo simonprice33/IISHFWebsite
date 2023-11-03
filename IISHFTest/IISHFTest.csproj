@@ -8,7 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.jQuery.Unobtrusive.Validation" Version="4.0.0" />
     <PackageReference Include="Slick" Version="1.5.11" />
-    <PackageReference Include="Umbraco.Cms" Version="12.1.2" />
+    <PackageReference Include="Umbraco.Cms" Version="12.2.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,6 +21,10 @@
     <Folder Include="Views\Partials\Contact\" />
     <Folder Include="wwwroot\fonts\" />
     <Folder Include="wwwroot\images\members\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\css\event-tabs.css" />
   </ItemGroup>
 
   <ItemGroup>

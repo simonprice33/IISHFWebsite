@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using IISHFTest.Core.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Cache;
@@ -16,12 +17,13 @@ using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Web.Website.Controllers;
 using Umbraco.Extensions;
 
-namespace IISHFTest.Core.Controllers
+namespace IISHFTest.Core.Controllers.SurfaceControllers
 {
     [Controller]
     public class ContactController : SurfaceController
     {
         private readonly IPublishedContentQuery _contentQuery;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public ContactController(
             IUmbracoContextAccessor umbracoContextAccessor,
@@ -29,7 +31,8 @@ namespace IISHFTest.Core.Controllers
             ServiceContext services, AppCaches appCaches,
             IProfilingLogger profilingLogger,
             IPublishedUrlProvider publishedUrlProvider,
-            IPublishedContentQuery contentQuery)
+            IPublishedContentQuery contentQuery,
+            IHttpContextAccessor httpContextAccessor)
             : base(umbracoContextAccessor,
                 databaseFactory,
                 services,
@@ -38,6 +41,7 @@ namespace IISHFTest.Core.Controllers
                 publishedUrlProvider)
         {
             _contentQuery = contentQuery;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         [HttpPost]
@@ -78,6 +82,7 @@ namespace IISHFTest.Core.Controllers
         public ActionResult RenderContactForm()
         {
             var model = new ContactFormViewModel();
+            model.Email = "sprice@iishf.com";
             return PartialView("~/Views/Partials/Contact/ContactForm.cshtml", model);
         }
 
