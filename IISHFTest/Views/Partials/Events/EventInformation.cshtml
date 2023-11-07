@@ -33,12 +33,11 @@
                 if (hostImage != null)
                 {
                     string imageUrl = hostImage.Url(); // This should get you the URL of the image.
-                    <img src="@imageUrl" alt="Host Image" />
+                    <img src="@imageUrl" class="img img-fluid mb-2" alt="Host Image" />
                 }
             }
             
             <h5><strong>@iishfEvent.Value("HostClub").ToString()</strong></h5>
-
             <h6><strong>@iishfEvent.Value("HostContact").ToString()</strong></h6>
             @{
                 var link = iishfEvent.Value<Umbraco.Cms.Core.Models.Link>("HostWebSite");

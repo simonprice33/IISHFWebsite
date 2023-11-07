@@ -3,7 +3,6 @@
     height: auto;
     border: 2px solid #333; /* Adjust the border color and width as you like */
     border-radius: 15px; /* Rounded corners */
-    transform: skewX(-20deg); /* Adjust the skew angle if needed */
     background-color: #eff0f1; /* Adjust the background color as you like */
     /* Add some padding and other styles if needed */
     padding: 10px;
@@ -13,42 +12,42 @@
 }
 
 /* To counteract the skew on child elements */
-.skewed-border-box-content {
-    transform: skewX(10deg); /* Counteracts the parent skew */
+/*.skewed-border-box-content {
+    transform: skewX(10deg);*/ /* Counteracts the parent skew */
     /* Add other styling for your content here */
-}
+/*}*/
 
     /* This will represent the vertical line itself */
-    .skewed-border-box-content h2 .vertical-line {
+    /*.skewed-border-box-content h2 .vertical-line {
         display: inline-block;
-        height: 1em; /* Adjust the height as necessary */
-        width: 1px; /* Width of the line */
-        background-color: #000; /* Color of the line */
-        margin: 0 5px; /* Spacing around the line */
-        vertical-align: middle; /* Aligns the line with the middle of the text */
-    }
+        height: 1em;*/ /* Adjust the height as necessary */
+        /*width: 1px;*/ /* Width of the line */
+        /*background-color: #000;*/ /* Color of the line */
+        /*margin: 0 5px;*/ /* Spacing around the line */
+        /*vertical-align: middle;*/ /* Aligns the line with the middle of the text */
+    /*}
 
     .skewed-border-box-content h2 span {
         display: inline-block;
-        vertical-align: middle;
+        vertical-align: middle;*/
         /* Add skew correction if the text looks skewed */
-    }
+    /*}
 
-@media (max-width: 767.98px) {
+@media (max-width: 767.98px) {*/
     /* Assuming that 'md' breakpoint is at 768px, adjust if your Bootstrap version is different */
-    .vertical-line {
-        display: none; /* Hide the vertical line on small screens */
-    }
+    /*.vertical-line {
+        display: none;*/ /* Hide the vertical line on small screens */
+    /*}
 
     .placement, .team-name, .iso {
-        display: block; /* Each item on its own line on small screens */
-        text-align: center; /* Center the text on small screens */
-    }
-}
+        display: block;*/ /* Each item on its own line on small screens */
+        /*text-align: center;*/ /* Center the text on small screens */
+    /*}
+}*/
 /* Additional styling for the vertical line if necessary */
-.vertical-line {
-    margin: 0 10px; /* Add margin around the line if it's inline */
-}
+/*.vertical-line {
+    margin: 0 10px;*/ /* Add margin around the line if it's inline */
+/*}*/
 
 .bg-gold {
     background-color: gold;

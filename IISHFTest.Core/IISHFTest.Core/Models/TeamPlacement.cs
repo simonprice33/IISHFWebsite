@@ -10,12 +10,16 @@ namespace IISHFTest.Core.Models
     {
         public int Placement { get; set; }
 
-        public string? Iso3 { get; set; }
+        public string Iso3 { get; set; } = string.Empty;
 
-        public string? TeamName { get; set; } = string.Empty;
+        public string TeamName { get; set; } = string.Empty;
 
         public int EventYear { get; set; }
 
-        public string? TitleEvent { get; set; }
+        public string TitleEvent { get; set; } = string.Empty;
+
+        public string? TeamLogoUrl { get; set; }
+
+        public bool IsChampionships { get; set; }
     }
 }

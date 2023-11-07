@@ -1,0 +1,15 @@
+PutPlacement is a call that will take event information and placement information to update final placements 
+This wil need to take in a teamname, placement, title event, year and isChampionship
+
+Sub PutPlacement()
+    Dim http As Object
+    Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+    http.Open "PUT", "https://localhost:44322/api/Events/Placement", False
+    http.setRequestHeader "Content-Type", "application/json"
+    http.send "{""TeamName"":""SHC Rossemaison"",""Iso3"":""CHE"",""Placement"":3,""TitleEvent"":""U13"",""EventYear"":""2023"",""IsChampionships"":false}"
+    If http.Status = 204 Then
+        MsgBox "Updated"
+    Else
+        Debug.Print "Status: " & http.Status & " - " & http.statusText
+    End If
+End Sub

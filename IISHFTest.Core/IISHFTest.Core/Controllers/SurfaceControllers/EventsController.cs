@@ -14,6 +14,7 @@ using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Web;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Web.Website.Controllers;
+using Lucene.Net.Index;
 
 namespace IISHFTest.Core.Controllers.SurfaceControllers
 {
@@ -49,27 +50,31 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
         [HttpGet]
         public IActionResult GetPlacements(int year, string titleEvent)
         {
-            var eventPlacements = _contentQuery.ContentAtRoot()
-                .DescendantsOrSelfOfType("eventPlacement")
+            var teams = _contentQuery.ContentAtRoot()
+                .DescendantsOrSelfOfType("team")
                 .ToList();
 
-            var specificEventPlacement = eventPlacements
-                .Where(ep => ep.Value<int>("eventYear") == year && ep.Value<string>("titleEvent") == titleEvent).ToList();
+            var eventTeams = teams.Where(x =>
+                    x.Parent != null &&
+                    x.Parent.Name == year.ToString() &&
+                    x.Parent.Parent != null &&
+                    x.Parent.Parent.Value<string>("EventShotCode") == titleEvent)
+                .ToList();
 
-
-            if (specificEventPlacement == null)
+            if (!eventTeams.Any())
             {
                 // Handle not found situation
                 return PartialView("~/Views/Partials/Events/EventPlacements.cshtml", new FinalPlacementsViewModel());
             }
 
-            var teamPlacements = specificEventPlacement.Select(placementItem => new TeamPlacement
+            var teamPlacements = eventTeams.Select(placementItem => new TeamPlacement
             {
-                Placement = placementItem.Value<int>("finalPlacement"),
-                Iso3 = placementItem.Value<string>("iso3"),
-                TeamName = placementItem.Value<string>("teamName"),
-                EventYear = placementItem.Value<int>("eventYear"),
-                TitleEvent = placementItem.Value<string>("titleEvent")
+                Placement = placementItem.Value<int>("FinalRanking"),
+                Iso3 = placementItem.Value<string>("countryIso3"),
+                TeamName = placementItem.Value<string>("eventTeam"),
+                TeamLogoUrl = placementItem.Value<IPublishedContent>("image")?.Url() ?? string.Empty,
+                EventYear = year,
+                TitleEvent = titleEvent
             }).ToList();
 
             var model = new FinalPlacementsViewModel

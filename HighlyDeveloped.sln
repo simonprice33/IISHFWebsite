@@ -7,6 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IISHFTest", "IISHFTest\IISH
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IISHFTest.Core", "IISHFTest.Core\IISHFTest.Core\IISHFTest.Core.csproj", "{9E933551-3161-4A00-AD56-C57C09576942}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionItems", "{1DF52000-F7E3-4072-91DA-EE2614A64D20}"
+	ProjectSection(SolutionItems) = preProject
+		VBACalls.txt = VBACalls.txt
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

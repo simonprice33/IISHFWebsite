@@ -1,6 +1,7 @@
 ﻿using IISHFTest.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Controllers;
 
@@ -19,26 +20,42 @@ namespace IISHFTest.Core.Controllers.ApiControllers
             _contentService = contentService;
         }
 
-        [HttpPost("Placement")]
+        [HttpPut("Placement")]
         //[ApiKeyAuthorize]
         public IActionResult PostPlacement([FromBody] TeamPlacement model)
         {
-            var rootContent = _contentQuery.ContentAtRoot().ToList();
-            var placementItems = rootContent.FirstOrDefault(x => x.Name == "Data")!.Children.FirstOrDefault(x => x.Name == "Event Placements");
-
-            if (placementItems != null)
+            var tournament = GetTournament(model.IsChampionships, model.TitleEvent, string.Format(model.EventYear.ToString()));
+            if (tournament == null)
             {
-                var newContact = _contentService.Create("Placement", placementItems.Id, "eventPlacement");
-                newContact.SetValue("teamName", model.TeamName);
-                newContact.SetValue("iso3", model.Iso3);
-                newContact.SetValue("finalPlacement", model.Placement);
-                newContact.SetValue("titleEvent", model.TitleEvent);
-                newContact.SetValue("eventYear", model.EventYear);
-
-                _contentService.SaveAndPublish(newContact);
+                return NotFound();
             }
 
-            return Ok();
+            var selectedTeam = tournament.Children.FirstOrDefault(x => x.Name == model.TeamName);
+            if (selectedTeam == null)
+            {
+                return NotFound();
+            }
+
+            var teamToUpdate = _contentService.GetById(selectedTeam.Id);
+
+            teamToUpdate?.SetValue("finalRanking", model.Placement);
+            _contentService.SaveAndPublish(teamToUpdate);
+
+            return NoContent();
+        }
+
+        private IPublishedContent? GetTournament(bool isChampionships, string titleEvent, string eventYear)
+        {
+            var rootContent = _contentQuery.ContentAtRoot().ToList();
+            var tournaments = rootContent
+                .FirstOrDefault(x => x.Name == "Home")!.Children()?
+                .FirstOrDefault(x => x.Name == "Tournaments")!.Children()?
+                .FirstOrDefault(x => x.Name.ToLower().Contains(isChampionships ? "championships" : "cup"))!.Children();
+
+            return tournaments == null || !tournaments.Any()
+                ? null
+                : tournaments.FirstOrDefault(x => x.Value<string>("EventShotCode") == titleEvent).Children()
+                    .FirstOrDefault(x => x.Name == eventYear) ?? null;
         }
     }
 }
