@@ -12,8 +12,8 @@ namespace IISHFTest.Core.Models
 
         public FinalPlacementsViewModel()
         {
-            TeamPlacements = new List<TeamPlacement>();
+            TeamPlacements = new List<TeamPlacements>();
         }
-        public IEnumerable<TeamPlacement> TeamPlacements { get; set; }
+        public IEnumerable<TeamPlacements> TeamPlacements { get; set; }
     }
 }

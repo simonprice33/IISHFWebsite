@@ -43,7 +43,26 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
         [HttpGet]
         public IActionResult GetSheduleAndResults()
         {
-            var model = new EventResultRequestViewModel();
+
+            var schedule = _contentQuery.ContentAtRoot()
+                .DescendantsOrSelfOfType("game")
+                .ToList();
+            var model = new ScheduleAndResultsViewModel();
+            foreach (var game in schedule)
+            {
+                model.ScheduleAndResults.Add(new ScheduleAndResults()
+                {
+                    HomeTeam = game.Value<string>("homeTeam"),
+                    AwayTeam = game.Value<string>("awayTeam"),
+                    HomeScore = game.Value<string>("homeScore"),
+                    AwayScore = game.Value<string>("awayScore"),
+                    GameNumber = game.Value<int>("gameNumber"),
+                    GameDateTime = game.Value<DateTime>("scheduleDateTime"),
+                    Group = game.Value<string>("group"),
+                    Remarks = game.Value<string>("remarks"),
+                });
+            }
+
             return PartialView("~/Views/Partials/Events/SchedulAndResults.cshtml", model);
         }
 
@@ -67,7 +86,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
                 return PartialView("~/Views/Partials/Events/EventPlacements.cshtml", new FinalPlacementsViewModel());
             }
 
-            var teamPlacements = eventTeams.Select(placementItem => new TeamPlacement
+            var teamPlacements = eventTeams.Select(placementItem => new TeamPlacements
             {
                 Placement = placementItem.Value<int>("FinalRanking"),
                 Iso3 = placementItem.Value<string>("countryIso3"),

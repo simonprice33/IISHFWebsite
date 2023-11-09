@@ -60,3 +60,39 @@
 .bg-bronze {
     background-color: #cd7f32; /* Bronze color */
 }
+
+.team {
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ddd; /* Slight border */
+    position: relative;
+}
+
+.home-team {
+    background: #f8f9fa; /* Bootstrap light grey background */
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    clip-path: polygon(0 0, calc(100% - 30px) 0, 100% 100%, 0% 100%);
+}
+
+.away-team {
+    background: #f8f9fa; /* Bootstrap light grey background */
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    clip-path: polygon(30px 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.trapezoid {
+    width: 120px;
+    height: 50px;
+    background: #0095DA;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    clip-path: polygon(0 0, 100% 0, 70% 100%, 30% 100%);
+    color: white;
+    font-size: 20px; /* Adjust as needed */
+    font-weight: bold;
+}

@@ -1,14 +1,46 @@
 ﻿@using IISHFTest.Core.Controllers
-@model IISHFTest.Core.Models.EventResultRequestViewModel
-
-@{
-    var b = true;
-}
+@using MailKit.Search
+@model IISHFTest.Core.Models.ScheduleAndResultsViewModel
 
 <div class="container">
     <div class="row">
         <div class="col-12">
             <h1 class="text-center mb-5">Schedule and Results</h1>
         </div>
+        @{
+            if (@Model?.ScheduleAndResults == null || !@Model.ScheduleAndResults.Any())
+            {
+                <h2 class="text-center">Schedule pending </h2>
+            }
+
+            foreach (var game in Model!.ScheduleAndResults.OrderBy(x => x.GameNumber))
+            {
+                <div class="row justify-content-center align-items-stretch mb-3">
+                    <div class="col-12 text-center">
+                        @{
+                            if (!string.IsNullOrWhiteSpace(@game.Group))
+                            {
+                                <div class="badge bg-secondary text-white text-center">Group : @game.Group - Game Time : @game.GameDateTime.ToString("f")</div>
+                            }
+                            else
+                            {
+                                <div class="text-center badge bg-secondary text-white">@game.Remarks <br/> Game Time : @game.GameDateTime.ToString("f")</div>
+                            }
+                        }
+                    </div>
+                    <div class="col team home-team text-center">
+                        <div class="col-6">@game.HomeTeam</div>
+                        <div class="col-6">@game.HomeScore</div>
+                    </div>
+                    <div class="col-auto team trapezoid">
+                        vs.
+                    </div>
+                    <div class="col team away-team text-center">
+                        <div class="col-6">@game.AwayScore</div>
+                        <div class="col-6">@game.AwayTeam</div>
+                    </div>
+                </div>
+            }
+        }
     </div>
 </div>

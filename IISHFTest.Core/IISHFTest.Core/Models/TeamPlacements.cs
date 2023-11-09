@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IISHFTest.Core.Models
 {
-    public class TeamPlacement
+    public class TeamPlacements : TournamentBaseModel
     {
         public int Placement { get; set; }
 
@@ -14,12 +14,6 @@ namespace IISHFTest.Core.Models
 
         public string TeamName { get; set; } = string.Empty;
 
-        public int EventYear { get; set; }
-
-        public string TitleEvent { get; set; } = string.Empty;
-
         public string? TeamLogoUrl { get; set; }
-
-        public bool IsChampionships { get; set; }
     }
 }
