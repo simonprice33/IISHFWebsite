@@ -20,24 +20,30 @@
                         @{
                             if (!string.IsNullOrWhiteSpace(@game.Group))
                             {
-                                <div class="badge bg-secondary text-white text-center">Group : @game.Group - Game Time : @game.GameDateTime.ToString("f")</div>
+                                <div class="badge bg-secondary text-white text-center">Group : @game.Group - @game.GameDateTime.ToString("f")</div>
                             }
                             else
                             {
-                                <div class="text-center badge bg-secondary text-white">@game.Remarks <br/> Game Time : @game.GameDateTime.ToString("f")</div>
+                                <div class="text-center badge bg-secondary text-white">@game.Remarks <br/> @game.GameDateTime.ToString("f")</div>
                             }
                         }
                     </div>
                     <div class="col team home-team text-center">
-                        <div class="col-6">@game.HomeTeam</div>
-                        <div class="col-6">@game.HomeScore</div>
+                        <div class="col-2 text-start">
+                            <img class="img img-fluid" style="max-height: 50px" src="@game.HomeTeamLogoUrl" alt="@game.HomeTeam" />
+                        </div>
+                        <div class="col-6 text-center">@game.HomeTeam</div>
+                        <div class="col-4">@game.HomeScore</div>
                     </div>
                     <div class="col-auto team trapezoid">
                         vs.
                     </div>
                     <div class="col team away-team text-center">
-                        <div class="col-6">@game.AwayScore</div>
-                        <div class="col-6">@game.AwayTeam</div>
+                        <div class="col-4">@game.AwayScore</div>
+                        <div class="col-6 text-center">@game.AwayTeam</div>
+                        <div class="col-2 text-end">
+                            <img class="img img-fluid" style="max-height: 50px" src="@game.AwayTeamLogoUrl" alt="@game.AwayTeam" />
+                        </div>
                     </div>
                 </div>
             }

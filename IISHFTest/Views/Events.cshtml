@@ -67,7 +67,7 @@
                     @await Html.PartialAsync("~/Views/Partials/Events/EventInformation.cshtml")
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-standings" role="tabpanel" aria-labelledby="v-pills-standings-tab">
-                    @await Html.PartialAsync("~/Views/Partials/Events/EventStandings.cshtml")
+                    <div id="groupRankingsContainer"></div>
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-schedule" role="tabpanel" aria-labelledby="v-pills-schedule-tab">
                     <div id="scheduleResultsContainer"></div>
@@ -99,7 +99,11 @@
 
 <script>
     $(document).ready(function () {
-        $.get('/umbraco/surface/events/getsheduleandresults', function (data) {
+        $.get('/umbraco/surface/events/GetGroupRankings', { year: '@year', titleEvent: '@eventShortCode' }, function (data) {
+            $('#groupRankingsContainer').html(data);
+        });
+
+        $.get('/umbraco/surface/events/getsheduleandresults', { year: '@year', titleEvent: '@eventShortCode' }, function (data) {
             $('#scheduleResultsContainer').html(data);
         });
 

@@ -21,26 +21,71 @@ namespace IISHFTest.Core.Controllers.ApiControllers
             _contentService = contentService;
         }
 
-        [HttpPut("Placement")]
+        [HttpPut("Ranking")]
         //[ApiKeyAuthorize]
-        public IActionResult PostPlacement([FromBody] TeamPlacements model)
+        public IActionResult PutRanking([FromBody] Rankings model)
         {
-            var tournament = GetTournament(model.IsChampionships, model.TitleEvent, string.Format(model.EventYear.ToString()));
+            var tournament = GetTournament(
+                model.Ranking.FirstOrDefault()!.IsChampionships,
+                model.Ranking.FirstOrDefault()!.TitleEvent,
+                string.Format(model.Ranking.FirstOrDefault()!.EventYear.ToString()));
+
             if (tournament == null)
             {
                 return NotFound();
             }
 
-            var selectedTeam = tournament.Children.FirstOrDefault(x => x.Name == model.TeamName && x.ContentType.Alias == "team");
-            if (selectedTeam == null)
+            foreach (var team in model.Ranking)
+            {
+                var selectedTeam = tournament.Children.FirstOrDefault(x => x.Name == team.TeamName && x.ContentType.Alias == "team");
+                if (selectedTeam == null)
+                {
+                    return NotFound();
+                }
+
+                var teamToUpdate = _contentService.GetById(selectedTeam.Id);
+
+                teamToUpdate?.SetValue("games", team.Games);
+                teamToUpdate?.SetValue("wins", team.Wins);
+                teamToUpdate?.SetValue("ties", team.Ties);
+                teamToUpdate?.SetValue("losses", team.Losses);
+                teamToUpdate?.SetValue("goalsFor", team.GoalsFor);
+                teamToUpdate?.SetValue("goalsAgainst", team.GoalsAgainst);
+                teamToUpdate?.SetValue("difference", team.Differnce);
+                teamToUpdate?.SetValue("tieWeight", team.TieWeight);
+                _contentService.SaveAndPublish(teamToUpdate);
+            }
+
+            return NoContent();
+        }
+
+        [HttpPut("Placement")]
+        //[ApiKeyAuthorize]
+        public IActionResult PutPlacement([FromBody] TeamPlacements model)
+        {
+            var tournament = GetTournament(
+                model.Placements.FirstOrDefault()!.IsChampionships, 
+                model.Placements.FirstOrDefault()!.TitleEvent, 
+                string.Format(model.Placements.FirstOrDefault()!.EventYear.ToString()));
+
+            if (tournament == null)
             {
                 return NotFound();
             }
 
-            var teamToUpdate = _contentService.GetById(selectedTeam.Id);
+            foreach (var placement in model.Placements)
+            {
+                var selectedTeam = tournament.Children.FirstOrDefault(x => x.Name == placement.TeamName && x.ContentType.Alias == "team");
+                if (selectedTeam == null)
+                {
+                    return NotFound();
+                }
 
-            teamToUpdate?.SetValue("finalRanking", model.Placement);
-            _contentService.SaveAndPublish(teamToUpdate);
+                var teamToUpdate = _contentService.GetById(selectedTeam.Id);
+
+                teamToUpdate?.SetValue("finalRanking", placement.Placement);
+                _contentService.SaveAndPublish(teamToUpdate);
+            }
 
             return NoContent();
         }

@@ -23,5 +23,9 @@ namespace IISHFTest.Core.Models
         public string Group { get; set; }
 
         public string Remarks { get; set; }
+
+        public string HomeTeamLogoUrl { get; set; }
+        
+        public string AwayTeamLogoUrl { get; set; }
     }
 }

@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace IISHFTest.Core.Models
 {
-    public class TeamPlacements
+    public class Rankings
     {
-        public TeamPlacements()
-        {
-            Placements = new List<TeamPlacement>();
-        }
 
-        public IEnumerable<TeamPlacement> Placements { get; set; }
+        public Rankings()
+        {
+            Ranking = new List<Ranking>();
+        }
+        public IEnumerable<Ranking> Ranking { get; set; }
     }
 }

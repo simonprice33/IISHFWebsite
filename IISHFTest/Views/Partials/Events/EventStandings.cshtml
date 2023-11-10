@@ -1,16 +1,73 @@
-﻿@using Umbraco.Cms.Web.Common.PublishedModels;
-
-@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.Events>
-@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+﻿@using IISHFTest.Core.Controllers
+@using IISHFTest.Helpers
+@using MailKit.Search
+@model IISHFTest.Core.Models.GroupRankingsViewModel
 
 @{
-    var b = true;
+    var groups = Model.Rankings.GroupBy(x => x.Group);
+    var groupA = groups.FirstOrDefault(x => x.Key == "A");
 }
 
 <div class="container">
     <div class="row">
         <div class="col-12">
             <h1 class="text-center mb-5">Standings</h1>
+            @{
+                foreach (var group in groups)
+                {
+                    <h1 class="mb-3">Group @group.Key</h1>
+                    <table class="table table-striped table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th>G</th>
+                                <th>W</th>
+                                <th>L</th>
+                                <th>T</th>
+                                <th>GF</th>
+                                <th>GA</th>
+                                <th>+/-</th>
+                                <th>Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var team in group.OrderBy(x => x.GroupPlacement)
+                                .ThenByDescending(x => x.Points)
+                                .ThenByDescending(x => x.TieWeight)
+                                .ThenByDescending(x => x.Wins)
+                                .ThenByDescending(x => x.GoalsFor)
+                                .ThenByDescending(x => x.GoalsAgainst)
+                                .ThenByDescending(x => x.Differnce))
+                            {
+                                <tr>
+                                    <td>@team.GroupPlacement.ToOrdinal()</td>
+                                    <td>
+                                        <img class="img img-fluid" style="max-height: 50px" src="@team.TeamLogoUrl" alt="@team.TeamName" />
+                                    </td>
+                                    <td><strong>@team.TeamName</strong></td>
+                                    <td>@team.Games</td>
+                                    <td>@team.Wins</td>
+                                    <td>@team.Losses</td>
+                                    <td>@team.Ties</td>
+                                    <td>@team.GoalsFor</td>
+                                    <td>@team.GoalsAgainst</td>
+                                    <td>@team.Differnce</td>
+                                    <td>@team.Points</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            }
         </div>
     </div>
 </div>
+
+<script>
+    $(document).ready(function () {
+        // Initialize Tablesaw
+        $(document).trigger("enhance.tablesaw");
+    });
+</script>

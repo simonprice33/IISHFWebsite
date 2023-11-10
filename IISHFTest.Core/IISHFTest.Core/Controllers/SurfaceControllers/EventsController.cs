@@ -41,15 +41,55 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
         }
 
         [HttpGet]
-        public IActionResult GetSheduleAndResults()
+        public IActionResult GetGroupRankings(int year, string titleEvent)
         {
+            var teams = GetContent("team");
+            var eventTeams = FilterData(year, titleEvent, teams);
 
-            var schedule = _contentQuery.ContentAtRoot()
-                .DescendantsOrSelfOfType("game")
-                .ToList();
+            if (!eventTeams.Any())
+            {
+                // Handle not found situation
+                return PartialView("~/Views/Partials/Events/EventStandings.cshtml", new GroupRankingsViewModel());
+            }
+
+            var teamPlacements = eventTeams.Select(placementItem => new RankingViewModel()
+                {
+                    TeamName = placementItem.Value<string>("eventTeam"),
+                    Group = placementItem.Value<string>("group"),
+                    TeamLogoUrl = placementItem.Value<IPublishedContent>("image")?.Url() ?? string.Empty,
+                    Games = placementItem.Value<int>("games"),
+                    Wins = placementItem.Value<int>("wins"),
+                    Losses = placementItem.Value<int>("losses"),
+                    Ties = placementItem.Value<int>("ties"),
+                    GoalsFor = placementItem.Value<int>("goalsFor"),
+                    GoalsAgainst = placementItem.Value<int>("goalsAgainst"),
+                    Differnce = placementItem.Value<int>("difference"),
+                    TieWeight = placementItem.Value<decimal>("tieWeight"),
+                    Points = placementItem.Value<int>("points"),
+                    GroupPlacement = placementItem.Value<int>("groupPlacement"),
+                }).ToList();
+
+            var model = new GroupRankingsViewModel
+            {
+                Rankings = teamPlacements
+            };
+
+            return PartialView("~/Views/Partials/Events/EventStandings.cshtml", model);
+        }
+
+        [HttpGet]
+        public IActionResult GetSheduleAndResults(int year, string titleEvent)
+        {
+            var teams = GetContent("game");
+            var schedule = FilterData(year, titleEvent, teams);
+
             var model = new ScheduleAndResultsViewModel();
             foreach (var game in schedule)
             {
+            
+                var homeTeam = game.Parent.Children.FirstOrDefault(x => x.Name == game.Value<string>("homeTeam"));
+                var awayTeam = game.Parent.Children.FirstOrDefault(x => x.Name == game.Value<string>("awayTeam"));
+
                 model.ScheduleAndResults.Add(new ScheduleAndResults()
                 {
                     HomeTeam = game.Value<string>("homeTeam"),
@@ -60,6 +100,8 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
                     GameDateTime = game.Value<DateTime>("scheduleDateTime"),
                     Group = game.Value<string>("group"),
                     Remarks = game.Value<string>("remarks"),
+                    HomeTeamLogoUrl = homeTeam.Value<IPublishedContent>("image")?.Url() ?? string.Empty,
+                    AwayTeamLogoUrl = awayTeam.Value<IPublishedContent>("image")?.Url() ?? string.Empty,
                 });
             }
 
@@ -69,16 +111,8 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
         [HttpGet]
         public IActionResult GetPlacements(int year, string titleEvent)
         {
-            var teams = _contentQuery.ContentAtRoot()
-                .DescendantsOrSelfOfType("team")
-                .ToList();
-
-            var eventTeams = teams.Where(x =>
-                    x.Parent != null &&
-                    x.Parent.Name == year.ToString() &&
-                    x.Parent.Parent != null &&
-                    x.Parent.Parent.Value<string>("EventShotCode") == titleEvent)
-                .ToList();
+            var teams = GetContent("team");
+            var eventTeams = FilterData(year, titleEvent, teams);
 
             if (!eventTeams.Any())
             {
@@ -86,7 +120,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
                 return PartialView("~/Views/Partials/Events/EventPlacements.cshtml", new FinalPlacementsViewModel());
             }
 
-            var teamPlacements = eventTeams.Select(placementItem => new TeamPlacements
+            var teamPlacements = eventTeams.Select(placementItem => new TeamPlacement
             {
                 Placement = placementItem.Value<int>("FinalRanking"),
                 Iso3 = placementItem.Value<string>("countryIso3"),
@@ -102,6 +136,25 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
             };
 
             return PartialView("~/Views/Partials/Events/EventPlacements.cshtml", model);
+        }
+
+        private static List<IPublishedContent> FilterData(int year, string titleEvent, List<IPublishedContent> rootContent)
+        {
+            var eventTeams = rootContent.Where(x =>
+                    x.Parent != null &&
+                    x.Parent.Name == year.ToString() &&
+                    x.Parent.Parent != null &&
+                    x.Parent.Parent.Value<string>("EventShotCode") == titleEvent)
+                .ToList();
+            return eventTeams;
+        }
+
+        private List<IPublishedContent> GetContent(string type)
+        {
+            var teams = _contentQuery.ContentAtRoot()
+                .DescendantsOrSelfOfType(type)
+                .ToList();
+            return teams;
         }
     }
 }
