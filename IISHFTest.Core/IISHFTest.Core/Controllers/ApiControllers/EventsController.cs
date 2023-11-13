@@ -21,6 +21,71 @@ namespace IISHFTest.Core.Controllers.ApiControllers
             _contentService = contentService;
         }
 
+        [HttpPost("Roster")]
+        public IActionResult PostRosterMember([FromBody] RosterMembers model)
+        {
+            var content = GetTournament(
+                model.IsChampionships,
+                model.TitleEvent,
+                model.EventYear.ToString());
+
+            var team = content.Children().FirstOrDefault(x => x.Name == model.TeamName);
+
+            foreach (var rosterMember in model.ItcRosterMembers)
+            {
+                var rosteredMember = _contentService.Create(rosterMember.PlayerName, team.Id, "roster");
+                rosteredMember?.SetValue("playerName", rosterMember.PlayerName);
+                rosteredMember?.SetValue("licenseNumber", rosterMember.License);
+                rosteredMember?.SetValue("isBenchOfficial", rosterMember.IsBenchOfficial);
+                rosteredMember?.SetValue("role", rosterMember.Role);
+                rosteredMember?.SetValue("jerseyNumber", rosterMember.JerseyNumber);
+                rosteredMember?.SetValue("dateOfBirth", rosterMember.DateOfBirth.ToString("yyyy-MM-dd"));
+                rosteredMember?.SetValue("nmaCheck", rosterMember.NmaCheck);
+                rosteredMember?.SetValue("iishfCheck", rosterMember.IISHFCheck);
+                rosteredMember?.SetValue("comments", rosterMember.Comments);
+
+                _contentService.SaveAndPublish(rosteredMember);
+            }
+
+            return Ok();
+        }
+
+        [HttpPut("Statistics")]
+        public IActionResult PutStatistics([FromBody] UpdatePlayerStatistics model)
+        {
+            var tournament = GetTournament(
+                model.IsChampionships,
+                model.TitleEvent,
+                string.Format(model.EventYear.ToString()));
+
+            if (tournament == null)
+            {
+                return NotFound();
+            }
+
+            foreach (var player in model.PlayerStatistics)
+            {
+                var selectedTeam = tournament.Children.FirstOrDefault(x => x.Name == player.TeamName && x.ContentType.Alias == "team");
+                if (selectedTeam == null)
+                {
+                    return NotFound();
+                }
+
+                var rosterMember = selectedTeam.Children()
+                    .FirstOrDefault(x => x.Value<string>("licenseNumber") == player.License);
+
+                var rosteredMember = _contentService.GetById(rosterMember.Id);
+                rosteredMember?.SetValue("goals", player.Goals);
+                rosteredMember?.SetValue("assists", player.Assists);
+                rosteredMember?.SetValue("penalties", player.Penalties);
+                rosteredMember?.SetValue("gamesPlayed", player.GamesPlayed);
+                _contentService.SaveAndPublish(rosteredMember);
+
+            }
+
+            return NoContent();
+        }
+
         [HttpPut("Ranking")]
         //[ApiKeyAuthorize]
         public IActionResult PutRanking([FromBody] Rankings model)
@@ -46,13 +111,19 @@ namespace IISHFTest.Core.Controllers.ApiControllers
                 var teamToUpdate = _contentService.GetById(selectedTeam.Id);
 
                 teamToUpdate?.SetValue("games", team.Games);
-                teamToUpdate?.SetValue("wins", team.Wins);
-                teamToUpdate?.SetValue("ties", team.Ties);
-                teamToUpdate?.SetValue("losses", team.Losses);
+                teamToUpdate?.SetValue("wins", team.won);
+                teamToUpdate?.SetValue("tie", team.Tied);
+                teamToUpdate?.SetValue("losses", team.Lost);
                 teamToUpdate?.SetValue("goalsFor", team.GoalsFor);
                 teamToUpdate?.SetValue("goalsAgainst", team.GoalsAgainst);
-                teamToUpdate?.SetValue("difference", team.Differnce);
-                teamToUpdate?.SetValue("tieWeight", team.TieWeight);
+                teamToUpdate?.SetValue("difference", team.Diff);
+
+                if (team.TieWeight != null)
+                {
+                    teamToUpdate?.SetValue("tieWeight", team.TieWeight);
+                }
+
+                teamToUpdate?.SetValue("points", team.Points);
                 _contentService.SaveAndPublish(teamToUpdate);
             }
 
@@ -64,8 +135,8 @@ namespace IISHFTest.Core.Controllers.ApiControllers
         public IActionResult PutPlacement([FromBody] TeamPlacements model)
         {
             var tournament = GetTournament(
-                model.Placements.FirstOrDefault()!.IsChampionships, 
-                model.Placements.FirstOrDefault()!.TitleEvent, 
+                model.Placements.FirstOrDefault()!.IsChampionships,
+                model.Placements.FirstOrDefault()!.TitleEvent,
                 string.Format(model.Placements.FirstOrDefault()!.EventYear.ToString()));
 
             if (tournament == null)
@@ -95,8 +166,8 @@ namespace IISHFTest.Core.Controllers.ApiControllers
         public IActionResult PutScheduleGame([FromBody] UpdateTeamScores model)
         {
             var tournament = GetTournament(
-                model.Scores.FirstOrDefault()!.IsChampionships, 
-                model.Scores.FirstOrDefault()!.TitleEvent, 
+                model.Scores.FirstOrDefault()!.IsChampionships,
+                model.Scores.FirstOrDefault()!.TitleEvent,
                 string.Format(model.Scores.FirstOrDefault()!.EventYear.ToString()));
             if (tournament == null)
             {
@@ -126,8 +197,8 @@ namespace IISHFTest.Core.Controllers.ApiControllers
         public IActionResult PostScheduleGame([FromBody] CreateScheduleGames model)
         {
             var tournament = GetTournament(
-                model.Games.FirstOrDefault()!.IsChampionships, 
-                model.Games.FirstOrDefault()!.TitleEvent, 
+                model.Games.FirstOrDefault()!.IsChampionships,
+                model.Games.FirstOrDefault()!.TitleEvent,
                 string.Format(model.Games.FirstOrDefault()!.EventYear.ToString()));
 
             if (tournament == null)

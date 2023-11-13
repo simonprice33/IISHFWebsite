@@ -4,7 +4,19 @@
 @using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
 
 @{
-    var b = true;
+    var id = Model.Id;
+
+    var year = DateTime.Now.Year;
+
+    if (!string.IsNullOrWhiteSpace(Context.Request.Query["year"].ToString()))
+    {
+        int.TryParse(Context.Request.Query["year"].ToString(), out year);
+    }
+
+    var iishfEvent = Umbraco.Content(id).Children().FirstOrDefault(x => x.Name == year.ToString());
+
+    var videoFeeds = iishfEvent.Value<IEnumerable<Umbraco.Cms.Core.Models.Link>>("liveStreams");
+
 }
 
 <div class="container">
@@ -12,5 +24,22 @@
         <div class="col-12">
             <h1 class="text-center mb-5">Media</h1>
         </div>
+        @{
+            @foreach (var feed in videoFeeds)
+            {
+                if (feed.Url.ToLower().Contains("youtube"))
+                {
+                    var src = $"https://www.youtube.com/embed/{@feed.Url.Split('/').Last()}";
+                    <div class="row mb-5">
+                        <iframe width="640" height="420" src="@src" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                    </div>
+                }
+
+                if (feed.Url.ToLower().Contains("sportdeutschland"))
+                {
+                    <iframe src="@feed.Url" width=640 height="420" frameborder=0 allowfullscreen></iframe>                    
+                }
+            }
+        }
     </div>
 </div>

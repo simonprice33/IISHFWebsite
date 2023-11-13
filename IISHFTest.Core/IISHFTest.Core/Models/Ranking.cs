@@ -12,17 +12,19 @@ namespace IISHFTest.Core.Models
         
         public string Games { get; set; }
         
-        public int Wins { get; set; }
+        public int won { get; set; }
         
-        public int Ties { get; set; }
+        public int Tied { get; set; }
         
-        public int Losses { get; set; }
+        public int Lost { get; set; }
         
         public int? GoalsFor { get; set; }
         
         public int? GoalsAgainst { get; set; }
         
-        public int? Differnce { get; set; }
+        public int? Diff { get; set; }
+
+        public int? Points { get; set; }
         
         public decimal? TieWeight { get; set; }
     }

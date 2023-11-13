@@ -53,21 +53,21 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
             }
 
             var teamPlacements = eventTeams.Select(placementItem => new RankingViewModel()
-                {
-                    TeamName = placementItem.Value<string>("eventTeam"),
-                    Group = placementItem.Value<string>("group"),
-                    TeamLogoUrl = placementItem.Value<IPublishedContent>("image")?.Url() ?? string.Empty,
-                    Games = placementItem.Value<int>("games"),
-                    Wins = placementItem.Value<int>("wins"),
-                    Losses = placementItem.Value<int>("losses"),
-                    Ties = placementItem.Value<int>("ties"),
-                    GoalsFor = placementItem.Value<int>("goalsFor"),
-                    GoalsAgainst = placementItem.Value<int>("goalsAgainst"),
-                    Differnce = placementItem.Value<int>("difference"),
-                    TieWeight = placementItem.Value<decimal>("tieWeight"),
-                    Points = placementItem.Value<int>("points"),
-                    GroupPlacement = placementItem.Value<int>("groupPlacement"),
-                }).ToList();
+            {
+                TeamName = placementItem.Value<string>("eventTeam"),
+                Group = placementItem.Value<string>("group"),
+                TeamLogoUrl = placementItem.Value<IPublishedContent>("image")?.Url() ?? string.Empty,
+                Games = placementItem.Value<int>("games"),
+                Wins = placementItem.Value<int>("wins"),
+                Losses = placementItem.Value<int>("losses"),
+                Ties = placementItem.Value<int>("ties"),
+                GoalsFor = placementItem.Value<int>("goalsFor"),
+                GoalsAgainst = placementItem.Value<int>("goalsAgainst"),
+                Differnce = placementItem.Value<int>("difference"),
+                TieWeight = placementItem.Value<decimal>("tieWeight"),
+                Points = placementItem.Value<int>("points"),
+                GroupPlacement = placementItem.Value<int>("groupPlacement"),
+            }).ToList();
 
             var model = new GroupRankingsViewModel
             {
@@ -86,7 +86,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
             var model = new ScheduleAndResultsViewModel();
             foreach (var game in schedule)
             {
-            
+
                 var homeTeam = game.Parent.Children.FirstOrDefault(x => x.Name == game.Value<string>("homeTeam"));
                 var awayTeam = game.Parent.Children.FirstOrDefault(x => x.Name == game.Value<string>("awayTeam"));
 
@@ -136,6 +136,40 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
             };
 
             return PartialView("~/Views/Partials/Events/EventPlacements.cshtml", model);
+        }
+
+        [HttpGet]
+        public IActionResult GetPlayerStats(int year, string titleEvent)
+        {
+            var content = GetContent("team");
+            var teams = FilterData(year, titleEvent, content);
+
+            if (!teams.Any())
+            {
+                return PartialView("~/Views/Partials/Events/PlayerStatistics.cshtml", new PlayerStatisticsViewModel());
+            }
+
+            var model = new PlayerStatisticsViewModel
+            {
+                PlayerStatistics = teams
+                    .SelectMany(x => x.Children)
+                    .Select(player => new PlayerStatistics
+                    {
+                        TeamName = player.Parent.Name,
+                        PlayerName = player.Value<string>("playerName"),
+                        Role = player.Value<string>("role"),
+                        JerseyNumber = player.Value<int>("jerseyNumber"),
+                        GamesPlayed = player.Value<int>("gamesPlayed"),
+                        Goals = player.Value<int>("goals"),
+                        Assists = player.Value<int>("assists"),
+                        Penalties = player.Value<int>("penalties"),
+                        TeamLogoUrl = player.Parent.Value<IPublishedContent>("image")?.Url() ?? string.Empty,
+                    })
+                    .ToList()
+            };
+
+
+            return PartialView("~/Views/Partials/Events/PlayerStatistics.cshtml", model);
         }
 
         private static List<IPublishedContent> FilterData(int year, string titleEvent, List<IPublishedContent> rootContent)

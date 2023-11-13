@@ -71,3 +71,7 @@ footer {
         margin-top: 0.5rem; /* equivalent to Bootstrap's mb-5 */
     }
 }
+
+.vertical-align-middle td, .vertical-align-middle th {
+    vertical-align: middle;
+}

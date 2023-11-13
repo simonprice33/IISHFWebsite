@@ -42,19 +42,19 @@
                                 .ThenByDescending(x => x.Differnce))
                             {
                                 <tr>
-                                    <td>@team.GroupPlacement.ToOrdinal()</td>
+                                    <td class="align-middle">@team.GroupPlacement.ToOrdinal()</td>
                                     <td>
                                         <img class="img img-fluid" style="max-height: 50px" src="@team.TeamLogoUrl" alt="@team.TeamName" />
                                     </td>
-                                    <td><strong>@team.TeamName</strong></td>
-                                    <td>@team.Games</td>
-                                    <td>@team.Wins</td>
-                                    <td>@team.Losses</td>
-                                    <td>@team.Ties</td>
-                                    <td>@team.GoalsFor</td>
-                                    <td>@team.GoalsAgainst</td>
-                                    <td>@team.Differnce</td>
-                                    <td>@team.Points</td>
+                                    <td class="align-middle"><strong>@team.TeamName</strong></td>
+                                    <td class="align-middle">@team.Games</td>
+                                    <td class="align-middle">@team.Wins</td>
+                                    <td class="align-middle">@team.Losses</td>
+                                    <td class="align-middle">@team.Ties</td>
+                                    <td class="align-middle">@team.GoalsFor</td>
+                                    <td class="align-middle">@team.GoalsAgainst</td>
+                                    <td class="align-middle">@team.Differnce</td>
+                                    <td class="align-middle">@team.Points</td>
                                 </tr>
                             }
                         </tbody>

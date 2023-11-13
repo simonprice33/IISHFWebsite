@@ -48,6 +48,9 @@
                 <a class="nav-link mb-3 p-3 shadow" id="v-pills-placements-tab" data-bs-toggle="pill" href="#v-pills-placements" role="tab" aria-controls="v-pills-placements" aria-selected="false">
                     <span class="font-weight-bold small text-uppercase">Final Placements</span>
                 </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-player-stats-tab" data-bs-toggle="pill" href="#v-pills-player-stats" role="tab" aria-controls="v-pills-standings" aria-selected="false">
+                    <span class="font-weight-bold small text-uppercase">Player Statistics</span>
+                </a>
                 <a class="nav-link mb-3 p-3 shadow" id="v-pills-media-tab" data-bs-toggle="pill" href="#v-pills-media" role="tab" aria-controls="v-pills-media" aria-selected="false">
                     <span class="font-weight-bold small text-uppercase">Media</span>
                 </a>
@@ -74,6 +77,10 @@
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-placements" role="tabpanel" aria-labelledby="v-pills-placements-tab">
                     <div id="eventPlacements"></div>
+
+                </div>
+                <div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-player-stats" role="tabpanel" aria-labelledby="v-pills-placements-tab">
+                    <div id="playerStats"></div>
 
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-media" role="tabpanel" aria-labelledby="v-pills-settings-tab">
@@ -109,6 +116,10 @@
 
         $.get('/umbraco/surface/events/GetPlacements', { year: '@year', titleEvent: '@eventShortCode' }, function (data) {
             $('#eventPlacements').html(data);
+        });
+
+        $.get('/umbraco/surface/events/GetPlayerStats', { year: '@year', titleEvent: '@eventShortCode' }, function (data) {
+            $('#playerStats').html(data);
         });
     });
 </script>

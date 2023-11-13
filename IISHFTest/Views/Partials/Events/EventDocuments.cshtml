@@ -2,9 +2,19 @@
 
 @inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.Events>
 @using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@using IISHFTest.Helpers
 
 @{
-    var b = true;
+    var id = Model.Id;
+
+    var year = DateTime.Now.Year;
+
+    if (!string.IsNullOrWhiteSpace(Context.Request.Query["year"].ToString()))
+    {
+        int.TryParse(Context.Request.Query["year"].ToString(), out year);
+    }
+
+    var documents = Umbraco.Content(id).Children().FirstOrDefault(x => x.Name == year.ToString()).Children().Where(x => x.ContentType.Alias == "document").ToList();
 }
 
 <div class="container">
@@ -12,5 +22,18 @@
         <div class="col-12">
             <h1 class="text-center mb-5">Tournament Documents</h1>
         </div>
+        @{
+            foreach (var document in documents)
+            {
+                var file = document.Value<IPublishedContent>("FileDownload");
+                var fileUrl = file?.Url();
+                var iconClass = FileIconHelper.GetIcon(fileUrl);
+
+                <a class="dropdown-item" href="@fileUrl" target="_blank">
+                    <i class="@iconClass fa-2xl p-1"></i>
+                    @document.Name
+                </a>
+            }
+        }
     </div>
 </div>
