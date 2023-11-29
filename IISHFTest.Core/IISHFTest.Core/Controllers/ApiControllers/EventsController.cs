@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using IISHFTest.Core.Models;
+using Lucene.Net.Index;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models.PublishedContent;
@@ -263,6 +264,41 @@ namespace IISHFTest.Core.Controllers.ApiControllers
 
             return NoContent();
         }
+
+        [HttpPut("VideoFeed")]
+        public IActionResult PutVideoFeeed([FromBody] VideoFeeds model)
+        {
+            var tournament = GetTournament(
+                model.IsChampionships,
+                model.TitleEvent,
+                string.Format(model.EventYear.ToString()));
+
+            foreach (var feed in model.Feeds)
+            {
+                var eventVideoFeed = _contentService.Create(feed.Title, tournament.Id, "liveFeeds");
+
+                var linkObject = new
+                    {
+                        name = $"{feed.Title}",
+                        url = feed.FeedUri,
+                        target = "_blank",
+                    };
+
+                    var linkArray = new[] { linkObject };
+                    var jsonLinkArray = JsonSerializer.Serialize(linkArray);
+
+                    eventVideoFeed.SetValue("liveFeedUrl", jsonLinkArray);
+                    eventVideoFeed.SetValue("feedOrder", feed.FeedOrder);
+                    eventVideoFeed.SetValue("liveFeedDateTime", feed.LIveFeedDateTimeUtc);
+                    eventVideoFeed.SetValue("showInSite", true);
+                
+                _contentService.SaveAndPublish(eventVideoFeed);
+            }
+
+
+            return NoContent();
+        }
+
 
         private IPublishedContent? GetTournament(bool isChampionships, string titleEvent, string eventYear)
         {
