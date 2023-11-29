@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IISHFTest.Core.Models
 {
-    public class Ranking : TournamentBaseModel
+    public class Ranking
     {
         public string TeamName { get; set; }
         
@@ -27,5 +27,7 @@ namespace IISHFTest.Core.Models
         public int? Points { get; set; }
         
         public decimal? TieWeight { get; set; }
+
+        public int Place { get; set; }
     }
 }

@@ -64,8 +64,8 @@
                     <h5><strong>@iishfEvent.Value("HostClub").ToString()</strong></h5>
                     <h6><strong>@iishfEvent.Value("HostContact").ToString()</strong></h6>
                     @{
-                        var link = iishfEvent.Value<IEnumerable<Umbraco.Cms.Core.Models.Link>>("HostWebSite");
-                        <a href="@link.FirstOrDefault().Url" target="@link.FirstOrDefault().Target"><i class="fa-duotone fa-globe-pointer text-black fa-lg m-2"></i></a>
+                        var link = iishfEvent.Value<Umbraco.Cms.Core.Models.Link>("HostWebSite");
+                        <a href="@link.Url" target="@link.Target"><i class="fa-duotone fa-globe-pointer text-black fa-lg m-2"></i></a>
 
 
                         if (!string.IsNullOrWhiteSpace(@iishfEvent.Value("HostPhoneNumber").ToString()))

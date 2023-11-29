@@ -14,35 +14,35 @@
 /* To counteract the skew on child elements */
 /*.skewed-border-box-content {
     transform: skewX(10deg);*/ /* Counteracts the parent skew */
-    /* Add other styling for your content here */
+/* Add other styling for your content here */
 /*}*/
 
-    /* This will represent the vertical line itself */
-    /*.skewed-border-box-content h2 .vertical-line {
+/* This will represent the vertical line itself */
+/*.skewed-border-box-content h2 .vertical-line {
         display: inline-block;
         height: 1em;*/ /* Adjust the height as necessary */
-        /*width: 1px;*/ /* Width of the line */
-        /*background-color: #000;*/ /* Color of the line */
-        /*margin: 0 5px;*/ /* Spacing around the line */
-        /*vertical-align: middle;*/ /* Aligns the line with the middle of the text */
-    /*}
+/*width: 1px;*/ /* Width of the line */
+/*background-color: #000;*/ /* Color of the line */
+/*margin: 0 5px;*/ /* Spacing around the line */
+/*vertical-align: middle;*/ /* Aligns the line with the middle of the text */
+/*}
 
     .skewed-border-box-content h2 span {
         display: inline-block;
         vertical-align: middle;*/
-        /* Add skew correction if the text looks skewed */
-    /*}
+/* Add skew correction if the text looks skewed */
+/*}
 
 @media (max-width: 767.98px) {*/
-    /* Assuming that 'md' breakpoint is at 768px, adjust if your Bootstrap version is different */
-    /*.vertical-line {
+/* Assuming that 'md' breakpoint is at 768px, adjust if your Bootstrap version is different */
+/*.vertical-line {
         display: none;*/ /* Hide the vertical line on small screens */
-    /*}
+/*}
 
     .placement, .team-name, .iso {
         display: block;*/ /* Each item on its own line on small screens */
-        /*text-align: center;*/ /* Center the text on small screens */
-    /*}
+/*text-align: center;*/ /* Center the text on small screens */
+/*}
 }*/
 /* Additional styling for the vertical line if necessary */
 /*.vertical-line {
@@ -95,4 +95,72 @@
     color: white;
     font-size: 20px; /* Adjust as needed */
     font-weight: bold;
+}
+
+/* Media query for mobile view */
+@media screen and (max-width: 992px) {
+    .home-team {
+        width: 100%;
+        display: block;
+        border-bottom-left-radius: 0; /* Removing rounded bottom-left border */
+        border-bottom-right-radius: 0; /* Removing rounded bottom-right border */
+        clip-path: none;
+    }
+
+    .away-team {
+        width: 100%;
+        display: block;
+        border-top-left-radius: 0; /* Removing rounded top-left border */
+        border-top-right-radius: 0; /* Removing rounded top-right border */
+        /* Other styles to adjust, e.g., removing clip-path if needed */
+        clip-path: none;
+    }
+
+    .trapezoid {
+        width: 100%;
+        display: block;
+        /* Remove or override styles related to angles or clip paths */
+        clip-path: none;
+        height: 20px; /* Setting the height to 20px */
+        text-align: center; /* Centering the text horizontally */
+        vertical-align: middle;
+        line-height: 11px; /* Adjusting line height to center text vertically */
+    }
+
+    #homeTeamName, #awayTeamName {
+        display: none; /* Hides the team names */
+    }
+
+    .home-team, .away-team {
+        /* Align items in a row with space between */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .away-team {
+        flex-direction: row-reverse; /* Reverses the order of elements inside the away team div */
+    }
+
+        .home-team img, .away-team img {
+            /* Adjust the logo size if necessary */
+            max-height: 45px; /* example size, adjust as needed */
+        }
+
+        .away-team img {
+            margin-right: 15px; /* Adds margin to the right of the away team image */
+        }
+
+        .home-team div, .away-team div {
+            /* Reduce margins or padding to bring elements closer */
+            margin: 0 25px; /* Adjust the values as needed */
+        }
+
+    .team-name-text {
+        display: none; /* Hide team name text by default */
+    }
+
+    .show-team-name {
+        display: block; /* Show team name text when this class is added */
+    }
 }

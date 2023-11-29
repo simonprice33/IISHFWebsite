@@ -1,4 +1,5 @@
-﻿using IISHFTest.Core.Models;
+﻿using System.Text.Json;
+using IISHFTest.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models.PublishedContent;
@@ -21,6 +22,39 @@ namespace IISHFTest.Core.Controllers.ApiControllers
             _contentService = contentService;
         }
 
+        [HttpPost("Team")]
+        public IActionResult PostTeam([FromBody] Team model)
+        {
+            var content = GetTournament(
+                model.IsChampionships,
+                model.TitleEvent,
+                model.EventYear.ToString());
+
+            var team = _contentService.Create(model.TeamName, content.Id, "team");
+            team?.SetValue("eventTeam", model.TeamName);
+            team?.SetValue("countryIso3", model.CountryIso3);
+            team?.SetValue("group", model.Group);
+
+            // Assuming you have a URL and a name for the link
+            if (model.TeamUrl != null)
+            {
+                var linkObject = new
+                {
+                    name = $"{model.TeamName} Website",
+                    url = model.TeamUrl,
+                    target = "_blank",
+                };
+
+                var linkArray = new[] { linkObject };
+                var jsonLinkArray = JsonSerializer.Serialize(linkArray);
+
+                team.SetValue("teamWebsite", jsonLinkArray);
+            }
+
+            _contentService.SaveAndPublish(team);
+            return Ok();
+        }
+
         [HttpPost("Roster")]
         public IActionResult PostRosterMember([FromBody] RosterMembers model)
         {
@@ -30,6 +64,11 @@ namespace IISHFTest.Core.Controllers.ApiControllers
                 model.EventYear.ToString());
 
             var team = content.Children().FirstOrDefault(x => x.Name == model.TeamName);
+
+            if (team == null)
+            {
+                return NotFound();
+            }
 
             foreach (var rosterMember in model.ItcRosterMembers)
             {
@@ -68,7 +107,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
                 var selectedTeam = tournament.Children.FirstOrDefault(x => x.Name == player.TeamName && x.ContentType.Alias == "team");
                 if (selectedTeam == null)
                 {
-                    return NotFound();
+                    continue;
                 }
 
                 var rosterMember = selectedTeam.Children()
@@ -91,9 +130,9 @@ namespace IISHFTest.Core.Controllers.ApiControllers
         public IActionResult PutRanking([FromBody] Rankings model)
         {
             var tournament = GetTournament(
-                model.Ranking.FirstOrDefault()!.IsChampionships,
-                model.Ranking.FirstOrDefault()!.TitleEvent,
-                string.Format(model.Ranking.FirstOrDefault()!.EventYear.ToString()));
+                model.IsChampionships,
+                model.TitleEvent,
+                string.Format(model.EventYear.ToString()));
 
             if (tournament == null)
             {
@@ -105,12 +144,13 @@ namespace IISHFTest.Core.Controllers.ApiControllers
                 var selectedTeam = tournament.Children.FirstOrDefault(x => x.Name == team.TeamName && x.ContentType.Alias == "team");
                 if (selectedTeam == null)
                 {
-                    return NotFound();
+                    continue;
                 }
 
                 var teamToUpdate = _contentService.GetById(selectedTeam.Id);
 
                 teamToUpdate?.SetValue("games", team.Games);
+                teamToUpdate?.SetValue("groupPlacement", team.Place);
                 teamToUpdate?.SetValue("wins", team.won);
                 teamToUpdate?.SetValue("tie", team.Tied);
                 teamToUpdate?.SetValue("losses", team.Lost);
@@ -135,9 +175,9 @@ namespace IISHFTest.Core.Controllers.ApiControllers
         public IActionResult PutPlacement([FromBody] TeamPlacements model)
         {
             var tournament = GetTournament(
-                model.Placements.FirstOrDefault()!.IsChampionships,
-                model.Placements.FirstOrDefault()!.TitleEvent,
-                string.Format(model.Placements.FirstOrDefault()!.EventYear.ToString()));
+                model.IsChampionships,
+                model.TitleEvent,
+                string.Format(model.EventYear.ToString()));
 
             if (tournament == null)
             {
@@ -166,9 +206,9 @@ namespace IISHFTest.Core.Controllers.ApiControllers
         public IActionResult PutScheduleGame([FromBody] UpdateTeamScores model)
         {
             var tournament = GetTournament(
-                model.Scores.FirstOrDefault()!.IsChampionships,
-                model.Scores.FirstOrDefault()!.TitleEvent,
-                string.Format(model.Scores.FirstOrDefault()!.EventYear.ToString()));
+                model.IsChampionships,
+                model.TitleEvent,
+                string.Format(model.EventYear.ToString()));
             if (tournament == null)
             {
                 return NotFound();
@@ -197,9 +237,9 @@ namespace IISHFTest.Core.Controllers.ApiControllers
         public IActionResult PostScheduleGame([FromBody] CreateScheduleGames model)
         {
             var tournament = GetTournament(
-                model.Games.FirstOrDefault()!.IsChampionships,
-                model.Games.FirstOrDefault()!.TitleEvent,
-                string.Format(model.Games.FirstOrDefault()!.EventYear.ToString()));
+                model.IsChampionships,
+                model.TitleEvent,
+                string.Format(model.EventYear.ToString()));
 
             if (tournament == null)
             {

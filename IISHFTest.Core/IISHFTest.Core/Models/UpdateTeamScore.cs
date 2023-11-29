@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IISHFTest.Core.Models
 {
-    public class UpdateTeamScore : TournamentBaseModel
+    public class UpdateTeamScore 
     {
         public int GameNumber { get; set; }
 

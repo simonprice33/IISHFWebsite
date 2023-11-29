@@ -1,4 +1,5 @@
-﻿using IISHFTest.Core.Models;
+﻿using System.Text.Json;
+using IISHFTest.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Cache;
@@ -60,7 +61,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
                 Games = placementItem.Value<int>("games"),
                 Wins = placementItem.Value<int>("wins"),
                 Losses = placementItem.Value<int>("losses"),
-                Ties = placementItem.Value<int>("ties"),
+                Ties = placementItem.Value<int>("tie"),
                 GoalsFor = placementItem.Value<int>("goalsFor"),
                 GoalsAgainst = placementItem.Value<int>("goalsAgainst"),
                 Differnce = placementItem.Value<int>("difference"),

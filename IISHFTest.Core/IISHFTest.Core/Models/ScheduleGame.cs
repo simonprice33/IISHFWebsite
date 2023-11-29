@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IISHFTest.Core.Models
 {
-    public class ScheduleGame : TournamentBaseModel
+    public class ScheduleGame 
     {
         public string HomeTeam { get; set; }
 

@@ -36,8 +36,11 @@
                                 <div class="col-12 text-center">
                                     @if (@child.Value("web") != null && !string.IsNullOrWhiteSpace(@child.Value("web").ToString()))
                                     {
-                                        var link = child.Value<Umbraco.Cms.Core.Models.Link>("web");
-                                        <a href="@link.Url" target="@link.Target"><i class="fa-duotone fa-globe-pointer text-black fa-lg m-2"></i></a>
+                                        var link = child.Value<IEnumerable<Umbraco.Cms.Core.Models.Link>>("web").FirstOrDefault();
+                                        if (link != null)
+                                        {
+                                            <a href="@link.Url" target="@link.Target"><i class="fa-duotone fa-globe-pointer text-black fa-lg m-2"></i></a>
+                                        }
                                     } 
                                     @if (@child.Value("email") != null && !string.IsNullOrWhiteSpace(@child.Value("email").ToString()))
                                     {
@@ -45,31 +48,46 @@
                                     }
                                     @if (@child.Value("facebook") != null && !string.IsNullOrWhiteSpace(@child.Value("facebook").ToString()))
                                     {
-                                        var link = child.Value<Umbraco.Cms.Core.Models.Link>("facebook");
-                                        <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-facebook text-black fa-lg m-2"></i></a>
+                                        var link = child.Value<IEnumerable<Umbraco.Cms.Core.Models.Link>>("facebook").FirstOrDefault();
+                                        if (link != null)
+                                        {
+                                            <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-facebook text-black fa-lg m-2"></i></a>
+                                        }
                                     }
                                     @if (@child.Value("twitter") != null && !string.IsNullOrWhiteSpace(@child.Value("twitter").ToString()))
                                     {
-                                        var link = child.Value<Umbraco.Cms.Core.Models.Link>("twitter");
-                                        <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-x-twitter text-black fa-lg m-2"></i></a>
+                                        var link = child.Value<IEnumerable<Umbraco.Cms.Core.Models.Link>>("twitter").FirstOrDefault();
+                                        if (link != null)
+                                        {
+                                            <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-x-twitter text-black fa-lg m-2"></i></a>
+                                        }
                                     }
                                     @if (@child.Value("instagram") != null && !string.IsNullOrWhiteSpace(@child.Value("instagram").ToString()))
                                     {
-                                        var link = child.Value<Umbraco.Cms.Core.Models.Link>("instagram");
-                                        <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-instagram text-black fa-lg m-2"></i></a>
+                                        var link = child.Value<IEnumerable<Umbraco.Cms.Core.Models.Link>>("instagram").FirstOrDefault();
+                                        if (link != null)
+                                        {
+                                            <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-instagram text-black fa-lg m-2"></i></a>
+                                        }
                                     }
                                     @if (@child.Value("youtube") != null && !string.IsNullOrWhiteSpace(@child.Value("youtube").ToString()))
                                     {
-                                        var link = child.Value<Umbraco.Cms.Core.Models.Link>("youtube");
-                                        <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-youtube text-black fa-lg m-2"></i></a>
+                                        var link = child.Value<IEnumerable<Umbraco.Cms.Core.Models.Link>>("youtube").FirstOrDefault();
+                                        if (link != null)
+                                        {
+                                            <a href="@link.Url" target="@link.Target"><i class="fa-brands fa-square-youtube text-black fa-lg m-2"></i></a>
+                                        }
                                     }
                                     @if (@child.Value("telephone") != null && !string.IsNullOrWhiteSpace(@child.Value("telephone").ToString()))
                                     {
-                                        var link = child.Value<Umbraco.Cms.Core.Models.Link>("telephone");
-                                        <a href="tel:@child.Value("telephone")">
-                                            <i class="fa-duotone fa-square-phone-flip text-black fa-lg m-2"></i>
-                                            
-                                        </a>
+                                        var link = child.Value<IEnumerable<Umbraco.Cms.Core.Models.Link>>("telephone");
+                                        if (link != null)
+                                        {
+                                            <a href="tel:@child.Value("telephone")">
+                                                <i class="fa-duotone fa-square-phone-flip text-black fa-lg m-2"></i>
+
+                                            </a>
+                                        }
                                     }
                                 </div>
                             </div>
