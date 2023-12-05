@@ -114,6 +114,11 @@ namespace IISHFTest.Core.Controllers.ApiControllers
                 var rosterMember = selectedTeam.Children()
                     .FirstOrDefault(x => x.Value<string>("licenseNumber") == player.License);
 
+                if (rosterMember == null)
+                {
+                    continue;
+                }
+
                 var rosteredMember = _contentService.GetById(rosterMember.Id);
                 rosteredMember?.SetValue("goals", player.Goals);
                 rosteredMember?.SetValue("assists", player.Assists);

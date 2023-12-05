@@ -46,6 +46,10 @@ footer {
     background-color: #FF7C1F;
 }
 
+.bg-blue {
+    background-color: #0095DA;
+}
+
 .page-item.active-orange .page-link {
     z-index: 3;
     color: #fff;

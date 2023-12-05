@@ -6,15 +6,21 @@
 
 @{
     var id = Model.Id;
-
-    var year = DateTime.Now.Year;
+    var events = Umbraco.Content(id).Children();
+    var selectedCalendarYear = DateTime.Now.Year;
 
     if (!string.IsNullOrWhiteSpace(Context.Request.Query["year"].ToString()))
     {
-        int.TryParse(Context.Request.Query["year"].ToString(), out year);
+        int.TryParse(Context.Request.Query["year"].ToString(), out selectedCalendarYear);
     }
 
-    var documents = Umbraco.Content(id).Children().FirstOrDefault(x => x.Name == year.ToString()).Children().Where(x => x.ContentType.Alias == "document").ToList();
+    var selectedEvent = events.FirstOrDefault(x => x.Name == selectedCalendarYear.ToString());
+    if (selectedEvent == null)
+    {
+        selectedEvent = events.FirstOrDefault();
+    }
+
+    var documents = selectedEvent.Children().Where(x => x.ContentType.Alias == "document").ToList();
 }
 
 <div class="container">

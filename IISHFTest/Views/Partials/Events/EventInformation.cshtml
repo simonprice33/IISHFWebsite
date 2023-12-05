@@ -5,21 +5,36 @@
 
 @{
     var id = Model.Id;
+    var events = Umbraco.Content(id).Children();
 
-    var year = DateTime.Now.Year;
+    var selectedCalendarYear = DateTime.Now.Year;
 
     if (!string.IsNullOrWhiteSpace(Context.Request.Query["year"].ToString()))
     {
-        int.TryParse(Context.Request.Query["year"].ToString(), out year);
+        int.TryParse(Context.Request.Query["year"].ToString(), out selectedCalendarYear);
     }
 
-    var iishfEvent = Umbraco.Content(id).Children().FirstOrDefault(x => x.Name == year.ToString());
+    var selectedEvent = events.FirstOrDefault(x => x.Name == selectedCalendarYear.ToString());
+    if (selectedEvent == null)
+    {
+        selectedEvent = events.FirstOrDefault();
+    }
+    
+    var heroImageObj = Model.HeroImage;
+    var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
 
-    var b = true;
+    string eventShortCode = string.Empty;
+    if (selectedEvent != null)
+    {
+        int.TryParse(selectedEvent.Name, out selectedCalendarYear);
+
+        //var eventShortCode = selectedEvent.Parent.Value<IPublishedContent>("EventShortCode");
+        eventShortCode = selectedEvent.Parent.Value<string>("EventShotCode"); // Assuming it's a content picker property
+    }
 }
 
 @{
-    if (iishfEvent == null)
+    if (selectedEvent == null)
     {
         <div class="container ">
             <div class="row">
@@ -32,7 +47,7 @@
 }
 
 @{
-    if (iishfEvent != null)
+    if (selectedEvent != null)
     {
         <div class="container ">
             <div class="row">
@@ -41,8 +56,8 @@
                 </div>
                 <div>
                     @{
-                        var startDate = DateTime.Parse(@iishfEvent.Value("EventStartDate").ToString());
-                        var endDate = DateTime.Parse(@iishfEvent.Value("EventEndDate").ToString());
+                        var startDate = DateTime.Parse(@selectedEvent.Value("EventStartDate").ToString());
+                        var endDate = DateTime.Parse(@selectedEvent.Value("EventEndDate").ToString());
                         <h2 class="mb-5">@startDate.DayOfWeek @startDate.Day - @endDate.DayOfWeek @endDate.ToString("dd MMMM yyyy")</h2>
                     }
                 </div>
@@ -52,7 +67,7 @@
 
                     @{
                         // Assuming 'Model' is your event IPublishedContent item.
-                        IPublishedContent hostImage = iishfEvent.Value<IPublishedContent>("HostImage");
+                        IPublishedContent hostImage = selectedEvent.Value<IPublishedContent>("HostImage");
 
                         if (hostImage != null)
                         {
@@ -61,39 +76,39 @@
                         }
                     }
 
-                    <h5><strong>@iishfEvent.Value("HostClub").ToString()</strong></h5>
-                    <h6><strong>@iishfEvent.Value("HostContact").ToString()</strong></h6>
+                    <h5><strong>@selectedEvent.Value("HostClub").ToString()</strong></h5>
+                    <h6><strong>@selectedEvent.Value("HostContact").ToString()</strong></h6>
                     @{
-                        var link = iishfEvent.Value<Umbraco.Cms.Core.Models.Link>("HostWebSite");
+                        var link = selectedEvent.Value<Umbraco.Cms.Core.Models.Link>("HostWebSite");
                         <a href="@link.Url" target="@link.Target"><i class="fa-duotone fa-globe-pointer text-black fa-lg m-2"></i></a>
 
 
-                        if (!string.IsNullOrWhiteSpace(@iishfEvent.Value("HostPhoneNumber").ToString()))
+                        if (!string.IsNullOrWhiteSpace(@selectedEvent.Value("HostPhoneNumber").ToString()))
                         {
-                            var telephone = $"tel:{@iishfEvent.Value("HostPhoneNumber").ToString().Replace(" ", string.Empty).Trim()}";
-                            var whatsAppUrl = $"https://wa.me/{@iishfEvent.Value("HostPhoneNumber").ToString().Replace("+", string.Empty).Replace(" ", string.Empty).Trim()}";
+                            var telephone = $"tel:{@selectedEvent.Value("HostPhoneNumber").ToString().Replace(" ", string.Empty).Trim()}";
+                            var whatsAppUrl = $"https://wa.me/{@selectedEvent.Value("HostPhoneNumber").ToString().Replace("+", string.Empty).Replace(" ", string.Empty).Trim()}";
                             <a href="@telephone" ><i class="fa-thin fa-mobile-button text-black fa-lg m-2"></i></a>
                             <a href="@whatsAppUrl" ><i class="fa-brands fa-square-whatsapp text-black fa-lg m-2"></i></a>
                         }
 
-                        if (!string.IsNullOrWhiteSpace(@iishfEvent.Value("HostEmail").ToString()))
+                        if (!string.IsNullOrWhiteSpace(@selectedEvent.Value("HostEmail").ToString()))
                         {
-                            <a href="mailto:@iishfEvent.Value("HostEmail")"><i class="fa-regular fa-at text-black fa-lg m-2"></i></a>
+                            <a href="mailto:@selectedEvent.Value("HostEmail")"><i class="fa-regular fa-at text-black fa-lg m-2"></i></a>
                         }
                     }
 
                 </div>
                 <div class="col-12 col-sm-12 col-md-4 col-lg-4 text-center text-md-left ">
                     <h2 class="h2-desktop h2-mobile">Venue</h2>
-                    <h5><strong>@iishfEvent.Value("VenueName").ToString()</strong></h5>
-                    <h6><strong>@Html.Raw(iishfEvent.Value<string>("VenueAddress").Replace("\n", "<br>"))</strong></h6>
+                    <h5><strong>@selectedEvent.Value("VenueName").ToString()</strong></h5>
+                    <h6><strong>@Html.Raw(selectedEvent.Value<string>("VenueAddress").Replace("\n", "<br>"))</strong></h6>
                 </div>
                 <div class="col-12 col-sm-12 col-md-4 col-lg-4 text-center text-md-left ">
                     <h2 class="h2-desktop h2-mobile">Rink Features</h2>
                     <h5>Dimensions</h5>
-                    <h6>@iishfEvent.Value("RinkSizeLength") X @iishfEvent.Value("RinkSizeWidth")</h6>
+                    <h6>@selectedEvent.Value("RinkSizeLength") X @selectedEvent.Value("RinkSizeWidth")</h6>
                     <h5>Flooring</h5>
-                    <h6>@iishfEvent.Value("RinkFloor")</h6>
+                    <h6>@selectedEvent.Value("RinkFloor")</h6>
                 </div>
             </div>
         </div>
