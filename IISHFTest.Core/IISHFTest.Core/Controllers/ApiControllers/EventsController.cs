@@ -166,7 +166,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
 
                 if (team.TieWeight != null)
                 {
-                    teamToUpdate?.SetValue("tieWeight", team.TieWeight);
+                    teamToUpdate?.SetValue("tiedWeight", team.TieWeight);
                 }
 
                 teamToUpdate?.SetValue("points", team.Points);
@@ -303,6 +303,53 @@ namespace IISHFTest.Core.Controllers.ApiControllers
 
             return NoContent();
         }
+
+        [HttpPost("SanctionedEvent")]
+        public IActionResult PostTournament([FromBody] TournamentModel model)
+        {
+            var rootContent = _contentQuery.ContentAtRoot().ToList();
+            var tournament = rootContent
+                .FirstOrDefault(x => x.Name == "Home")!.Children()?
+                .FirstOrDefault(x => x.Name == "Tournaments")!.Children()?
+                .FirstOrDefault(x => x.Name.ToLower().Contains(model.IsChampionships ? "championships" : "cup"))!
+                .Children()
+                .FirstOrDefault(x => x.Value<string>("EventShotCode") == model.TitleEvent);
+
+            if (tournament != null)
+            {
+                var linkObject = new
+                {
+                    name = $"{model.HostClub} Website",
+                    url = model.HostWebsite,
+                    target = "_blank",
+                };
+
+                var linkArray = new[] { linkObject };
+                var jsonLinkArray = JsonSerializer.Serialize(linkArray);
+
+                var iishfEvent = _contentService.Create(model.EventYear.ToString(), tournament.Id, "event");
+                iishfEvent?.SetValue("eventStartDate", model.EventStartDate);
+                iishfEvent?.SetValue("eventEndDate", model.EventEndDate);
+                iishfEvent?.SetValue("hostClub", model.HostClub);
+                iishfEvent?.SetValue("hostContact", model.HostContact);
+                iishfEvent?.SetValue("hostPhoneNumber", model.HostPhoneNumber);
+                iishfEvent?.SetValue("hostEmail", model.HostEmail);
+                iishfEvent?.SetValue("hostWebSite", jsonLinkArray);
+                iishfEvent?.SetValue("venueName", model.VenueName);
+                iishfEvent?.SetValue("venueAddress", model.VenueAddress);
+                iishfEvent?.SetValue("rinkSizeLength", model.RinkLength);
+                iishfEvent?.SetValue("rinkSizeWidth", model.RinkWidth);
+                iishfEvent?.SetValue("rinkFloor", model.RinkFloor);
+
+                _contentService.SaveAndPublish(iishfEvent);
+
+                return Created(new Uri(iishfEvent.Id.ToString(), UriKind.RelativeOrAbsolute), iishfEvent.Id.ToString());
+            }
+
+            return NotFound();
+        }
+
+
 
 
         private IPublishedContent? GetTournament(bool isChampionships, string titleEvent, string eventYear)

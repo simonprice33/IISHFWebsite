@@ -1,0 +1,99 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@using System.Runtime.InteropServices
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+
+@{
+    var id = Model.Id;
+    var CurrentNode = Umbraco.Content(id);
+
+    List<string> missionItems = new List<string>();
+
+    var missionAndValuesContent = CurrentNode.Children.Where(x => x.ContentType.Alias == "missionValuesSection").ToList();
+    foreach (var item in missionAndValuesContent)
+    {
+        var items = item.Children();
+        foreach (var missionItem in items)
+        {
+            missionItems.Add(missionItem.Value<string>("MissionValueContent"));
+        }
+    }
+
+
+}
+
+
+<section class="cd-intro cd-intro-large">
+    <div class="clipper-inner">
+        <div class="content-on-top">
+            <i class="icon-lg pe-7s-graph1"></i>
+            <h1 class="cd-headline clip is-full-width">
+                <span class="cd-words-wrapper">
+                    <b class="is-visible"> Values</b>
+                    <b>Vision</b>
+                    <b>Mission</b>
+                   
+                </span>
+            </h1>
+            
+            @{
+                if (missionItems != null)
+                {
+                    
+
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-md-12 col-lg-12">
+                                <div class="values">
+                                    @{
+                                        foreach (var child in missionItems.Skip(1))
+                                        {
+                                            <div class="container">
+                                                <div class="row">
+                                                    <div class="col-sm-12 col-sm-12 col-lg-12 text-center">
+                                                        @{
+                                                            if (@child.Length < 50)
+                                                            {
+                                                                <h1>@child</h1>
+                                                            }
+                                                            else
+                                                            {
+                                                                <h4> @child</h4>
+                                                            }
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+
+
+        </div>
+        <div class="overlay"></div>
+    </div>
+</section>
+
+
+
+<script>
+    $(document).ready(function () {
+        $('.values').slick({
+            infinite: true,
+            arrows: false,
+            speed: 1000,
+            slidesToShow: 1,
+            slidesToScroll: 1,
+            autoplay: true,
+            autoplaySpeed: 3000,
+        });
+    });
+</script>
+
+
+
+

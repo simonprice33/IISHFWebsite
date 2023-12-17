@@ -10,6 +10,12 @@
     background-image: url('https://iishf.com/images/svg/section-background-stripes2.svg'); /* Replace 'your-image.jpg' with your image file path */
 }
 
+.cd-intro-large {
+    /* Make the background cover the entire section */
+    height: 500px !important;
+    vertical-align: middle;
+}
+
 .cd-intro {
     position: relative;
 }

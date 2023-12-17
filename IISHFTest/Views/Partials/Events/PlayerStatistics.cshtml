@@ -9,14 +9,9 @@
             <h1 class="text-center mb-5">Player Statistics</h1>
             @{
 
-                if (!@Model.PlayerStatistics.Any())
-                {
-                    <h1>Awaiting player data</h1>
-                }
-                else
-                {
-                    <table class="table table-condensed table-striped table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
-                        <thead>
+
+                <table class="table table-condensed table-striped table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
+                    <thead>
                         <tr>
                             <th class="text-center" colspan="2">Team</th>
                             <th class="text-center">Player Name</th>
@@ -26,16 +21,16 @@
                             <th class="text-center">Penalties</th>
                             <th class="text-center">Games Played</th>
                         </tr>
-                        </thead>
-                        <tbody>
+                    </thead>
+                    <tbody>
                         @foreach (var team in Model.PlayerStatistics
-                            .OrderByDescending(x => x.Total)
-                            .ThenByDescending(x => x.Goals)
-                            .ThenByDescending(x => x.Assists)
-                            .ThenByDescending(x => x.GamesPlayed)
-                            .ThenByDescending(x => x.Penalties)
-                            .ThenByDescending(x => x.TeamName)
-                            .ThenByDescending(x => x.TeamName))
+                    .OrderByDescending(x => x.Total)
+                    .ThenByDescending(x => x.Goals)
+                    .ThenByDescending(x => x.Assists)
+                    .ThenByDescending(x => x.GamesPlayed)
+                    .ThenByDescending(x => x.Penalties)
+                    .ThenByDescending(x => x.TeamName)
+                    .ThenByDescending(x => x.TeamName))
                         {
                             <tr>
                                 <td>
@@ -50,9 +45,8 @@
                                 <td class="align-middle text-center">@team.GamesPlayed</td>
                             </tr>
                         }
-                        </tbody>
-                    </table>
-                }
+                    </tbody>
+                </table>
             }
         </div>
     </div>
@@ -62,5 +56,9 @@
     $(document).ready(function () {
         // Initialize Tablesaw
         $(document).trigger("enhance.tablesaw");
+
+        if (@Model.PlayerStatistics.Count === 0) {
+            $("#v-pills-player-stats-tab").hide()
+        }
     });
 </script>

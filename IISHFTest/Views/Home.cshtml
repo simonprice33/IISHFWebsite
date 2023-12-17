@@ -23,21 +23,8 @@
 
 @await Html.PartialAsync("News/LatestNewsLimit6")
 
-<section class="cd-intro">
-    <div class="clipper-inner">
-        <div class="content-on-top">
-            <i class="icon-lg pe-7s-graph1"></i>
-            <h1 class="cd-headline clip is-full-width">
-                <span class="cd-words-wrapper">
-                    <b class="is-visible"> Values</b>
-                    <b>Vision</b>
-                    <b>Mission</b>
-                </span>
-            </h1>
-        </div>
-        <div class="overlay"></div>
-    </div>
-</section>
+@await Html.PartialAsync("~/Views/Partials/Statements/MissionAndValues.cshtml")
+
 
 <section id="member-federations" class="home-member-section">
     <div class="Container">

@@ -80,7 +80,11 @@
                     <h6><strong>@selectedEvent.Value("HostContact").ToString()</strong></h6>
                     @{
                         var link = selectedEvent.Value<Umbraco.Cms.Core.Models.Link>("HostWebSite");
-                        <a href="@link.Url" target="@link.Target"><i class="fa-duotone fa-globe-pointer text-black fa-lg m-2"></i></a>
+                        if (link != null)
+                        {
+                            
+                            <a href="@link.Url" target="@link.Target"><i class="fa-duotone fa-globe-pointer text-black fa-lg m-2"></i></a>
+                        }
 
 
                         if (!string.IsNullOrWhiteSpace(@selectedEvent.Value("HostPhoneNumber").ToString()))
@@ -88,7 +92,7 @@
                             var telephone = $"tel:{@selectedEvent.Value("HostPhoneNumber").ToString().Replace(" ", string.Empty).Trim()}";
                             var whatsAppUrl = $"https://wa.me/{@selectedEvent.Value("HostPhoneNumber").ToString().Replace("+", string.Empty).Replace(" ", string.Empty).Trim()}";
                             <a href="@telephone" ><i class="fa-thin fa-mobile-button text-black fa-lg m-2"></i></a>
-                            <a href="@whatsAppUrl" ><i class="fa-brands fa-square-whatsapp text-black fa-lg m-2"></i></a>
+                            <a href="@whatsAppUrl" target="_blank"><i class="fa-brands fa-square-whatsapp text-black fa-lg m-2"></i></a>
                         }
 
                         if (!string.IsNullOrWhiteSpace(@selectedEvent.Value("HostEmail").ToString()))
@@ -107,8 +111,13 @@
                     <h2 class="h2-desktop h2-mobile">Rink Features</h2>
                     <h5>Dimensions</h5>
                     <h6>@selectedEvent.Value("RinkSizeLength") X @selectedEvent.Value("RinkSizeWidth")</h6>
-                    <h5>Flooring</h5>
-                    <h6>@selectedEvent.Value("RinkFloor")</h6>
+                    @{
+                        if (!string.IsNullOrWhiteSpace(@selectedEvent.Value("RinkFloor").ToString()))
+                        {
+                            <h5>Flooring</h5>
+                            <h6>@selectedEvent.Value("RinkFloor")</h6>
+                        }
+                    }
                 </div>
             </div>
         </div>
