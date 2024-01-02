@@ -14,6 +14,8 @@
     background-image: url('https://iishf.com/images/ap-smart-layerslider/homepage/slide1.png'); /* Replace 'your-image.jpg' with your image file path */
 }
 
+
+
 .home-contact-section {
     background-color: #303030;
     background-repeat: repeat;
@@ -55,4 +57,11 @@
 .content-on-top {
     position: relative;
     z-index: 3; /* Higher than the overlay */
+}
+
+
+@media only screen and (max-width: 768px) { /* Adjust the max-width as needed for your design */
+    #contact .col-sm-4 {
+        margin-top: 20px; /* Adjust the margin value as needed */
+    }
 }

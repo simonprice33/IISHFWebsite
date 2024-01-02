@@ -99,6 +99,16 @@
 
 /* Media query for mobile view */
 @media screen and (max-width: 992px) {
+
+    .team {
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #ddd; /* Slight border */
+        position: relative;
+    }
+
     .home-team {
         width: 100%;
         display: block;
@@ -157,10 +167,16 @@
         }
 
     .team-name-text {
-        display: none; /* Hide team name text by default */
+        display: none !i; /* Hide team name text by default */
     }
 
     .show-team-name {
         display: block; /* Show team name text when this class is added */
+    }
+}
+
+@media screen and (min-width: 993px) {
+    .team-name-text {
+        display: none; /* Hide by default in desktop view */
     }
 }

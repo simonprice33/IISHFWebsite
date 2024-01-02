@@ -88,22 +88,39 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
             foreach (var game in schedule)
             {
 
-                var homeTeam = game.Parent.Children.FirstOrDefault(x => x.Name == game.Value<string>("homeTeam"));
-                var awayTeam = game.Parent.Children.FirstOrDefault(x => x.Name == game.Value<string>("awayTeam"));
-
-                model.ScheduleAndResults.Add(new ScheduleAndResults()
+                try
                 {
-                    HomeTeam = game.Value<string>("homeTeam"),
-                    AwayTeam = game.Value<string>("awayTeam"),
-                    HomeScore = game.Value<string>("homeScore"),
-                    AwayScore = game.Value<string>("awayScore"),
-                    GameNumber = game.Value<int>("gameNumber"),
-                    GameDateTime = game.Value<DateTime>("scheduleDateTime"),
-                    Group = game.Value<string>("group"),
-                    Remarks = game.Value<string>("remarks"),
-                    HomeTeamLogoUrl = homeTeam.Value<IPublishedContent>("image")?.Url() ?? string.Empty,
-                    AwayTeamLogoUrl = awayTeam.Value<IPublishedContent>("image")?.Url() ?? string.Empty,
-                });
+                    var homeTeam =
+                        game.Parent.Children.FirstOrDefault(x => x.Name == game.Value<string>("homeTeam")) ?? game.Parent.Children.FirstOrDefault(x => x.Name.Trim().Contains(game.Value<string>("homeTeam").Trim()));
+
+                    var awayTeam =
+                        game.Parent.Children.FirstOrDefault(x => x.Name == game.Value<string>("awayTeam")) ?? game.Parent.Children.FirstOrDefault(x => x.Name.Trim().Contains(game.Value<string>("awayTeam").Trim()));
+
+                    var homeLogo = homeTeam.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
+                    var awayLogo = awayTeam.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
+
+                    var gameDateTime = game.Value<DateTime>("scheduleDateTime");
+
+                    var remarks = game.Value<string>("remarks").Split("(").FirstOrDefault();
+
+                    model.ScheduleAndResults.Add(new ScheduleAndResults()
+                    {
+                        HomeTeam = game.Value<string>("homeTeam"),
+                        AwayTeam = game.Value<string>("awayTeam"),
+                        HomeScore = game.Value<string>("homeScore"),
+                        AwayScore = game.Value<string>("awayScore"),
+                        GameNumber = game.Value<int>("gameNumber"),
+                        GameDateTime = gameDateTime,
+                        Group = game.Value<string>("group"),
+                        Remarks = remarks,
+                        HomeTeamLogoUrl = homeLogo,
+                        AwayTeamLogoUrl = awayLogo,
+                    });
+                }
+                catch (Exception ex)
+                { 
+                    Console.WriteLine($"Game {game.Name} has data issues");
+                }
             }
 
             return PartialView("~/Views/Partials/Events/SchedulAndResults.cshtml", model);

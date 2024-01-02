@@ -157,7 +157,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
 
                 teamToUpdate?.SetValue("games", team.Games);
                 teamToUpdate?.SetValue("groupPlacement", team.Place);
-                teamToUpdate?.SetValue("wins", team.won);
+                teamToUpdate?.SetValue("wins", team.Won);
                 teamToUpdate?.SetValue("tie", team.Tied);
                 teamToUpdate?.SetValue("losses", team.Lost);
                 teamToUpdate?.SetValue("goalsFor", team.GoalsFor);

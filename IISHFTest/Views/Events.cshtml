@@ -19,7 +19,7 @@
     {
         selectedEvent = events.FirstOrDefault();
     }
-    
+
     var heroImageObj = Model.HeroImage;
     var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
 
@@ -49,12 +49,12 @@
 
 <div class="container mt-5 mb-5">
     <div class="row">
-        
-        <div id="filter" class="col-12 col-sm-12 col-md-2 col-lg-2 order-1 order-md-2 mb-3">
+
+        <div id="filter" class="col-12 col-sm-12 col-md-2 col-lg-12 order-1 order-md-2 mb-3">
             <div class="row">
                 <div class="col-12">
-                   
-                    @foreach (var eventYerar in events.OrderByDescending( x => x.Name))
+
+                    @foreach (var eventYerar in events.OrderByDescending(x => x.Name))
                     {
                         var activeClass = "bg-blue";
                         if (!selectedCalendarYear.ToString().Equals(eventYerar.Name, StringComparison.InvariantCultureIgnoreCase))
@@ -88,6 +88,7 @@
                     <a class="nav-link mb-3 p-3 shadow" id="v-pills-standings-tab" data-bs-toggle="pill" href="#v-pills-standings" role="tab" aria-controls="v-pills-standings" aria-selected="false">
                         <span class="font-weight-bold small text-uppercase">Group Standings</span>
                     </a>
+
                     <a class="nav-link mb-3 p-3 shadow" id="v-pills-schedule-tab" data-bs-toggle="pill" href="#v-pills-schedule" role="tab" aria-controls="v-pills-schedule" aria-selected="false">
                         <span class="font-weight-bold small text-uppercase">Schedule and Results</span>
                     </a>
@@ -112,9 +113,9 @@
                         </a>
                     }
 
-                   @* <a class="nav-link mb-3 p-3 shadow" id="v-pills-news-tab" data-bs-toggle="pill" href="#v-pills-news" role="tab" aria-controls="v-pills-news" aria-selected="false">
-                        <span class="font-weight-bold small text-uppercase">Related News</span>
-                    </a>*@
+                    @* <a class="nav-link mb-3 p-3 shadow" id="v-pills-news-tab" data-bs-toggle="pill" href="#v-pills-news" role="tab" aria-controls="v-pills-news" aria-selected="false">
+                <span class="font-weight-bold small text-uppercase">Related News</span>
+                </a>*@
                 }
             </div>
         </div>

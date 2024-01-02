@@ -8,41 +8,43 @@
             <h1 class="text-center mb-5">Schedule and Results</h1>
         </div>
         @{
-            if (@Model?.ScheduleAndResults == null || !@Model.ScheduleAndResults.Any())
+            if (Model?.ScheduleAndResults == null || !Model.ScheduleAndResults.Any())
             {
                 <h2 class="text-center">Schedule pending </h2>
             }
 
-            foreach (var game in Model!.ScheduleAndResults.OrderBy(x => x.GameNumber))
+            foreach (var game in Model.ScheduleAndResults.OrderBy(x => x.GameNumber))
             {
                 <div class="row justify-content-center align-items-stretch mb-3">
                     <div class="col-12 text-center">
                         @{
-                            if (!string.IsNullOrWhiteSpace(@game.Group))
+                            if (!string.IsNullOrWhiteSpace(game.Group))
                             {
                                 <div class="badge bg-secondary text-white text-center">Group : @game.Group - @game.GameDateTime.ToString("f")</div>
                             }
                             else
                             {
-                                <div class="text-center badge bg-secondary text-white">@game.Remarks <br/> @game.GameDateTime.ToString("f")</div>
+                                <div class="text-center badge bg-secondary text-white">@game.Remarks <br /> @game.GameDateTime.ToString("f")</div>
                             }
                         }
                     </div>
                     <div class="col team home-team text-center">
-                        <div class="col-sm-2 col-lg-2 col-lg-2 text-start">
+                        <div class="col-sm-2 col-lg-2 text-start">
                             <img class="img img-fluid" style="max-height: 45px" src="@game.HomeTeamLogoUrl" alt="@game.HomeTeam" />
+                            <div class="col-sm-12 team-name-text text-center">@game.HomeTeam</div>
                         </div>
                         <div id="homeTeamName" class="col-sm-9 col-md-6 col-lg-6 text-center">@game.HomeTeam</div>
-                        <div class="col-sm-1 col-md-4">@game.HomeScore</div>
+                        <div class="col-sm-1 col-md-4 score-center">@game.HomeScore</div>
                     </div>
                     <div class="col-auto team trapezoid">
                         vs.
                     </div>
                     <div class="col team away-team text-center">
-                        <div class="col-sm-1 col-md-4 col-lg-4">@game.AwayScore</div>
-                        <div id="awayTeamName"  class="col-sm-9 col-md-6 col-lg-6 text-center">@game.AwayTeam</div>
-                        <div class="col-sm-2 col-lg-2 col-lg-2 text-end">
-                            <img class="img img-fluid"  style="max-height: 45px" src="@game.AwayTeamLogoUrl" alt="@game.AwayTeam" />
+                        <div class="col-sm-1 col-md-4 col-lg-4 score-center">@game.AwayScore</div>
+                        <div id="awayTeamName" class="col-sm-9 col-md-6 col-lg-6 text-center">@game.AwayTeam</div>
+                        <div class="col-sm-2 col-lg-2 text-end">
+                            <img class="img img-fluid" style="max-height: 45px" src="@game.AwayTeamLogoUrl" alt="@game.AwayTeam" />
+                            <div class="team-name-text col-sm-12 text-center">@game.AwayTeam</div>
                         </div>
                     </div>
                 </div>
@@ -52,27 +54,61 @@
 </div>
 
 <script>
-
     $(document).ready(function () {
+
+        if (@Model.ScheduleAndResults.Count === 0) {
+            $("#v-pills-schedule-tab").hide()
+        }
+
+        // Define the media query for mobile view
+        var isMobileView = window.matchMedia("(max-width: 992px)").matches;
+
+        // Function to adjust text size based on the container width and text length
+        function adjustTextSize($element) {
+            var containerWidth = $element.parent().width();
+            var textLength = $element.text().length;
+            var fontSize = Math.min(24, Math.max(12, containerWidth / textLength)); // Adjust based on max and min font size
+
+            $element.css('font-size', fontSize + 'px');
+        }
+
+        // Function to handle missing or failed images
+        function handleMissingImage($img, $teamName) {
+            if (isMobileView) {
+                // Mobile view: Hide the image and show the team name
+                $img.hide();
+                $teamName.show();
+                adjustTextSize($teamName);
+            } else {
+                // Non-mobile view: Hide both image and text
+                $img.hide();
+                $teamName.hide();
+            }
+        }
+
         $('.team img').each(function () {
             var $img = $(this);
             var $teamName = $img.next('.team-name-text');
 
-            // Function to handle missing or failed images
-            function handleMissingImage() {
-                $img.hide(); // Hide the image
-                $teamName.show(); // Show the team name
-            }
+            console.log("checking img string")
 
             // Check immediately if the src is missing or empty
-            if (!$img.attr('src')) {
-                handleMissingImage();
+            if (!$img.attr('src') || $img.attr('src').trim() === '') {
+                console.log("no img string")
+                handleMissingImage($img, $teamName);
             }
 
             // Add an event listener for error in loading the image
-            $img.on('error', handleMissingImage);
+            $img.on('error', function () {
+                handleMissingImage($img, $teamName);
+            });
+        });
+
+        // Adjust text size for all team name texts
+        $('.team-name-text').each(function () {
+            adjustTextSize($(this));
         });
     });
-
-
 </script>
+
+

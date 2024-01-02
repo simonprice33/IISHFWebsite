@@ -8,15 +8,15 @@ namespace IISHFTest.Core.Models
 {
     public class Ranking
     {
-        public string TeamName { get; set; }
+        public string? TeamName { get; set; }
         
-        public string Games { get; set; }
+        public string? Games { get; set; }
+
+        public int Won { get; set; } = 0;
+
+        public int Tied { get; set; } = 0;
         
-        public int won { get; set; }
-        
-        public int Tied { get; set; }
-        
-        public int Lost { get; set; }
+        public int Lost { get; set; } = 0;
         
         public int? GoalsFor { get; set; }
         
@@ -28,6 +28,6 @@ namespace IISHFTest.Core.Models
         
         public decimal? TieWeight { get; set; }
 
-        public int Place { get; set; }
+        public int Place { get; set; } = 0;
     }
 }

@@ -38,3 +38,19 @@ h1, h2, h3, h4 {
 .custom-input:-moz-placeholder { /* Firefox 18- */
     color: white;
 }
+
+@media only screen and (max-width: 600px) {
+
+    .home-header-section h1 {
+        font-size: 36px; /* Adjust to a suitable size for mobile */
+    }
+
+    .home-header-section .sub-heading {
+        font-size: 18px; /* Adjust to a suitable size for mobile */
+    }
+
+    h4 {
+        font-size: smaller; /* Adjust the font size */
+        word-wrap: break-word; /* Ensures long words do not overflow */
+    }
+}
