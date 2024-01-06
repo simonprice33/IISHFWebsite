@@ -85,6 +85,9 @@
                     <a class="nav-link mb-3 p-3 shadow active" id="v-pills-info-tab" data-bs-toggle="pill" href="#v-pills-info" role="tab" aria-controls="v-pills-info" aria-selected="true">
                         <span class="font-weight-bold small text-uppercase">Tournament information</span>
                     </a>
+                    <a class="nav-link mb-3 p-3 shadow" id="v-pills-teams-tab" data-bs-toggle="pill" href="#v-pills-teams" role="tab" aria-controls="v-pills-info" aria-selected="true">
+                        <span class="font-weight-bold small text-uppercase">Teams</span>
+                    </a>
                     <a class="nav-link mb-3 p-3 shadow" id="v-pills-standings-tab" data-bs-toggle="pill" href="#v-pills-standings" role="tab" aria-controls="v-pills-standings" aria-selected="false">
                         <span class="font-weight-bold small text-uppercase">Group Standings</span>
                     </a>
@@ -128,6 +131,9 @@
                     {
                         <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-info" role="tabpanel" aria-labelledby="v-pills-info-tab">
                             @await Html.PartialAsync("~/Views/Partials/Events/EventInformation.cshtml")
+                        </div>
+                        <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-teams" role="tabpanel" aria-labelledby="v-pills-info-tab">
+                            @await Html.PartialAsync("~/Views/Partials/Events/Teams.cshtml")
                         </div>
                         <div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-standings" role="tabpanel" aria-labelledby="v-pills-standings-tab">
                             <div id="groupRankingsContainer"></div>
