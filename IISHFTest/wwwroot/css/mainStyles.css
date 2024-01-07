@@ -105,3 +105,9 @@ footer {
     margin-top: 10px; /* Add some space above the button */
     width: auto; /* Ensure the button width is auto to prevent stretching */
 }
+
+@media screen and (max-width: 768px) {
+    #filters {
+        display: none;
+    }
+}

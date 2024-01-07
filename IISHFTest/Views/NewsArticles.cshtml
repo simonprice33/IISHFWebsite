@@ -32,7 +32,7 @@
 
     var numberOfPages = (int)Math.Ceiling((double)newsArticles.Count() / (double)pageSize);
     var selectedPage = 1;
-    
+
     if (!string.IsNullOrWhiteSpace(Context.Request.Query["page"].ToString()))
     {
         int.TryParse(Context.Request.Query["page"].ToString(), out selectedPage);
@@ -41,7 +41,7 @@
             selectedPage = 1;
         }
 
-        
+
     }
 
     var nextPage = selectedPage + 1;
@@ -66,21 +66,24 @@
         <div id="filter" class="col-12 col-sm-12 col-md-2 col-lg-2 order-1 order-md-2 mb-3">
             <div class="row">
                 <div class="col-12">
-                <h1>Filters</h1>
-                @if (!string.IsNullOrWhiteSpace(catValue))
-                {
-                    <a href="@Model.UrlSegment" class="badge bg-secondary text-white">Clear Filters</a>
-                }
-                @foreach (var tag in tags.OrderBy(x => x))
-                {
-                    var activeClass = "bg-secondary";
-                    if (catValue.ToLower().Equals(tag, StringComparison.InvariantCultureIgnoreCase))
+                    <h1>Filters <i id="toggleFilters" class="fa-light fa-filter"></i></h1>
+                </div>
+                <div id="filters" class="col-12">
+
+                    @if (!string.IsNullOrWhiteSpace(catValue))
                     {
-                        activeClass = "bg-orange";
+                        <a href="@Model.UrlSegment" class="badge bg-secondary text-white">Clear Filters</a>
                     }
-                    <a href="@Model.UrlSegment?cat=@tag" class="badge @activeClass text-white">@tag.CapitalizeFirstLetter()</a>
-                }
-            </div>
+                    @foreach (var tag in tags.OrderBy(x => x))
+                    {
+                        var activeClass = "bg-secondary";
+                        if (catValue.ToLower().Equals(tag, StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            activeClass = "bg-orange";
+                        }
+                        <a href="@Model.UrlSegment?cat=@tag" class="badge @activeClass text-white">@tag.CapitalizeFirstLetter()</a>
+                    }
+                </div>
             </div>
         </div>
 
@@ -134,11 +137,11 @@
                         }
                     }
 
-                    <div class="col-12 col-sm-6 col-md-4 col-lg-4 mb-3">
+                    <div class="col-6 col-sm-6 col-md-4 col-lg-4 mb-3">
                         <a href="@article.Url()" class="card-link">
                             <div class="card">
                                 <img class="card-img-top" src="@thumbUrl" alt="Card image cap">
-                                <div class="card-body">
+                                <div class="card-body news">
                                     <h5 class="card-title">@article.Name</h5>
                                     <p class="card-text">@article.Value("leadIn")</p>
                                 </div>
@@ -150,8 +153,8 @@
                         </a>
                     </div>
                 }
-                
-                
+
+
             </div>
             @if (numberOfPages > 1)
             {
@@ -206,28 +209,13 @@
             }
 
         </div>
-       @* <div id="filter" class="col-12 col-sm-12 col-md-2 col-lg-2">
-            <div class="col-12">
-                <h1>Filters</h1>
-
-                @if (!string.IsNullOrWhiteSpace(catValue))
-                {
-                    <a href="@Model.UrlSegment" class="badge bg-secondary text-white">Clear Filters</a>
-                }
-
-                @foreach (var tag in tags.OrderBy(x => x))
-                {
-                    var activeClass = "bg-secondary";
-                    if (catValue.ToLower().Equals(tag, StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        activeClass = "bg-orange";
-                    }
-                    <a href="@Model.UrlSegment?cat=@tag" class="badge @activeClass text-white">@tag.CapitalizeFirstLetter()</a>
-                }
-            </div>
-        </div>*@
     </div>
 </div>
 
-
-
+<script>
+    $(document).ready(function () {
+        $('#toggleFilters').click(function () {
+            $('#filters').slideToggle(250); // 250 milliseconds for animation
+        });
+    });
+</script>

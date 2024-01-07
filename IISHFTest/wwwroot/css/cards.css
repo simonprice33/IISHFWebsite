@@ -42,12 +42,14 @@
 }
 
 /* Default font size for larger screens */
+.news,
 .team-name {
     font-size: 1em; /* or any size that fits your design */
 }
 
 /* Smaller font size for screens narrower than 768px */
 @media (max-width: 768px) {
+    .news,
     .team-name {
         font-size: 0.8em; /* Adjust as needed */
     }
@@ -55,7 +57,29 @@
 
 /* Even smaller font size for very narrow screens */
 @media (max-width: 480px) {
+    .news,
     .team-name {
         font-size: 0.7em; /* Adjust as needed */
+    }
+}
+
+/* Adjust font size for screens narrower than 768px */
+@media (max-width: 768px) {
+    h5 {
+        font-size: 1.5em; /* Slightly smaller font size for medium screens */
+    }
+}
+
+/* Smaller font size for very narrow screens */
+@media (max-width: 480px) {
+    h5 {
+        font-size: 1.25em; /* Smaller but still legible font size for small screens */
+    }
+}
+
+/* Optional: For extremely narrow screens (like some mobile phones in portrait mode) */
+@media (max-width: 320px) {
+    h5 {
+        font-size: 1.0em; /* Adjusted font size for extra small screens */
     }
 }

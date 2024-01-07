@@ -46,7 +46,9 @@
         <div class="col-12 col-sm-12 col-md-9 col-lg-9">
             <h1 class="orange text-center mb-3">@Model.ArticleTitle</h1>
 
-            @Model.ArticleContent
+            <div id="article-content">
+                @Model.ArticleContent
+            </div>
             <br />
             Authored By: @Model.Author<br />
             @Model.PostDate.ToString("dd.MM.yyyy")
@@ -180,3 +182,16 @@
     </div>
 
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var articleContentDiv = document.getElementById("article-content");
+        if (articleContentDiv) {
+            var images = articleContentDiv.getElementsByTagName("img");
+            for (var i = 0; i < images.length; i++) {
+                images[i].classList.add("img");
+                images[i].classList.add("img-fluid");
+            }
+        }
+    });
+</script>
