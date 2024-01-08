@@ -4,6 +4,7 @@
 @using Newtonsoft.Json.Linq
 @using Azure.Core
 @using IISHFTest.Extensions
+@using System.Text.RegularExpressions
 @{
     Layout = "Main.cshtml";
     var heroImageObj = Model.HeroImage;
@@ -21,6 +22,18 @@
          .Distinct()
          .ToArray();
 
+    var orderedTags = tags
+        .OrderBy(tag => {
+                            var match = Regex.Match(tag, @"\b(20\d{2})\b");
+                            if (match.Success && int.TryParse(match.Value, out int year))
+                            {
+                                return year < today.Year;
+                            }
+                            return false; // Tags without a year or with a future year come first
+        })
+        .ThenBy(tag => tag) // Alphabetical secondary sort
+        .ToArray();
+
     var catValue = Context.Request.Query["cat"].ToString();
 
     if (!string.IsNullOrWhiteSpace(catValue))
@@ -28,7 +41,7 @@
         newsArticles = newsArticles.Where(x => x.Value<string[]>("newsCategories").Contains(catValue)).ToList();
     }
 
-    const int pageSize = 12; // Make this configurable
+    const int pageSize = 9; // Make this configurable
 
     var numberOfPages = (int)Math.Ceiling((double)newsArticles.Count() / (double)pageSize);
     var selectedPage = 1;
@@ -74,7 +87,7 @@
                     {
                         <a href="@Model.UrlSegment" class="badge bg-secondary text-white">Clear Filters</a>
                     }
-                    @foreach (var tag in tags.OrderBy(x => x))
+                    @foreach (var tag in orderedTags)
                     {
                         var activeClass = "bg-secondary";
                         if (catValue.ToLower().Equals(tag, StringComparison.InvariantCultureIgnoreCase))
