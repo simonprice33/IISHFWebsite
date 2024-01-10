@@ -35,11 +35,15 @@
         .ToArray();
 
     var catValue = Context.Request.Query["cat"].ToString();
+    int.TryParse(Context.Request.Query["year"].ToString(), out var yearValue);
 
-    if (!string.IsNullOrWhiteSpace(catValue))
-    {
-        newsArticles = newsArticles.Where(x => x.Value<string[]>("newsCategories").Contains(catValue)).ToList();
-    }
+    var articleYears = newsArticles.Select(x => x.Value<DateTime>("PostDate").Year).Distinct().ToList();
+
+    newsArticles = newsArticles.Where(x =>
+        (string.IsNullOrWhiteSpace(catValue) || x.Value<string[]>("newsCategories").Contains(catValue)) &&
+        (yearValue <= 0 || x.Value<DateTime>("postDate").Year == yearValue)
+        ).ToList();
+
 
     const int pageSize = 9; // Make this configurable
 
@@ -53,8 +57,6 @@
         {
             selectedPage = 1;
         }
-
-
     }
 
     var nextPage = selectedPage + 1;
@@ -81,22 +83,27 @@
                 <div class="col-12">
                     <h1>Filters <i id="toggleFilters" class="fa-light fa-filter"></i></h1>
                 </div>
+             
                 <div id="filters" class="col-12">
+                    <a href="@Model.UrlSegment" class="badge bg-secondary text-white">Clear Filters</a>
 
-                    @if (!string.IsNullOrWhiteSpace(catValue))
+                    <h4 class="mt-2">Article Year</h4>
+                    @foreach (var year in articleYears)
                     {
-                        <a href="@Model.UrlSegment" class="badge bg-secondary text-white">Clear Filters</a>
+                        var yearActiveClass = yearValue == year ? "bg-orange" : "bg-secondary";
+                        var yearQueryString = yearValue == year ? (string.IsNullOrWhiteSpace(catValue) ? "" : $"cat={catValue}") : (string.IsNullOrWhiteSpace(catValue) ? $"year={year}" : $"year={year}&cat={catValue}");
+                        <a href="@Model.UrlSegment?@yearQueryString" class="badge @yearActiveClass text-white">@year</a>
                     }
+
+                    <h4 class="mt-2">Tags</h4>
                     @foreach (var tag in orderedTags)
                     {
-                        var activeClass = "bg-secondary";
-                        if (catValue.ToLower().Equals(tag, StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            activeClass = "bg-orange";
-                        }
-                        <a href="@Model.UrlSegment?cat=@tag" class="badge @activeClass text-white">@tag.CapitalizeFirstLetter()</a>
+                        var tagActiveClass = catValue.Equals(tag, StringComparison.InvariantCultureIgnoreCase) ? "bg-orange" : "bg-secondary";
+                        var tagQueryString = catValue.Equals(tag, StringComparison.InvariantCultureIgnoreCase) ? (yearValue > 0 ? $"year={yearValue}" : "") : (yearValue > 0 ? $"cat={tag}&year={yearValue}" : $"cat={tag}");
+                        <a href="@Model.UrlSegment?@tagQueryString" class="badge @tagActiveClass text-white">@tag.CapitalizeFirstLetter()</a>
                     }
                 </div>
+
             </div>
         </div>
 
