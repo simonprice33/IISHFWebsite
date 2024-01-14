@@ -1,4 +1,8 @@
+using IISHFTest.Core.Configurations;
+using IISHFTest.Core.Interfaces;
+using IISHFTest.Core.Services;
 using IISHFTest.Core.Settings;
+using HttpClient = IISHFTest.Core.Services.HttpClient;
 
 namespace IISHFTest
 {
@@ -34,6 +38,15 @@ namespace IISHFTest
             var apiKeySettings = new ApiKeySettings();
             _config.Bind("ApiKeySettings", apiKeySettings);
             services.AddSingleton(apiKeySettings);
+
+            services.AddScoped<IHttpClient, HttpClient>();
+            services.AddScoped<IEmailService, EmailService>();
+
+            services.Configure<SendGridConfiguration>
+                (_config.GetSection("SendGridConfiguration"));
+
+            services.Configure<EmailConfiguration>
+                (_config.GetSection("EmailSettings"));
 
             services.AddUmbraco(_env, _config)
                 .AddBackOffice()

@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using IISHFTest.Core.Settings;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using IISHFTest.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
+
+namespace IISHFTest.Core.Attributes;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public class ApiKeyAuthorizeAttribute : Attribute, IAuthorizationFilter
