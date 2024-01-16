@@ -1,0 +1,58 @@
+﻿@inherits UmbracoViewPage<IISHFTest.Core.Models.VerificationViewModel>
+@using IISHFTest.Core.Controllers.SurfaceControllers
+@model IISHFTest.Core.Models.VerificationViewModel
+
+@{
+    var modelContent = Umbraco.ContentAtRoot().ToList();
+    var registerContent = modelContent
+        .FirstOrDefault(x => x.Name == "Home")!.Children()?
+        .FirstOrDefault(x => x.Name == "Verify");
+
+
+    var heroImageObj = registerContent.Value<IPublishedContent>("heroImage");
+    var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
+}
+
+<div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
+    <div class="overlay"></div>
+    <div class="inner">
+        <div class="container custom-container">
+            <h1 class="display-4">@registerContent.Value("heroTitle")</h1>
+            <p class="lead">@registerContent.Value("heroSubtitle")</p>
+        </div>
+    </div>
+</div>
+
+@{
+    if ((string)TempData["status"]! == "OK")
+    {
+        <div class="container">
+            <div class="row">
+                <div class="col-12 col-sm-12 col-md-12 col-lg-12 mt-5">
+                    <h1>Account Activated</h1>
+                    <h4>Your account has successfully been activated. You will be redirected to the login page in the next 10 seconds. </h4>
+                    <h3>If you do not get automatically redirected click here to be redirected</h3>
+                    
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="container">
+            <div class="row">
+                <div class="col-12 col-sm-12 col-md-12 col-lg-12 mt-5">
+                    <h1>Something went wrong</h1>
+                    @{
+                        var errors = ViewData.ModelState.Where(n => n.Value.Errors.Count > 0).ToList();
+                        foreach (var error in errors)
+                        {
+                            <h4>@error</h4>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+}

@@ -1,5 +1,8 @@
 ﻿@using IISHFTest.Helpers
+@using Umbraco.Cms.Core.Security
+@using Umbraco.Cms.Web.Website.Controllers
 @inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@inject IMemberManager _memberManager;
 @{
     Layout = null;
 
@@ -86,6 +89,37 @@
                             </li>
                         }
                     }
+                    @if (_memberManager.IsLoggedIn())
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-duotone fa-circle-user"></i>
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                    <li><a class="dropdown-item" href="#">My Account</a></li>
+                                    <li><a class="dropdown-item" href="#">Reset Password</a></li>
+                                    <li><a class="dropdown-item" href="#">ITC</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        @using (Html.BeginUmbracoForm<UmbLoginStatusController>("HandleLogout", new { RedirectUrl = "/" }))
+                                        {
+                                            //<button type="submit" class="btn btn-primary">Log out!!</button>
+                                            <input type="submit" class="dropdown-item" value="Logout"/>
+                                            
+
+                                        }
+                                    </li>
+                                </ul>
+                            </li>
+
+                        }
+                        else
+                        {
+                            <li class="nav-item active">
+                                <a class="nav-link" href="/login">Sign up | Sign in</a>
+                            </li>
+                        }
+                    
                 }
             </ul>
         </div>

@@ -30,8 +30,9 @@ namespace IISHFTest.Core.Services
 
         public async Task SendRegistrationConfirmation(CreateMemberRegistration registration)
         {
-            //var renderedEmail = await GetHtmlTemplate(registration);
-            var renderedEmail = string.Empty;
+            var renderedEmail = await GetHtmlTemplate(registration, "MemberRegistration.html");
+            //var htmlPath = $"https://localhost:44322/verify?token={registration.Token}";
+            //var renderedEmail = $"<a href=\"{htmlPath}\">Click here</a> to verify your email address and complete registration of your IISHF Account";
 
             var sender = new EmailAddress(_iishfOptions.NoReplyEmailAdddress, _iishfOptions.DisplayName);
             var subject = $"IISHF Membership registration";
@@ -79,7 +80,7 @@ namespace IISHFTest.Core.Services
             throw new SendGridInternalException("Something went wrong in sending");
         }
 
-        private async Task<string> GetHtmlTemplate(CreateMemberRegistration invitation, string templateName)
+        private async Task<string> GetHtmlTemplate(object invitation, string templateName)
         {
             Handlebars.RegisterHelper("formatDate", (writer, context, parameters) =>
             {
@@ -92,7 +93,7 @@ namespace IISHFTest.Core.Services
                 writer.WriteSafeString(dateTime.ToShortDateString());
             });
 
-            var templateUri = new Uri($"{_iishfOptions.EmailTemplateBaseUrl.ToString()}/{templateName}");
+            var templateUri = new Uri($"{_iishfOptions.EmailTemplateBaseUrl.ToString()}{templateName}");
 
             var emailTemplate = await _httpClient.GetStringAsync(templateUri);
             string renderedEmail = Handlebars.Compile(emailTemplate)(invitation);

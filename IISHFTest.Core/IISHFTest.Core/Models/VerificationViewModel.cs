@@ -6,14 +6,8 @@ using System.Threading.Tasks;
 
 namespace IISHFTest.Core.Models
 {
-    public class CreateMemberRegistration
+    public class VerificationViewModel
     {
-        public string Name { get; set; }
-
-        public string EmailAddress { get; set; }
-
         public Guid Token { get; set; }
-
-        public Uri TokenUrl { get; set; }
     }
 }
