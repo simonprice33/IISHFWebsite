@@ -32,8 +32,8 @@
             {
 
                 <text>
-                    <input type="hidden" name="provider" value="@providerName"/>
-                    Input security code: <input name="code" value=""/><br/>
+                    <input type="hidden" name="provider" value="@providerName" />
+                    Input security code: <input name="code" value="" /><br />
                     <button type="submit" class="btn btn-primary">Validate</button>
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                 </text>
@@ -46,11 +46,12 @@ else
 {
 
 
-<div class="login-form">
+    <div class="login-form">
 
-    @using (Html.BeginUmbracoForm<UserController>(
-        "HandleLogin", new { RedirectUrl = loginModel.RedirectUrl })) {
-            
+        @using (Html.BeginUmbracoForm<UserController>(
+       "HandleLogin", new { RedirectUrl = loginModel.RedirectUrl }))
+        {
+
             <div class="container mt-5">
                 <div class="row">
                     <div class="col-12 col-sm-12 col-md-6 col-lg-6">
@@ -69,12 +70,12 @@ else
                         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                         <div class="mb-3">
                             <label asp-for="@loginModel.Username" class="form-label"></label>
-                            <input asp-for="@loginModel.Username" class="form-control"/>
+                            <input asp-for="@loginModel.Username" class="form-control" />
                             <span asp-validation-for="@loginModel.Username" class="form-text text-danger"></span>
                         </div>
                         <div class="mb-3">
                             <label asp-for="@loginModel.Password" class="form-label"></label>
-                            <input asp-for="@loginModel.Password" class="form-control"/>
+                            <input asp-for="@loginModel.Password" class="form-control" />
                             <span asp-validation-for="@loginModel.Password" class="form-text text-danger"></span>
                         </div>
                         <div class="mb-3 form-check">
@@ -84,42 +85,50 @@ else
                             </label>
                         </div>
 
-                        <input type="submit" value="Log in"/>
+                        <input type="submit" value="Log in" />
                     </div>
+                    
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12 col-sm-12 col-md-6 col-lg-6">
+                        <a href="/forgotten-password/">Forgot Password?</a>
                     </div>
+                </div>
             </div>
 
 
         }
-@{
-    var loginProviders = await memberExternalLoginProviders.GetMemberProvidersAsync();
-    var externalSignInError = ViewData.GetExternalSignInProviderErrors();
+        @{
+            var loginProviders = await memberExternalLoginProviders.GetMemberProvidersAsync();
+            var externalSignInError = ViewData.GetExternalSignInProviderErrors();
 
-    if (loginProviders.Any())
-    {
-        <hr/>
-        <h4>Or using external providers</h4>
-        if (externalSignInError?.AuthenticationType is null && externalSignInError?.Errors.Any() == true)
-        {
-            @Html.DisplayFor(x => externalSignInError.Errors);
-        }
-
-        @foreach (var login in await memberExternalLoginProviders.GetMemberProvidersAsync())
-        {
-
-            @using (Html.BeginUmbracoForm<UmbExternalLoginController>(nameof(UmbExternalLoginController.ExternalLogin)))
+            if (loginProviders.Any())
             {
-                <button type="submit" name="provider" value="@login.ExternalLoginProvider.AuthenticationType">
-                    Sign in with @login.AuthenticationScheme.DisplayName
-                </button>
-
-                if (externalSignInError?.AuthenticationType == login.ExternalLoginProvider.AuthenticationType)
+                <hr />
+                <h4>Or using external providers</h4>
+                if (externalSignInError?.AuthenticationType is null && externalSignInError?.Errors.Any() == true)
                 {
-                    @Html.DisplayFor(x => externalSignInError.Errors);
+                    @Html.DisplayFor(x => externalSignInError.Errors)
+                    ;
+                }
+
+                @foreach (var login in await memberExternalLoginProviders.GetMemberProvidersAsync())
+                {
+
+                    @using (Html.BeginUmbracoForm<UmbExternalLoginController>(nameof(UmbExternalLoginController.ExternalLogin)))
+                    {
+                        <button type="submit" name="provider" value="@login.ExternalLoginProvider.AuthenticationType">
+                            Sign in with @login.AuthenticationScheme.DisplayName
+                        </button>
+
+                        if (externalSignInError?.AuthenticationType == login.ExternalLoginProvider.AuthenticationType)
+                        {
+                            @Html.DisplayFor(x => externalSignInError.Errors)
+                            ;
+                        }
+                    }
                 }
             }
         }
-    }
-}
-</div>
+    </div>
 }

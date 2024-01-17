@@ -6,12 +6,14 @@ using System.Threading.Tasks;
 using IISHFTest.Core.Interfaces;
 using IISHFTest.Core.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Actions;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Logging;
 using Umbraco.Cms.Core.Routing;
+using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Web;
 using Umbraco.Cms.Infrastructure.Persistence;
@@ -23,6 +25,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
     {
         private readonly IPublishedContentQuery _contentQuery;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IMemberManager _memberManager;
         private readonly IEmailService _emailService;
 
         public RegisterController(
@@ -33,6 +36,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
             IPublishedUrlProvider publishedUrlProvider,
             IPublishedContentQuery contentQuery,
             IHttpContextAccessor httpContextAccessor,
+            IMemberManager memberManager,
             IEmailService emailService)
             : base(umbracoContextAccessor,
                 databaseFactory,
@@ -43,6 +47,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
         {
             _contentQuery = contentQuery;
             _httpContextAccessor = httpContextAccessor;
+            _memberManager = memberManager;
             _emailService = emailService;
         }
 
@@ -105,14 +110,13 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
                 return CurrentUmbracoPage();
             }
 
-            var newMember = Services.MemberService.CreateMember(
-                model.EmailAddress,
-                model.EmailAddress,
-                $"{model.FirstName} {model.LastName}",
-                "Member");
+            var identityUser =
+                MemberIdentityUser.CreateNew(model.EmailAddress, model.EmailAddress, "Member", true, $"{model.FirstName} {model.LastName}");
+            var identityResult = await _memberManager.CreateAsync(
+                identityUser,
+                model.Password);
 
-            newMember.RawPasswordValue = model.Password;
-            Services.MemberService.Save(newMember);
+            var newMember = Services.MemberService.GetById(int.Parse(identityUser.Id));
 
             Services.MemberService.AssignRole(newMember.Id, "Standard User");
 
@@ -120,13 +124,13 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
             newMember.SetValue("emailVerificationToken", token);
             Services.MemberService.Save(newMember);
 
-            await _emailService.SendRegistrationConfirmation(new CreateMemberRegistration()
+            await _emailService.SendRegistrationConfirmation(new Member()
             {
                 Name = $"{model.FirstName} {model.LastName}",
                 EmailAddress = model.EmailAddress,
                 Token = token,
                 TokenUrl = new Uri($"{_httpContextAccessor.HttpContext.Request.Scheme}://{_httpContextAccessor.HttpContext.Request.Host}/verify?token={token}")
-            });
+            }, "MemberRegistration.html", "IISHF Membership registration");
 
             newMember.SetValue("verificationEmailSentDate", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
             Services.MemberService.Save(newMember);

@@ -30,7 +30,10 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
         private readonly IPublishedContentQuery _contentQuery;
         private readonly IMemberSignInManager _signInManager;
         private readonly IMemberManager _memberManager;
+        private readonly IMemberService _memberService;
         private readonly ITwoFactorLoginService _twoFactorLoginService;
+        private readonly IEmailService _emailService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public UserController(
             IPublishedContentQuery contentQuery,
@@ -42,13 +45,134 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
             IPublishedUrlProvider publishedUrlProvider,
             IMemberSignInManager signInManager,
             IMemberManager memberManager,
-            ITwoFactorLoginService twoFactorLoginService)
+            IMemberService memberService,
+
+            ITwoFactorLoginService twoFactorLoginService,
+            IEmailService emailService,
+            IHttpContextAccessor httpContextAccessor)
             : base(umbracoContextAccessor, databaseFactory, services, appCaches, profilingLogger, publishedUrlProvider)
         {
             _contentQuery = contentQuery;
             _signInManager = signInManager;
             _memberManager = memberManager;
+            _memberService = memberService;
             _twoFactorLoginService = twoFactorLoginService;
+            _emailService = emailService;
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        [HttpGet]
+        public ActionResult RenderForgotPassword()
+        {
+            return PartialView("~/Views/Partials/Members/ForgotPassword.cshtml", new ForgotPasswordResetRequestModel());
+        }
+
+        //[HttpGet]
+        //public async Task<IActionResult> RenderResetPassword()
+        //{
+
+        //    var member = Services.MemberService.GetMembersByPropertyValue("resetToken", token).FirstOrDefault();
+
+        //    if (member == null)
+        //    {
+        //        TempData["Status"] = "Member not found";
+        //        return PartialView("~/Views/Partials/Members/ResetPassword.cshtml", new PasswordResetRequestModel());
+
+        //    }
+
+        //    var tokenExpirationDate = member.GetValue<DateTime>("resetExpiryDate");
+        //    if (DateTime.UtcNow > tokenExpirationDate)
+        //    {
+        //        TempData["Status"] = "Expired";
+        //        return PartialView("~/Views/Partials/Members/ResetPassword.cshtml", new PasswordResetRequestModel());
+        //    }
+
+        //    var model = new PasswordResetRequestModel
+        //    {
+        //        EmailAddress = member.Email
+        //    };
+
+        //    return PartialView("~/Views/Partials/Members/ResetPassword.cshtml", model);
+        //}
+
+        [HttpPost]
+        public async Task<IActionResult> HandlePasswordResetRequest(ForgotPasswordResetRequestModel model)
+        {
+            TempData["Status"] = "OK";
+
+            if (string.IsNullOrWhiteSpace(model.EmailAddress))
+            {
+                TempData["Status"] = "OK";
+                return CurrentUmbracoPage();
+            }
+
+            var token = Guid.NewGuid();
+
+            var member = Services.MemberService.GetByUsername(model.EmailAddress);
+
+            await _emailService.SendRegistrationConfirmation(new Member()
+            {
+                Name = member.Name,
+                EmailAddress = model.EmailAddress,
+                Token = token,
+                TokenUrl = new Uri($"{_httpContextAccessor.HttpContext.Request.Scheme}://{_httpContextAccessor.HttpContext.Request.Host}/reset-password?token={token}")
+            }, "PasswordReset.html", "IISHF Password Reset Request");
+
+            member.SetValue("resetExpiryDate", DateTime.UtcNow.AddHours(1));
+            member.SetValue("resetToken", token);
+
+            Services.MemberService.Save(member);
+
+            TempData["Status"] = "OK";
+            return CurrentUmbracoPage();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> HandlePasswordResetAction(PasswordResetRequestModel model)
+        {
+            var queryToken = _httpContextAccessor.HttpContext.Request.Query["token"].ToString();
+            var member = Services.MemberService.GetMembersByPropertyValue("resetToken", queryToken).FirstOrDefault();
+            if (member == null)
+            {
+                TempData["Status"] = "Failed";
+                ModelState.Clear();
+                ModelState.AddModelError("Reset Token Not Found", "The token you have used is not valid");
+                return CurrentUmbracoPage();
+            }
+
+            var tokenExpirationDate = member.GetValue<DateTime>("resetExpiryDate");
+            if (DateTime.UtcNow > tokenExpirationDate)
+            {
+                ModelState.Clear();
+                ModelState.AddModelError("Reset Token Not Found", "The token you have used is no longer valid");
+                return CurrentUmbracoPage();
+            }
+
+            var memberIdentity = await _memberManager.FindByEmailAsync(member.Email);
+            var resetToken = await _memberManager.GeneratePasswordResetTokenAsync(memberIdentity);
+            var result = await _memberManager.ResetPasswordAsync(memberIdentity, resetToken, model.Password);
+
+            if (result.Succeeded)
+            {
+                member.SetValue("resetExpiryDate", null);
+                member.SetValue("resetToken", null);
+
+                Services.MemberService.Save(member);
+
+                var rootContent = _contentQuery.ContentAtRoot().ToList();
+
+                var loginContent = rootContent
+                    .FirstOrDefault(x => x.Name == "Home")!.Children()?
+                    .FirstOrDefault(x => x.Name == "Login");
+
+                TempData["status"] = "OK";
+                return RedirectToUmbracoPage(loginContent.Key);
+            }
+
+            TempData["Status"] = "Failed";
+            var error = result.Errors.FirstOrDefault();
+            ModelState.AddModelError(error.Code, error.Description);
+            return CurrentUmbracoPage();
         }
 
         [HttpPost]
@@ -74,7 +198,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
                     return CurrentUmbracoPage();
                 }
             }
-            
+
             var result = await _signInManager.PasswordSignInAsync(
                 model.Username, model.Password, model.RememberMe, true);
 

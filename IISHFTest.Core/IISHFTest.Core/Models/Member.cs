@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IISHFTest.Core.Models
 {
-    public class CreateMemberRegistration
+    public class Member
     {
         public string Name { get; set; }
 
