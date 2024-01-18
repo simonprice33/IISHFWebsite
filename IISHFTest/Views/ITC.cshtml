@@ -1,0 +1,326 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.ITC>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@using IISHFTest.Core.Controllers.SurfaceControllers
+@using System.Globalization
+@{
+    Layout = "Main.cshtml";
+    var id = Model.Id;
+    var rosterMembers = Umbraco.Content(id).Children().Where(x => x.ContentType.Alias == "roster").ToList();
+
+    var heroImageObj = Model.Value<IPublishedContent>("heroImage");
+    var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
+
+    string[] priorityCountries = { "United Kingdom", "Germany", "Switzerland", "Austria", "Denmark", "Ukraine" };
+
+    // Get all countries and ISO codes
+    var countries = CultureInfo.GetCultures(CultureTypes.SpecificCultures)
+        .Select(c => new RegionInfo(c.Name))
+        .Distinct()
+        .Select(x => new
+        {
+            Country = x.EnglishName,
+            ISO3 = x.ThreeLetterISORegionName
+        })
+        .Where(x => !string.IsNullOrEmpty(x.ISO3))
+        .OrderBy(x => Array.IndexOf(priorityCountries, x.Country) == -1 ? int.MaxValue : Array.IndexOf(priorityCountries, x.Country))
+        .ThenBy(x => x.Country);
+
+}
+
+<div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
+    <div class="overlay"></div>
+    <div class="inner">
+        <div class="container custom-container">
+            <h1 class="display-4">@Model.Value("heroTitle")</h1>
+            <p class="lead">@Model.Value("heroSubtitle")</p>
+        </div>
+    </div>
+</div>
+
+<div class="container container-custom mt-5">
+    <div class="row">
+        <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+            @using (Html.BeginUmbracoForm<UserController>("HandlePasswordResetRequest", null, new { @class = "custom-form" }))
+            {
+                <div id="formRows">
+                    @for (int i = 0; i < rosterMembers.Count(); i++)
+                    {
+
+
+                        <div class="form-group">
+                            <div class="input-container">
+                                <input type="text" class="form-control" name="License[]" placeholder="License" value="@rosterMembers[i].Value("licenseNumber")" />
+                            </div>
+                            <div class="input-container">
+                                @* Modify the Role dropdown here *@
+                                @{
+                                    var role = rosterMembers[i].Value<string>("role"); // Convert to string
+                                }
+                                <select class="form-control" name="Role[]">
+                                    <option value="Captain" selected="@(role == "Captain")">Captain</option>
+                                    <option value="Assistant Captain" selected="@(role == "Assistant Captain")">Assistant Captain</option>
+                                    <option value="Netminder" selected="@(role == "Netminder")">Netminder</option>
+                                    <option value="" selected="@(string.IsNullOrWhiteSpace(role))">Select Role</option>
+                                </select>
+                            </div>
+                            <div class="input-container">
+                                <input type="text" class="form-control" name="PlayerName[]" placeholder="PlayerName" value="@rosterMembers[i].Value("playerName")" />
+                            </div>
+                            <div class="input-container">
+                                <input type="text" class="form-control" name="JerseyNumber[]" placeholder="JerseyNumber" oninput="validateNumber(this)" value="@rosterMembers[i].Value("jerseyNumber")" />
+
+                            </div>
+                            <div class="input-container">
+                                @{
+                                    var dob = rosterMembers[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
+                                }
+                                <input type="text" class="form-control" name="DateOfBirth[]" placeholder="DD.MM.YYYY" value="@dob" />
+                            </div>
+                            <div class="input-container">
+                                <select class="form-control" name="Nationality[]">
+                                    <option value="">Select Nationality</option>
+                                    @{
+                                        var playerNationality = rosterMembers[i].Value<string>("nationality");
+                                    }
+                                    @foreach (var country in countries)
+                                    {
+                                        var isSelected = country.Country.Equals(playerNationality);
+                                        <option value="@country.ISO3" selected="@isSelected">@country.Country</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="input-container">
+                                <input type="text" class="form-control" name="Gender[]" placeholder="Gender" value="@rosterMembers[i].Value("gender")" />
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <button type="button" onclick="addRow()">Add Row</button>
+                <button type="submit">Submit</button>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        // Validate existing rows on page load
+        validateAllLicenses();
+        validateAllJerseyNumbers();
+        validateRoles();
+
+        // Attach event handlers for input changes
+        $('input[name^="License"]').on('input', function () {
+            validateAllLicenses();
+        });
+
+        $('input[name^="JerseyNumber"]').on('input', function () {
+            validateAllJerseyNumbers();
+        });
+
+        $('select[name^="Role"]').on('change', function () {
+            validateRoles();
+        });
+
+        // Attach event handlers for losing focus
+        $('input[name^="License"]').on('blur', function () {
+            validateAllLicenses();
+        });
+
+        $('input[name^="JerseyNumber"]').on('blur', function () {
+            validateAllJerseyNumbers();
+        });
+
+        var nationalityDropdown = $('select[name^="Nationality"]');
+        for (var i = 0; i < countries.length; i++) {
+            var option = $('<option></option>').attr('value', countries[i]).text(countries[i]);
+            nationalityDropdown.append(option);
+        }
+    });
+
+    // Array to keep track of selected roles
+    var selectedRoles = [];
+
+    function validateAllLicenses() {
+        var licenseInputs = $('input[name^="License"]');
+        var licenseValues = [];
+
+        licenseInputs.each(function () {
+            var value = $(this).val().trim();
+            licenseValues.push(value);
+        });
+
+        licenseInputs.each(function () {
+            var value = $(this).val().trim();
+            var isDuplicate = licenseValues.indexOf(value) !== licenseValues.lastIndexOf(value);
+
+            if (isDuplicate) {
+                $(this).addClass('is-duplicate');
+            } else {
+                $(this).removeClass('is-duplicate');
+            }
+        });
+    }
+
+    function validateAllJerseyNumbers() {
+        var jerseyInputs = $('input[name^="JerseyNumber"]');
+        var jerseyValues = [];
+
+        jerseyInputs.each(function () {
+            var value = $(this).val().trim();
+            jerseyValues.push(value);
+        });
+
+        jerseyInputs.each(function () {
+            var value = $(this).val().trim();
+            var isDuplicate = jerseyValues.indexOf(value) !== jerseyValues.lastIndexOf(value);
+
+            if (isDuplicate) {
+                $(this).addClass('is-duplicate');
+            } else {
+                $(this).removeClass('is-duplicate');
+            }
+        });
+    }
+
+    function validateRoles() {
+        var roleSelects = $('select[name^="Role"]');
+        var roleSelections = [];
+
+        roleSelects.each(function () {
+            var selectedRole = $(this).val();
+            roleSelections.push(selectedRole);
+        });
+
+        roleSelects.each(function () {
+            var selectedRole = $(this).val();
+            var isDuplicate = roleSelections.indexOf(selectedRole) !== roleSelections.lastIndexOf(selectedRole);
+
+            if (isDuplicate && selectedRole) {
+                $(this).addClass('is-duplicate-role');
+            } else {
+                $(this).removeClass('is-duplicate-role');
+            }
+        });
+    }
+
+    //function addRow() {
+    //    var formRows = $('#formRows');
+    //    var newRow = $('<div class="form-group"></div>');
+
+    //    var inputs = ['License', 'Role', 'PlayerName', 'JerseyNumber', 'DateOfBirth', 'Nationality', 'Gender'];
+
+    //    $.each(inputs, function (index, input) {
+    //        var inputContainer = $('<div class="input-container"></div>');
+
+    //        if (input === 'Role') {
+    //            var newInput = $('<select class="form-control"><option value="">Select Role</option><option value="Captain">Captain</option><option value="Assistant Captain">Assistant Captain</option><option value="Netminder">Netminder</option></select>');
+    //        } else {
+    //            var newInput = $('<input type="text" class="form-control" placeholder="' + input + '">');
+    //        }
+
+    //        newInput.attr('name', input + '[' + index + ']');
+
+    //        if (input === 'JerseyNumber') {
+    //            newInput.on('input', function () {
+    //                validateAllJerseyNumbers();
+    //            });
+
+    //            // Attach blur event for jerseyNumber textboxes
+    //            newInput.on('blur', function () {
+    //                validateAllJerseyNumbers();
+    //            });
+    //        }
+
+    //        if (input === 'License') {
+    //            newInput.on('input', function () {
+    //                validateAllLicenses();
+    //            });
+
+    //            // Attach blur event for license textboxes
+    //            newInput.on('blur', function () {
+    //                validateAllLicenses();
+    //            });
+    //        }
+
+    //        if (input === 'Role') {
+    //            newInput.on('change', function () {
+    //                validateRoles();
+    //            });
+    //        }
+
+    //        inputContainer.append(newInput);
+    //        newRow.append(inputContainer);
+    //    });
+
+    //    formRows.append(newRow);
+    //}
+
+    function addRow() {
+        var formRows = $('#formRows');
+        var newRow = $('<div class="form-group"></div>');
+
+        var inputs = ['License', 'Role', 'PlayerName', 'JerseyNumber', 'DateOfBirth', 'Nationality', 'Gender'];
+
+        $.each(inputs, function (index, input) {
+            var inputContainer = $('<div class="input-container"></div>');
+
+            var newInput;
+            if (input === 'Role') {
+                newInput = $('<select class="form-control"><option value="">Select Role</option><option value="Captain">Captain</option><option value="Assistant Captain">Assistant Captain</option><option value="Netminder">Netminder</option></select>');
+            } else {
+                newInput = $('<input type="text" class="form-control">');
+            }
+
+            newInput.attr('name', input + '[' + index + ']');
+
+            // Update the placeholder based on Umbraco form values
+            switch (input) {
+                case 'License':
+                    newInput.attr('placeholder', input);
+                    break;
+                case 'Role':
+                    // You can set the options dynamically based on Umbraco form values if needed
+                    newInput.attr('placeholder', input);
+                    break;
+                case 'PlayerName':
+                    newInput.attr('placeholder', "Player Name");
+                    break;
+                case 'JerseyNumber':
+                    newInput.attr('placeholder', "Jersey Number");
+                    newInput.on('input', function () {
+                        validateAllJerseyNumbers();
+                    });
+                    // Attach blur event for jerseyNumber textboxes
+                    newInput.on('blur', function () {
+                        validateAllJerseyNumbers();
+                    });
+                    break;
+                case 'DateOfBirth':
+                    //newInput.attr('placeholder', input);
+                    newInput.attr('placeholder', "dd.mm.yyyy");
+                    break;
+                case 'Nationality':
+                    newInput.attr('placeholder', input);
+                    break;
+                case 'Gender':
+                    newInput.attr('placeholder', input);
+                    break;
+            }
+
+            inputContainer.append(newInput);
+            newRow.append(inputContainer);
+        });
+
+        formRows.append(newRow);
+    }
+
+</script>
+
+
+
+
+
+

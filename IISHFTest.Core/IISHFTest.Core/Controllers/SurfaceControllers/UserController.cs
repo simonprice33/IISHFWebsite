@@ -66,35 +66,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
         {
             return PartialView("~/Views/Partials/Members/ForgotPassword.cshtml", new ForgotPasswordResetRequestModel());
         }
-
-        //[HttpGet]
-        //public async Task<IActionResult> RenderResetPassword()
-        //{
-
-        //    var member = Services.MemberService.GetMembersByPropertyValue("resetToken", token).FirstOrDefault();
-
-        //    if (member == null)
-        //    {
-        //        TempData["Status"] = "Member not found";
-        //        return PartialView("~/Views/Partials/Members/ResetPassword.cshtml", new PasswordResetRequestModel());
-
-        //    }
-
-        //    var tokenExpirationDate = member.GetValue<DateTime>("resetExpiryDate");
-        //    if (DateTime.UtcNow > tokenExpirationDate)
-        //    {
-        //        TempData["Status"] = "Expired";
-        //        return PartialView("~/Views/Partials/Members/ResetPassword.cshtml", new PasswordResetRequestModel());
-        //    }
-
-        //    var model = new PasswordResetRequestModel
-        //    {
-        //        EmailAddress = member.Email
-        //    };
-
-        //    return PartialView("~/Views/Partials/Members/ResetPassword.cshtml", model);
-        //}
-
+        
         [HttpPost]
         public async Task<IActionResult> HandlePasswordResetRequest(ForgotPasswordResetRequestModel model)
         {

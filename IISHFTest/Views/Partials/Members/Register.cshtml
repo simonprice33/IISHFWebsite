@@ -3,14 +3,14 @@
 @model IISHFTest.Core.Models.RegisterViewModel
 
 @{
-    var modelContent = Umbraco.ContentAtRoot().ToList();
-    var registerContent = modelContent
-        .FirstOrDefault(x => x.Name == "Home")!.Children()?
-        .FirstOrDefault(x => x.Name == "Register");
+        var modelContent = Umbraco.ContentAtRoot().ToList();
+        var registerContent = modelContent
+            .FirstOrDefault(x => x.Name == "Home")!.Children()?
+            .FirstOrDefault(x => x.Name == "Register");
 
 
-    var heroImageObj = registerContent.Value<IPublishedContent>("heroImage");
-    var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
+        var heroImageObj = registerContent.Value<IPublishedContent>("heroImage");
+        var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
 }
 
 <div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">

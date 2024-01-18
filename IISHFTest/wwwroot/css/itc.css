@@ -1,0 +1,21 @@
+﻿.custom-form .form-group {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+    .custom-form .form-group .input-container {
+        flex: 1;
+        margin-right: 5px;
+    }
+
+.error-message {
+    color: red;
+    font-size: 12px;
+    margin-top: 5px; /* Add margin to separate the input and error message */
+}
+
+.is-invalid,
+.is-duplicate,
+.is-duplicate-role {
+    border: 1px solid red !important;
+}

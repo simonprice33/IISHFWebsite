@@ -6,7 +6,9 @@
 @{
     Layout = null;
 
-    var homePage = Model.AncestorOrSelf<Home>();
+    var modelContent = Umbraco.ContentAtRoot().ToList();
+    var homePage = modelContent
+        .FirstOrDefault(x => x.Name == "Home");
 }
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-black-opacity">
