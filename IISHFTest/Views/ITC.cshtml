@@ -38,16 +38,14 @@
     </div>
 </div>
 
-<div class="container container-custom mt-5">
+<div class="container custom-container mt-5">
     <div class="row">
         <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-            @using (Html.BeginUmbracoForm<UserController>("HandlePasswordResetRequest", null, new { @class = "custom-form" }))
+            @using (Html.BeginUmbracoForm<EventsController>("SubmitItc", null, new { @class = "custom-form" }))
             {
                 <div id="formRows">
                     @for (int i = 0; i < rosterMembers.Count(); i++)
                     {
-
-
                         <div class="form-group">
                             <div class="input-container">
                                 <input type="text" class="form-control" name="License[]" placeholder="License" value="@rosterMembers[i].Value("licenseNumber")" />
@@ -90,8 +88,17 @@
                                     }
                                 </select>
                             </div>
+                            
                             <div class="input-container">
-                                <input type="text" class="form-control" name="Gender[]" placeholder="Gender" value="@rosterMembers[i].Value("gender")" />
+                                @* Modify the Role dropdown here *@
+                                @{
+                                    var gender = rosterMembers[i].Value<string>("gender"); // Convert to string
+                                }
+                                <select class="form-control" name="gender[]">
+                                    <option value="Male" selected="@(gender == "Male")">Male</option>
+                                    <option value="Female" selected="@(gender == "Female")">Female</option>
+                                    <option value="" selected="@(string.IsNullOrWhiteSpace(gender))">Select Gender</option>
+                                </select>
                             </div>
                         </div>
                     }
@@ -205,58 +212,6 @@
             }
         });
     }
-
-    //function addRow() {
-    //    var formRows = $('#formRows');
-    //    var newRow = $('<div class="form-group"></div>');
-
-    //    var inputs = ['License', 'Role', 'PlayerName', 'JerseyNumber', 'DateOfBirth', 'Nationality', 'Gender'];
-
-    //    $.each(inputs, function (index, input) {
-    //        var inputContainer = $('<div class="input-container"></div>');
-
-    //        if (input === 'Role') {
-    //            var newInput = $('<select class="form-control"><option value="">Select Role</option><option value="Captain">Captain</option><option value="Assistant Captain">Assistant Captain</option><option value="Netminder">Netminder</option></select>');
-    //        } else {
-    //            var newInput = $('<input type="text" class="form-control" placeholder="' + input + '">');
-    //        }
-
-    //        newInput.attr('name', input + '[' + index + ']');
-
-    //        if (input === 'JerseyNumber') {
-    //            newInput.on('input', function () {
-    //                validateAllJerseyNumbers();
-    //            });
-
-    //            // Attach blur event for jerseyNumber textboxes
-    //            newInput.on('blur', function () {
-    //                validateAllJerseyNumbers();
-    //            });
-    //        }
-
-    //        if (input === 'License') {
-    //            newInput.on('input', function () {
-    //                validateAllLicenses();
-    //            });
-
-    //            // Attach blur event for license textboxes
-    //            newInput.on('blur', function () {
-    //                validateAllLicenses();
-    //            });
-    //        }
-
-    //        if (input === 'Role') {
-    //            newInput.on('change', function () {
-    //                validateRoles();
-    //            });
-    //        }
-
-    //        inputContainer.append(newInput);
-    //        newRow.append(inputContainer);
-    //    });
-
-    //    formRows.append(newRow);
-    //}
 
     function addRow() {
         var formRows = $('#formRows');
