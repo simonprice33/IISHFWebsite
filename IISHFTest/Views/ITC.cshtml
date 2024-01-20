@@ -25,7 +25,6 @@
         .Where(x => !string.IsNullOrEmpty(x.ISO3))
         .OrderBy(x => Array.IndexOf(priorityCountries, x.Country) == -1 ? int.MaxValue : Array.IndexOf(priorityCountries, x.Country))
         .ThenBy(x => x.Country);
-
 }
 
 <div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
@@ -38,71 +37,66 @@
     </div>
 </div>
 
-<div class="container custom-container mt-5">
+<div class="container custom-container mt-5 mb-5">
     <div class="row">
         <div class="col-12 col-sm-12 col-md-12 col-lg-12">
             @using (Html.BeginUmbracoForm<EventsController>("SubmitItc", null, new { @class = "custom-form" }))
             {
-                <div id="formRows">
-                    @for (int i = 0; i < rosterMembers.Count(); i++)
-                    {
-                        <div class="form-group">
-                            <div class="input-container">
-                                <input type="text" class="form-control" name="License[]" placeholder="License" value="@rosterMembers[i].Value("licenseNumber")" />
-                            </div>
-                            <div class="input-container">
-                                @* Modify the Role dropdown here *@
-                                @{
-                                    var role = rosterMembers[i].Value<string>("role"); // Convert to string
-                                }
-                                <select class="form-control" name="Role[]">
-                                    <option value="Captain" selected="@(role == "Captain")">Captain</option>
-                                    <option value="Assistant Captain" selected="@(role == "Assistant Captain")">Assistant Captain</option>
-                                    <option value="Netminder" selected="@(role == "Netminder")">Netminder</option>
-                                    <option value="" selected="@(string.IsNullOrWhiteSpace(role))">Select Role</option>
-                                </select>
-                            </div>
-                            <div class="input-container">
-                                <input type="text" class="form-control" name="PlayerName[]" placeholder="PlayerName" value="@rosterMembers[i].Value("playerName")" />
-                            </div>
-                            <div class="input-container">
-                                <input type="text" class="form-control" name="JerseyNumber[]" placeholder="JerseyNumber" oninput="validateNumber(this)" value="@rosterMembers[i].Value("jerseyNumber")" />
-
-                            </div>
-                            <div class="input-container">
-                                @{
-                                    var dob = rosterMembers[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
-                                }
-                                <input type="text" class="form-control" name="DateOfBirth[]" placeholder="DD.MM.YYYY" value="@dob" />
-                            </div>
-                            <div class="input-container">
-                                <select class="form-control" name="Nationality[]">
-                                    <option value="">Select Nationality</option>
+                    <table class="table table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
+                    <thead>
+                        <tr>
+                            <th>License</th>
+                            <th>Role</th>
+                            <th>Player Name</th>
+                            <th style="width: 50px">Jersey Number</th>
+                            <th >Date of Birth</th>
+                            <th>Nationality</th>
+                            <th>Gender</th>
+                        </tr>
+                    </thead>
+                    <tbody id="formRows">
+                        @for (int i = 0; i < rosterMembers.Count(); i++)
+                        {
+                            <tr>
+                                <td><input type="text" class="form-control" name="License[]" value="@rosterMembers[i].Value("licenseNumber")" /></td>
+                                <td>
+                                    <select class="form-control" name="Role[]">
+                                        <option value="Captain" selected="@(rosterMembers[i].Value<string>("role") == "Captain")">Captain</option>
+                                        <option value="Assistant Captain" selected="@(rosterMembers[i].Value<string>("role") == "Assistant Captain")">Assistant Captain</option>
+                                        <option value="Netminder" selected="@(rosterMembers[i].Value<string>("role") == "Netminder")">Netminder</option>
+                                        <option value="Player" selected="@(rosterMembers[i].Value<string>("role") == "Player")">Player</option>
+                                        <option value="" selected="@(string.IsNullOrWhiteSpace(rosterMembers[i].Value<string>("role")))">Select Role</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" class="form-control" name="PlayerName[]" value="@rosterMembers[i].Value("playerName")" /></td>
+                                <td><input type="text" class="form-control" name="JerseyNumber[]" oninput="validateNumber(this)" value="@rosterMembers[i].Value("jerseyNumber")" /></td>
+                                <td>
                                     @{
-                                        var playerNationality = rosterMembers[i].Value<string>("nationality");
+                                        var dob = rosterMembers[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
                                     }
-                                    @foreach (var country in countries)
-                                    {
-                                        var isSelected = country.Country.Equals(playerNationality);
-                                        <option value="@country.ISO3" selected="@isSelected">@country.Country</option>
-                                    }
-                                </select>
-                            </div>
-                            
-                            <div class="input-container">
-                                @* Modify the Role dropdown here *@
-                                @{
-                                    var gender = rosterMembers[i].Value<string>("gender"); // Convert to string
-                                }
-                                <select class="form-control" name="gender[]">
-                                    <option value="Male" selected="@(gender == "Male")">Male</option>
-                                    <option value="Female" selected="@(gender == "Female")">Female</option>
-                                    <option value="" selected="@(string.IsNullOrWhiteSpace(gender))">Select Gender</option>
-                                </select>
-                            </div>
-                        </div>
-                    }
-                </div>
+                                    <input type="text" class="form-control" name="DateOfBirth[]" placeholder="DD.MM.YYYY" value="@dob"/>
+                                </td>
+                                <td>
+                                    <select class="form-control" name="Nationality[]">
+                                        <option value="">Select Nationality</option>
+                                        @foreach (var country in countries)
+                                        {
+                                            var isSelected = country.Country.Equals(rosterMembers[i].Value<string>("nationality"));
+                                            <option value="@country.ISO3" selected="@isSelected">@country.Country</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td>
+                                    <select class="form-control" name="gender[]">
+                                        <option value="Male" selected="@(rosterMembers[i].Value<string>("gender") == "Male")">Male</option>
+                                        <option value="Female" selected="@(rosterMembers[i].Value<string>("gender") == "Female")">Female</option>
+                                        <option value="" selected="@(string.IsNullOrWhiteSpace(rosterMembers[i].Value<string>("gender")))">Select Gender</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
 
                 <button type="button" onclick="addRow()">Add Row</button>
                 <button type="submit">Submit</button>
@@ -112,7 +106,11 @@
 </div>
 
 <script>
+
+    var countries = @Html.Raw(Json.Serialize(@countries));
+
     $(document).ready(function () {
+
         // Validate existing rows on page load
         validateAllLicenses();
         validateAllJerseyNumbers();
@@ -214,22 +212,45 @@
     }
 
     function addRow() {
+
         var formRows = $('#formRows');
-        var newRow = $('<div class="form-group"></div>');
+        var newRow = $('<tr></tr>');
+        newRow.hide();
 
         var inputs = ['License', 'Role', 'PlayerName', 'JerseyNumber', 'DateOfBirth', 'Nationality', 'Gender'];
 
         $.each(inputs, function (index, input) {
-            var inputContainer = $('<div class="input-container"></div>');
-
+            var inputContainer = $('<td></td>');
             var newInput;
-            if (input === 'Role') {
-                newInput = $('<select class="form-control"><option value="">Select Role</option><option value="Captain">Captain</option><option value="Assistant Captain">Assistant Captain</option><option value="Netminder">Netminder</option></select>');
+            if (input === 'Role' || input === 'Nationality' || input === 'Gender') {
+                newInput = $('<select class="form-control"></select>');
+                // Add default option
+                newInput.append('<option value="">Select ' + input + '</option>');
+
+                // Populate options dynamically
+                switch (input) {
+                    case 'Role':
+                        newInput.append('<option value="Captain">Captain</option>');
+                        newInput.append('<option value="Assistant Captain">Assistant Captain</option>');
+                        newInput.append('<option value="Netminder">Netminder</option>');
+                        newInput.append('<option value="Player">Player</option>');
+                        break;
+                    case 'Nationality':
+                        // Assuming you have a list of countries in the 'countries' variable
+                        $.each(countries, function (i, country) {
+                            newInput.append('<option value="' + country.isO3 + '">' + country.country + '</option>');
+                        });
+                        break;
+                    case 'Gender':
+                        newInput.append('<option value="Male">Male</option>');
+                        newInput.append('<option value="Female">Female</option>');
+                        break;
+                }
             } else {
                 newInput = $('<input type="text" class="form-control">');
             }
 
-            newInput.attr('name', input + '[' + index + ']');
+            newInput.attr('name', input + '[]');
 
             // Update the placeholder based on Umbraco form values
             switch (input) {
@@ -238,13 +259,12 @@
                     break;
                 case 'Role':
                     // You can set the options dynamically based on Umbraco form values if needed
-                    newInput.attr('placeholder', input);
                     break;
                 case 'PlayerName':
                     newInput.attr('placeholder', "Player Name");
                     break;
                 case 'JerseyNumber':
-                    newInput.attr('placeholder', "Jersey Number");
+                    newInput.attr('placeholder', "##");
                     newInput.on('input', function () {
                         validateAllJerseyNumbers();
                     });
@@ -254,8 +274,7 @@
                     });
                     break;
                 case 'DateOfBirth':
-                    //newInput.attr('placeholder', input);
-                    newInput.attr('placeholder', "dd.mm.yyyy");
+                    newInput.attr('placeholder', "DD.MM.YYYY");
                     break;
                 case 'Nationality':
                     newInput.attr('placeholder', input);
@@ -265,14 +284,19 @@
                     break;
             }
 
+            
             inputContainer.append(newInput);
             newRow.append(inputContainer);
+
         });
+            newRow.toggle(500);
 
         formRows.append(newRow);
     }
 
+    addRow();
 </script>
+
 
 
 
