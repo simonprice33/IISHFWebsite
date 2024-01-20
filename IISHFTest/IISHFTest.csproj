@@ -209,6 +209,7 @@
 
   <ItemGroup>
     <Folder Include="Views\Partials\Contact\" />
+    <Folder Include="Views\Partials\Forms\" />
     <Folder Include="wwwroot\fonts\" />
     <Folder Include="wwwroot\images\members\" />
     <Folder Include="wwwroot\media\0evnc2sr\" />

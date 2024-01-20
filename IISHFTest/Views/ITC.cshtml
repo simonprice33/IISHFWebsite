@@ -7,7 +7,8 @@
     Layout = "Main.cshtml";
     var id = Model.Id;
     var rosterMembers = Umbraco.Content(id).Children().Where(x => x.ContentType.Alias == "roster").ToList();
-
+    var players = rosterMembers.Where(x => !x.Value<bool>("isBenchOfficial")).ToList();
+    var benchOfficials = rosterMembers.Where(x => x.Value<bool>("isBenchOfficial")).ToList();
     var heroImageObj = Model.Value<IPublishedContent>("heroImage");
     var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
 
@@ -39,114 +40,188 @@
 
 <div class="container custom-container mt-5 mb-5">
     <div class="row">
-        <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-            @using (Html.BeginUmbracoForm<EventsController>("SubmitItc", null, new { @class = "custom-form" }))
-            {
+
+        <div class="col-md-2">
+            <!-- Tabs nav -->
+            <div class="nav flex-column nav-pills nav-pills-custom" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                <a class="nav-link mb-3 p-3 shadow active" id="v-pills-players-tab" data-bs-toggle="pill" href="#v-pills-players" role="tab" aria-controls="v-players-players" aria-selected="true">
+                    <span class="font-weight-bold small text-uppercase">Players</span>
+                </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-bench-tab" data-bs-toggle="pill" href="#v-pills-bench" role="tab" aria-controls="v-bench-bench" aria-selected="true">
+                    <span class="font-weight-bold small text-uppercase">Bench Officials</span>
+                </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-submit-tab" data-bs-toggle="pill" href="#v-pills-submit" role="tab" aria-controls="v-submit-submit" aria-selected="true">
+                    <span class="font-weight-bold small text-uppercase">Validate and Submit</span>
+                </a>
+            </div>
+
+        </div>
+        <div class="col-md-10">
+            <!-- Tabs content -->
+            <div class="tab-content" id="v-pills-tabContent">
+                <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-players" role="tabpanel" aria-labelledby="v-pills-players-tab">
                     <table class="table table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
-                    <thead>
+                        <thead>
+                            <tr>
+                                <th style="width: 150px">License</th>
+                                <th>Role</th>
+                                <th>Player Name</th>
+                                <th style="width: 50px">Jersey Number</th>
+                                <th>Date of Birth</th>
+                                <th>Nationality</th>
+                                <th>Gender</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="formRows">
+                            @for (int i = 0; i < players.Count(); i++)
+                            {
+                                <tr>
+                                    <td><input type="text" class="form-control" name="License[]" value="@players[i].Value("licenseNumber")" /></td>
+                                    <td>
+                                        <select class="form-control" name="Role[]">
+                                            <option value="Captain" selected="@(players[i].Value<string>("role") == "Captain")">Captain</option>
+                                            <option value="Assistant Captain" selected="@(players[i].Value<string>("role") == "Assistant Captain")">Assistant Captain</option>
+                                            <option value="Netminder" selected="@(players[i].Value<string>("role") == "Netminder")">Netminder</option>
+                                            <option value="Player" selected="@(players[i].Value<string>("role") == "Player")">Player</option>
+                                            <option value="" selected="@(string.IsNullOrWhiteSpace(players[i].Value<string>("role")))">Role</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" class="form-control" name="PlayerName[]" value="@players[i].Value("playerName")" /></td>
+                                    <td><input type="text" class="form-control" name="JerseyNumber[]" oninput="validateNumber(this)" value="@players[i].Value("jerseyNumber")" /></td>
+                                    <td>
+                                        @{
+                                            var dob = players[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
+                                        }
+                                        <input type="text" class="form-control" name="DateOfBirth[]" placeholder="DD.MM.YYYY" value="@dob" />
+                                    </td>
+                                    <td>
+                                        <select class="form-control" name="Nationality[]">
+                                            <option value="">Nationality</option>
+                                            @foreach (var country in countries)
+                                            {
+                                                var isSelected = country.Country.Equals(players[i].Value<string>("nationality"));
+                                                <option value="@country.ISO3" selected="@isSelected">@country.Country</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select class="form-control" name="Gender[]">
+                                            <option value="Male" selected="@(players[i].Value<string>("gender") == "Male")">Male</option>
+                                            <option value="Female" selected="@(players[i].Value<string>("gender") == "Female")">Female</option>
+                                            <option value="" selected="@(string.IsNullOrWhiteSpace(players[i].Value<string>("gender")))">Gender</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-danger" onclick="deleteRow(this)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    @*Move these into their own tab*@
+                    <button type="button" onclick="addRowToPlayer()">Add Row</button>
+                </div>
+
+                <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-bench" role="tabpanel" aria-labelledby="v-pills-bench-tab">
+                    <table id="benchOfficials" class="table table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
+                        <thead>
                         <tr>
-                            <th>License</th>
+                            <th style="width: 150px">License</th>
                             <th>Role</th>
-                            <th>Player Name</th>
-                            <th style="width: 50px">Jersey Number</th>
-                            <th >Date of Birth</th>
+                            <th>Official Name</th>
+                            <th>Date of Birth</th>
                             <th>Nationality</th>
                             <th>Gender</th>
+                            <th></th>
                         </tr>
-                    </thead>
-                    <tbody id="formRows">
-                        @for (int i = 0; i < rosterMembers.Count(); i++)
+                        </thead>
+                        <tbody id="formRowsBench">
+                        @for (int i = 0; i < benchOfficials.Count(); i++)
                         {
                             <tr>
-                                <td><input type="text" class="form-control" name="License[]" value="@rosterMembers[i].Value("licenseNumber")" /></td>
+                                <td><input type="text" class="form-control" name="License[]" value="@benchOfficials[i].Value("licenseNumber")" /></td>
                                 <td>
                                     <select class="form-control" name="Role[]">
-                                        <option value="Captain" selected="@(rosterMembers[i].Value<string>("role") == "Captain")">Captain</option>
-                                        <option value="Assistant Captain" selected="@(rosterMembers[i].Value<string>("role") == "Assistant Captain")">Assistant Captain</option>
-                                        <option value="Netminder" selected="@(rosterMembers[i].Value<string>("role") == "Netminder")">Netminder</option>
-                                        <option value="Player" selected="@(rosterMembers[i].Value<string>("role") == "Player")">Player</option>
-                                        <option value="" selected="@(string.IsNullOrWhiteSpace(rosterMembers[i].Value<string>("role")))">Select Role</option>
+                                        <option value="Captain" selected="@(benchOfficials[i].Value<string>("role") == "Captain")">Captain</option>
+                                        <option value="Assistant Captain" selected="@(benchOfficials[i].Value<string>("role") == "Assistant Captain")">Assistant Captain</option>
+                                        <option value="Netminder" selected="@(benchOfficials[i].Value<string>("role") == "Netminder")">Netminder</option>
+                                        <option value="Player" selected="@(benchOfficials[i].Value<string>("role") == "Player")">Player</option>
+                                        <option value="" selected="@(string.IsNullOrWhiteSpace(benchOfficials[i].Value<string>("role")))">Role</option>
                                     </select>
                                 </td>
-                                <td><input type="text" class="form-control" name="PlayerName[]" value="@rosterMembers[i].Value("playerName")" /></td>
-                                <td><input type="text" class="form-control" name="JerseyNumber[]" oninput="validateNumber(this)" value="@rosterMembers[i].Value("jerseyNumber")" /></td>
+                                <td><input type="text" class="form-control" name="PlayerName[]" value="@players[i].Value("playerName")" /></td>
                                 <td>
                                     @{
-                                        var dob = rosterMembers[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
+                                        var dob = players[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
                                     }
-                                    <input type="text" class="form-control" name="DateOfBirth[]" placeholder="DD.MM.YYYY" value="@dob"/>
+                                    <input type="text" class="form-control" name="DateOfBirth[]" placeholder="DD.MM.YYYY" value="@dob" />
                                 </td>
                                 <td>
                                     <select class="form-control" name="Nationality[]">
-                                        <option value="">Select Nationality</option>
+                                        <option value="">Nationality</option>
                                         @foreach (var country in countries)
                                         {
-                                            var isSelected = country.Country.Equals(rosterMembers[i].Value<string>("nationality"));
+                                            var isSelected = country.Country.Equals(benchOfficials[i].Value<string>("nationality"));
                                             <option value="@country.ISO3" selected="@isSelected">@country.Country</option>
                                         }
                                     </select>
                                 </td>
                                 <td>
-                                    <select class="form-control" name="gender[]">
-                                        <option value="Male" selected="@(rosterMembers[i].Value<string>("gender") == "Male")">Male</option>
-                                        <option value="Female" selected="@(rosterMembers[i].Value<string>("gender") == "Female")">Female</option>
-                                        <option value="" selected="@(string.IsNullOrWhiteSpace(rosterMembers[i].Value<string>("gender")))">Select Gender</option>
+                                    <select class="form-control" name="Gender[]">
+                                        <option value="Male" selected="@(benchOfficials[i].Value<string>("gender") == "Male")">Male</option>
+                                        <option value="Female" selected="@(benchOfficials[i].Value<string>("gender") == "Female")">Female</option>
+                                        <option value="" selected="@(string.IsNullOrWhiteSpace(benchOfficials[i].Value<string>("gender")))">Gender</option>
                                     </select>
                                 </td>
+                                <button type="button" class="btn btn-danger" onclick="deleteRow(this)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </tr>
                         }
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                    
+                    <div id="addBenchOfficialButtonErrors" class="alert alert-danger" role="alert">
+                        <h3>Cannot add more than 8 bench officials</h3>
+                    </div>
+                    <button id="addBenchOfficialButton" type="button">Add Row</button>
 
-                <button type="button" onclick="addRow()">Add Row</button>
-                <button type="submit">Submit</button>
-            }
+                </div>
+                <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-submit" role="tabpanel" aria-labelledby="v-pills-submit-tab">
+                    <button type="submit" onclick="validateForm()">Validate form</button>
+                    <button onclick="SaveAsDraft()">Submit</button>
+                    <button onclick="Submit()">Submit</button>
+                    <div id="submissionErrors" class="alert alert-danger mb-3" role="alert">
+                        
+                    </div>
+                </div>
+            </div>
         </div>
+        
     </div>
 </div>
 
 <script>
 
     var countries = @Html.Raw(Json.Serialize(@countries));
+    $("#submissionErrors").hide();
 
-    $(document).ready(function () {
-
-        // Validate existing rows on page load
-        validateAllLicenses();
-        validateAllJerseyNumbers();
-        validateRoles();
-
-        // Attach event handlers for input changes
-        $('input[name^="License"]').on('input', function () {
-            validateAllLicenses();
-        });
-
-        $('input[name^="JerseyNumber"]').on('input', function () {
-            validateAllJerseyNumbers();
-        });
-
-        $('select[name^="Role"]').on('change', function () {
-            validateRoles();
-        });
-
-        // Attach event handlers for losing focus
-        $('input[name^="License"]').on('blur', function () {
-            validateAllLicenses();
-        });
-
-        $('input[name^="JerseyNumber"]').on('blur', function () {
-            validateAllJerseyNumbers();
-        });
-
-        var nationalityDropdown = $('select[name^="Nationality"]');
-        for (var i = 0; i < countries.length; i++) {
-            var option = $('<option></option>').attr('value', countries[i]).text(countries[i]);
-            nationalityDropdown.append(option);
-        }
-    });
-
-    // Array to keep track of selected roles
+    var deletedLicenseNumbers = [];
     var selectedRoles = [];
+       
+    function deleteRow(button) {
+        var row = button.parentNode.parentNode;
+        var licenseNumber = row.querySelector('input[name="License[]"]').value;
+
+        // Remove the row from the table
+        row.parentNode.removeChild(row);
+
+        // Add the license number to the array
+        deletedLicenseNumbers.push(licenseNumber);
+    }
 
     function validateAllLicenses() {
         var licenseInputs = $('input[name^="License"]');
@@ -211,7 +286,7 @@
         });
     }
 
-    function addRow() {
+    function addRowToPlayer() {
 
         var formRows = $('#formRows');
         var newRow = $('<tr></tr>');
@@ -219,13 +294,18 @@
 
         var inputs = ['License', 'Role', 'PlayerName', 'JerseyNumber', 'DateOfBirth', 'Nationality', 'Gender'];
 
+        var deleteButton = $('<button type="button" class="btn btn-danger"><i class="fas fa-trash"></i></button>');
+        deleteButton.on('click', function () {
+            deleteRow(this);
+        });
+
         $.each(inputs, function (index, input) {
             var inputContainer = $('<td></td>');
             var newInput;
             if (input === 'Role' || input === 'Nationality' || input === 'Gender') {
                 newInput = $('<select class="form-control"></select>');
                 // Add default option
-                newInput.append('<option value="">Select ' + input + '</option>');
+                newInput.append('<option selected="selected" value="">' + input + '</option>');
 
                 // Populate options dynamically
                 switch (input) {
@@ -284,22 +364,366 @@
                     break;
             }
 
-            
+
             inputContainer.append(newInput);
             newRow.append(inputContainer);
 
         });
-            newRow.toggle(500);
+        newRow.append($('<td></td>').append(deleteButton));
+
+        newRow.toggle(500);
 
         formRows.append(newRow);
     }
 
-    addRow();
+    function addRowToBenchOfficial() {
+
+        var formRowsBench = $('#formRowsBench');
+        var newRow = $('<tr></tr>');
+        newRow.hide();
+
+        var inputs = ['License', 'Role', 'OfficialName', 'DateOfBirth', 'Nationality', 'Gender'];
+
+        var deleteButton = $('<button type="button" class="btn btn-danger"><i class="fas fa-trash"></i></button>');
+        deleteButton.on('click', function () {
+            deleteRow(this);
+        });
+
+        $.each(inputs, function (index, input) {
+            var inputContainer = $('<td></td>');
+            var newInput;
+            if (input === 'Role' || input === 'Nationality' || input === 'Gender') {
+                newInput = $('<select class="form-control"></select>');
+                // Add default option
+                newInput.append('<option value="">' + input + '</option>');
+
+                // Populate options dynamically
+                switch (input) {
+                    case 'Role':
+                        newInput.append('<option value="Captain">Captain</option>');
+                        newInput.append('<option value="Assistant Captain">Assistant Captain</option>');
+                        newInput.append('<option value="Netminder">Netminder</option>');
+                        newInput.append('<option value="Player">Player</option>');
+                        break;
+                    case 'Nationality':
+                        // Assuming you have a list of countries in the 'countries' variable
+                        $.each(countries, function (i, country) {
+                            newInput.append('<option value="' + country.isO3 + '">' + country.country + '</option>');
+                        });
+                        break;
+                    case 'Gender':
+                        newInput.append('<option value="Male">Male</option>');
+                        newInput.append('<option value="Female">Female</option>');
+                        break;
+                }
+            } else {
+                newInput = $('<input type="text" class="form-control">');
+            }
+
+            newInput.attr('name', input + '[]');
+
+            // Update the placeholder based on Umbraco form values
+            switch (input) {
+                case 'License':
+                    newInput.attr('placeholder', input);
+                    break;
+                case 'Role':
+                    // You can set the options dynamically based on Umbraco form values if needed
+                    break;
+                case 'OfficialName': // Adjusted for "Official Name"
+                    newInput.attr('placeholder', "Official Name");
+                    break;
+                case 'DateOfBirth':
+                    newInput.attr('placeholder', "DD.MM.YYYY");
+                    break;
+                case 'Nationality':
+                    newInput.attr('placeholder', input);
+                    break;
+                case 'Gender':
+                    newInput.attr('placeholder', input);
+                    break;
+            }
+
+            inputContainer.append(newInput);
+            newRow.append(inputContainer);
+
+        });
+        newRow.append($('<td></td>').append(deleteButton));
+        newRow.toggle(500);
+
+        formRowsBench.append(newRow);
+    }
+
+    ////function validateForm() {
+
+    ////    var isValid = true;
+    ////    var errors = [];
+
+    ////    // Validate existing rows
+    ////    var rowCount = $('#formRows tr').length;
+    ////    for (var i = 0; i < rowCount; i++) {
+    ////        var rowErrors = validateRow(i);
+    ////        var playerName = $('input[name="PlayerName[]"]').eq(i).val();
+
+    ////        if (rowErrors.length > 0) {
+    ////            isValid = false;
+    ////            $('tr').eq(i).addClass('table-danger');
+    ////            errors.push({
+    ////                playerName: playerName,
+    ////                rowErrors: rowErrors
+    ////            });
+    ////        }
+    ////    }
+
+    ////    // Display validation errors
+    ////    displayValidationErrors(errors);
+    ////    if (!isValid) {
+    ////    // Slide down with a specific duration (e.g., 500 milliseconds)
+    ////    $("#submissionErrors").show();
+    ////  } else {
+    ////    $("#submissionErrors").hide();
+    ////  }
+    ////    return isValid;
+    ////}
+
+    function validateForm() {
+        var isValid = true;
+        var errors = [];
+
+        // Validate existing rows
+        var rowCount = $('#formRows tr').length;
+
+        for (var i = 0; i < rowCount; i++) {
+            var rowErrors = validateRow(i);
+            var playerName = $('input[name="PlayerName[]"]').eq(i).val();
+            debugger
+            if (rowErrors.length > 0) {
+                isValid = false;
+                // Add class to all rows, including the last one
+                $('#formRows tr').eq(i).addClass('table-danger');
+                errors.push({
+                    playerName: playerName,
+                    rowErrors: rowErrors
+                });
+            }
+        }
+
+        // Display validation errors
+        displayValidationErrors(errors);
+        if (!isValid) {
+            // Slide down with a specific duration (e.g., 500 milliseconds)
+            $("#submissionErrors").show();
+        } else {
+            $("#submissionErrors").hide();
+        }
+        return isValid;
+    }
+
+    function validateRow(index) {
+        var rowErrors = [];
+        var isEmptyRow = true;
+        var license = $('input[name="License[]"]').eq(index);
+        var jerseyNumber = $('input[name="JerseyNumber[]"]').eq(index);
+        var role = $('select[name="Role[]"]').eq(index);
+        var nationality = $('select[name="Nationality[]"]').eq(index);
+        var gender = $('select[name="Gender[]"]').eq(index);
+        var playerName = $('input[name="PlayerName[]"]').eq(index);
+        var dateOfBirth = $('input[name="DateOfBirth[]"]').eq(index);
+
+        console.log(license.val())
+        console.log(jerseyNumber.val())
+        console.log(role.val())
+        console.log(nationality.val())
+        console.log(gender.val())
+        console.log(playerName.val())
+        console.log(dateOfBirth.val())
+        // Check if all fields are empty
+        if (
+            (!license || !license.val() || license.val().trim() === "") &&
+            (!jerseyNumber || !jerseyNumber.val() || jerseyNumber.val().trim() === "") &&
+            (!role || !role.val() || role.val() === "") &&
+            (!nationality || !nationality.val() || nationality.val() === "") &&
+            (!gender || !gender.val() || gender.val() === "") &&
+            (!playerName || !playerName.val() || playerName.val().trim() === "") &&
+            (!dateOfBirth || !dateOfBirth.val() || dateOfBirth.val().trim() === "" || dateOfBirth.val().trim() === "01.01.0001")
+        ) {
+            isEmptyRow = true;
+            
+
+        } else {
+            isEmptyRow = false;
+
+            // Validate License
+            if (!license || license.val().trim() === "") {
+                rowErrors.push("License Number cannot be empty");
+                if (license) {
+                    license.addClass('is-duplicate');
+                }
+            }
+
+            // Validate Jersey Number
+            if (!jerseyNumber || jerseyNumber.val().trim() === "") {
+                rowErrors.push("Jersey Number cannot be empty");
+                if (jerseyNumber) {
+                    jerseyNumber.addClass('is-duplicate');
+                }
+            }
+
+            // Validate Role
+            if (!role || role.val() === "") {
+                rowErrors.push("Role must have a selected value");
+                if (role) {
+                    role.addClass('is-duplicate-role');
+                }
+            }
+
+            // Validate Nationality
+            if (!nationality || nationality.val() === "") {
+                rowErrors.push("Nationality must have a selected value");
+                if (nationality) {
+                    nationality.addClass('is-duplicate');
+                }
+            }
+
+            if (!gender || gender.val() === "") {
+                rowErrors.push("Gender must have a selected value");
+                if (gender) {
+                    gender.addClass('is-duplicate-role');
+                }
+            }
+
+            // Validate Player Name
+            if (!playerName || playerName.val().trim() === "") {
+                rowErrors.push("Player Name cannot be empty");
+                if (playerName) {
+                    playerName.addClass('is-duplicate');
+                }
+            }
+
+            // Validate Date of Birth
+            if (!dateOfBirth || dateOfBirth.val().trim() === "" || dateOfBirth.val().trim() === "01.01.0001") {
+                rowErrors.push("Date of Birth cannot be empty or equal to 01.01.0001");
+                if (dateOfBirth) {
+                    dateOfBirth.addClass('is-duplicate');
+                }
+            }
+        }
+
+        // If the row is empty, add an error message
+        if (isEmptyRow) {
+            rowErrors.push("Row " + (index + 1) + " is empty.");
+        }
+               
+
+        // Display validation errors
+        displayValidationErrors(rowErrors);
+
+        return rowErrors;
+    }
+
+    function removeValidationHighlight(elements) {
+        elements.forEach(function (element) {
+            element.removeClass('is-duplicate is-duplicate-role');
+        });
+    }
+
+    function displayValidationErrors(errors) {
+        var errorContainer = $('#submissionErrors');
+        errorContainer.empty();
+
+        if (errors && errors.length > 0) {
+            errorContainer.show();
+            var errorList = $('<ul></ul>');
+
+            for (var i = 0; i < errors.length; i++) {
+                if (errors[i] && errors[i].rowErrors && errors[i].rowErrors.length > 0) {
+                    var rowErrors = errors[i].rowErrors;
+                    var playerName = errors[i].playerName;
+
+                    var listItem = $('<li></li>').text(playerName + " - " + rowErrors.join(", "));
+                    errorList.append(listItem);
+                }
+            }
+
+            errorContainer.append(errorList);
+        } else {
+            errorContainer.hide();
+        }
+    }
+   
+    $(document).ready(function () {
+        // Validate existing rows on page load
+        validateAllLicenses();
+        validateAllJerseyNumbers();
+        validateRoles();
+
+        // Attach event handlers for input changes
+        $('input[name^="License"]').on('input', function () {
+            validateAllLicenses();
+        });
+
+        $('input[name^="JerseyNumber"]').on('input', function () {
+            validateAllJerseyNumbers();
+        });
+
+        ////$('select[name^="Role"]').on('change', function () {
+        ////    validateRoles();
+        ////});
+
+        $(document).on('change', 'select[name^="Role"]', function () {
+            validateRoles();
+        });
+
+        // Attach event handlers for losing focus
+        $('input[name^="License"]').on('blur', function () {
+            validateAllLicenses();
+        });
+
+        $('input[name^="JerseyNumber"]').on('blur', function () {
+            validateAllJerseyNumbers();
+        });
+
+        var nationalityDropdown = $('select[name^="Nationality"]');
+        for (var i = 0; i < countries.length; i++) {
+            var option = $('<option></option>').attr('value', countries[i]).text(countries[i]);
+            nationalityDropdown.append(option);
+        }
+
+        var minPlayers = 8;
+        var currentOnRoster = $('#formRows tr').length;
+        var rowCountToAdd = minPlayers - currentOnRoster;
+        if(rowCountToAdd > 0){
+            for(var i = 0; i < rowCountToAdd; i++){
+                addRowToPlayer();
+            }
+        }
+
+        if ($('#formRowsBench tr').length === 0) {
+            addRowToBenchOfficial();
+        }
+
+        $('#addPlayerButton').on('click', function () {
+            if ($('#formRows tr').length > 30) {
+                addRowToPlayer();
+            } else {
+                // Display an alert or perform other actions if needed
+                alert('Cannot add more than 30 rows to Players table.');
+            }
+        });
+
+        $('#addBenchOfficialButton').on('click', function () {
+            console.log($('#formRowsBench tr').length)
+            if ($('#formRowsBench tr').length < 8) {
+                addRowToBenchOfficial();
+            } else {
+                // Display an alert or perform other actions if needed
+                $("#addBenchOfficialButtonErrors").slideToggle()
+                setTimeout(function(){
+                    $("#addBenchOfficialButtonErrors").slideToggle()
+                }, 2500)
+            }
+        });
+
+        $("#addBenchOfficialButtonErrors").hide()
+    });
 </script>
-
-
-
-
-
-
-

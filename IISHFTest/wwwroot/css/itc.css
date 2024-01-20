@@ -16,6 +16,7 @@
 
 .is-invalid,
 .is-duplicate,
-.is-duplicate-role {
+.is-duplicate-role,
+.is-empty-error {
     border: 1px solid red !important;
 }
