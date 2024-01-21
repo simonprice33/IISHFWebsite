@@ -460,7 +460,6 @@
         var isValid = true;
         var errors = [];
         var rowCount = $('#formRows tr').length;
-        console.log("row count = " + rowCount)
         
         var jerseyNumbers = [];
 
@@ -516,9 +515,6 @@
             }
         }
 
-        console.log(licenseNumbers);
-        console.log(jerseyNumbers);
-
         var jerseyNumberMap = {};
         
         jerseyNumbers.forEach(function (item) {
@@ -538,7 +534,6 @@
                 });
 
                 if (names.length > 0) {
-                    console.log("Jersey Number: " + number + ", Names: " + names.join(", "));
 
                     allErrors.push({
                         role: "Duplicate jersey numbers",
@@ -574,7 +569,6 @@
                 var names = licenseNumberMap[number];
 
                 if (names.length > 1 && duplicateLicenseNumbers[number]) {
-                    console.log("License Number: " + number + ", Names: " + names.join(", "));
 
                     allErrors.push({
                         role: "Duplicate license numbers",
@@ -598,7 +592,6 @@
         var isValid = true;
         var errors = [];
         var rowCount = $('#formRowsBench tr').length;
-        console.log("Bench officials row count = " + rowCount);
 
         for (var i = 0; i < rowCount; i++) {
             $('#formRowsBench tr').eq(i).removeClass('table-danger');
@@ -649,7 +642,6 @@
                 var names = licenseNumberMap[number];
 
                 if (names.length > 1 && duplicateLicenseNumbers[number]) {
-                    console.log("License Number: " + number + ", Names: " + names.join(", "));
 
                     allErrors.push({
                         role: "Duplicate license numbers",
@@ -678,13 +670,6 @@
         var gender = $('select[name="BenchGender[]"]').eq(index).val();
         var officialName = $('input[name="BenchOfficialName[]"]').eq(index).val();
         var dateOfBirth = $('input[name="BenchDateOfBirth[]"]').eq(index).val();
-
-        console.log(license);
-        console.log(role);
-        console.log(nationality);
-        console.log(gender);
-        console.log(officialName);
-        console.log(dateOfBirth);
 
         // Check if all fields are empty
         if (
@@ -757,13 +742,6 @@
         var playerName = $('input[name="PlayerName[]"]').eq(index);
         var dateOfBirth = $('input[name="DateOfBirth[]"]').eq(index);
 
-        console.log(license.val())
-        console.log(jerseyNumber.val())
-        console.log(role.val())
-        console.log(nationality.val())
-        console.log(gender.val())
-        console.log(playerName.val())
-        console.log(dateOfBirth.val())
         // Check if all fields are empty
         if (
             (!license || !license.val() || license.val().trim() === "") &&
@@ -952,7 +930,6 @@
                 var names = licenseRoleMap[licenseNumber];
 
                 if (names && names.length > 1) {
-                    console.log("License Number: " + entry.license + ", Names: " + entry.name);
 
                     allErrors.push({
                         role: "ITC Members listed as both player and bench official",
@@ -1027,7 +1004,6 @@
         });
 
         $('#addBenchOfficialButton').on('click', function () {
-            console.log($('#formRowsBench tr').length)
             if ($('#formRowsBench tr').length < 8) {
                 addRowToBenchOfficial();
             } else {
