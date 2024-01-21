@@ -142,9 +142,9 @@
                             @for (int i = 0; i < benchOfficials.Count(); i++)
                             {
                                 <tr>
-                                    <td><input type="text" class="form-control" name="License[]" value="@benchOfficials[i].Value("licenseNumber")" /></td>
+                                    <td><input type="text" class="form-control" name="BenchLicense[]" value="@benchOfficials[i].Value("licenseNumber")" /></td>
                                     <td>
-                                        <select class="form-control" name="Role[]">
+                                        <select class="form-control" name="BenchRole[]">
                                             <option value="Captain" selected="@(benchOfficials[i].Value<string>("role") == "Captain")">Captain</option>
                                             <option value="Assistant Captain" selected="@(benchOfficials[i].Value<string>("role") == "Assistant Captain")">Assistant Captain</option>
                                             <option value="Netminder" selected="@(benchOfficials[i].Value<string>("role") == "Netminder")">Netminder</option>
@@ -152,15 +152,15 @@
                                             <option value="" selected="@(string.IsNullOrWhiteSpace(benchOfficials[i].Value<string>("role")))">Role</option>
                                         </select>
                                     </td>
-                                    <td><input type="text" class="form-control" name="PlayerName[]" value="@players[i].Value("playerName")" /></td>
+                                    <td><input type="text" class="form-control" name="BenchOfficialName[]" value="@benchOfficials[i].Value("playerName")" /></td>
                                     <td>
                                         @{
-                                            var dob = players[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
+                                            var dob = benchOfficials[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
                                         }
-                                        <input type="text" class="form-control" name="DateOfBirth[]" placeholder="DD.MM.YYYY" value="@dob" />
+                                        <input type="text" class="form-control" name="BenchDateOfBirth[]" placeholder="DD.MM.YYYY" value="@dob" />
                                     </td>
                                     <td>
-                                        <select class="form-control" name="Nationality[]">
+                                        <select class="form-control" name="BenchNationality[]">
                                             <option value="">Nationality</option>
                                             @foreach (var country in countries)
                                             {
@@ -170,7 +170,7 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <select class="form-control" name="Gender[]">
+                                        <select class="form-control" name="BenchGender[]">
                                             <option value="Male" selected="@(benchOfficials[i].Value<string>("gender") == "Male")">Male</option>
                                             <option value="Female" selected="@(benchOfficials[i].Value<string>("gender") == "Female")">Female</option>
                                             <option value="" selected="@(string.IsNullOrWhiteSpace(benchOfficials[i].Value<string>("gender")))">Gender</option>
@@ -191,8 +191,8 @@
 
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-submit" role="tabpanel" aria-labelledby="v-pills-submit-tab">
-                    <button type="submit" onclick="validateForm()">Validate form</button>
-                    <button onclick="SaveAsDraft()">Submit</button>
+                    <button type="submit" onclick="validateForms()">Validate</button>
+                    <button onclick="SaveAsDraft()">Save Draft</button>
                     <button onclick="Submit()">Submit</button>
                     <div id="submissionErrors" class="alert alert-danger mb-3" role="alert">
                     </div>
@@ -210,6 +210,9 @@
 
     var deletedLicenseNumbers = [];
     var selectedRoles = [];
+    var allErrors = [];
+    var licenseNumbers = [];
+    var benchOfficialLicenseNumbers = []
 
     function deleteRow(button) {
         var row = button.parentNode.parentNode;
@@ -381,7 +384,7 @@
         var newRow = $('<tr></tr>');
         newRow.hide();
 
-        var inputs = ['License', 'Role', 'OfficialName', 'DateOfBirth', 'Nationality', 'Gender'];
+        var inputs = ['BenchLicense', 'BenchRole', 'BenchOfficialName', 'BenchDateOfBirth', 'BenchNationality', 'BenchGender'];
 
         var deleteButton = $('<button type="button" class="btn btn-danger"><i class="fas fa-trash"></i></button>');
         deleteButton.on('click', function () {
@@ -391,26 +394,26 @@
         $.each(inputs, function (index, input) {
             var inputContainer = $('<td></td>');
             var newInput;
-            if (input === 'Role' || input === 'Nationality' || input === 'Gender') {
+            if (input === 'BenchRole' || input === 'BenchNationality' || input === 'BenchGender') {
                 newInput = $('<select class="form-control"></select>');
                 // Add default option
                 newInput.append('<option value="">' + input + '</option>');
 
                 // Populate options dynamically
                 switch (input) {
-                    case 'Role':
+                    case 'BenchRole':
                         newInput.append('<option value="Captain">Captain</option>');
                         newInput.append('<option value="Assistant Captain">Assistant Captain</option>');
                         newInput.append('<option value="Netminder">Netminder</option>');
                         newInput.append('<option value="Player">Player</option>');
                         break;
-                    case 'Nationality':
+                    case 'BenchNationality':
                         // Assuming you have a list of countries in the 'countries' variable
                         $.each(countries, function (i, country) {
                             newInput.append('<option value="' + country.isO3 + '">' + country.country + '</option>');
                         });
                         break;
-                    case 'Gender':
+                    case 'BenchGender':
                         newInput.append('<option value="Male">Male</option>');
                         newInput.append('<option value="Female">Female</option>');
                         break;
@@ -423,22 +426,22 @@
 
             // Update the placeholder based on Umbraco form values
             switch (input) {
-                case 'License':
+                case 'BenchLicense':
                     newInput.attr('placeholder', input);
                     break;
-                case 'Role':
+                case 'BenchRole':
                     // You can set the options dynamically based on Umbraco form values if needed
                     break;
-                case 'OfficialName': // Adjusted for "Official Name"
+                case 'BenchOfficialName': // Adjusted for "Official Name"
                     newInput.attr('placeholder', "Official Name");
                     break;
-                case 'DateOfBirth':
+                case 'BenchDateOfBirth':
                     newInput.attr('placeholder', "DD.MM.YYYY");
                     break;
-                case 'Nationality':
+                case 'BenchNationality':
                     newInput.attr('placeholder', input);
                     break;
-                case 'Gender':
+                case 'BenchGender':
                     newInput.attr('placeholder', input);
                     break;
             }
@@ -458,7 +461,7 @@
         var errors = [];
         var rowCount = $('#formRows tr').length;
         console.log("row count = " + rowCount)
-        var licenseNumbers = [];
+        
         var jerseyNumbers = [];
 
         for (var i = 0; i < rowCount; i++) {
@@ -469,40 +472,118 @@
             var playerName = $('input[name="PlayerName[]"]').eq(i).val();
             var licenseNumber = $('input[name="License[]"]').eq(i).val();
             var jerseyNumber = $('input[name="JerseyNumber[]"]').eq(i).val();
-
-            // Check for duplicate license numbers
-            if (licenseNumber) {
-                if (licenseNumbers.includes(licenseNumber)) {
-                    rowErrors.push("Duplicate License Number with: " + findDuplicates(licenseNumber, licenseNumbers, i));
-                    isValid = false;
-                } else {
-                    licenseNumbers.push(licenseNumber);
-                }
-            }
-
-            // Check for duplicate jersey numbers
-            if (jerseyNumber) {
-                if (jerseyNumbers.includes(jerseyNumber)) {
-                    rowErrors.push("Duplicate Jersey Number with: " + findDuplicates(jerseyNumber, jerseyNumbers, i));
-                    isValid = false;
-                } else {
-                    jerseyNumbers.push(jerseyNumber);
-                }
-            }
+            licenseNumbers.push({
+                role: "License Numbers",
+                name: playerName,
+                license: licenseNumber
+            })
+            jerseyNumbers.push({
+                role: "License Numbers",
+                name: playerName,
+                jerseyNumber: jerseyNumber
+            });
+            playersAndOfficials.push({
+                role: "License Numbers",
+                name: playerName,
+                license: licenseNumber
+            })
 
             if (rowErrors.length > 0) {
                 isValid = false;
                 // Add class only to rows in the tbody, excluding the thead
                 $('#formRows tr').eq(i).addClass('table-danger');
-                errors.push({
-                    playerName: playerName,
-                    rowErrors: rowErrors
+
+                // Check for duplicate license and jersey numbers
+                var duplicateLicenseNumberError = findDuplicates(licenseNumber, licenseNumbers, i);
+                var duplicateJerseyNumberError = findDuplicates(jerseyNumber, jerseyNumbers, i);
+
+                // Combine all errors into a single array
+                var allRowErrors = rowErrors;
+
+                if (duplicateLicenseNumberError) {
+                    allRowErrors.push(duplicateLicenseNumberError);
+                }
+
+                if (duplicateJerseyNumberError) {
+                    allRowErrors.push(duplicateJerseyNumberError);
+                }
+
+                allErrors.push({
+                    role: "Roster Issues",
+                    name: playerName,
+                    rowErrors: allRowErrors
                 });
             }
         }
 
-        // Display validation errors
-        displayValidationErrors(errors);
+        console.log(licenseNumbers);
+        console.log(jerseyNumbers);
+
+        var jerseyNumberMap = {};
+        
+        jerseyNumbers.forEach(function (item) {
+            var jerseyNumber = item.jerseyNumber;
+
+            if (!jerseyNumberMap[jerseyNumber]) {
+                jerseyNumberMap[jerseyNumber] = [];
+            }
+
+            jerseyNumberMap[jerseyNumber].push(item.name);
+        });
+
+        for (var number in jerseyNumberMap) {
+            if (jerseyNumberMap.hasOwnProperty(number)) {
+                var names = jerseyNumberMap[number].filter(function (name) {
+                    return name.trim() !== ""; // Filter out empty names
+                });
+
+                if (names.length > 0) {
+                    console.log("Jersey Number: " + number + ", Names: " + names.join(", "));
+
+                    allErrors.push({
+                        role: "Duplicate jersey numbers",
+                        name: number,
+                        rowErrors: names
+                    });
+                }
+            }
+        }
+
+        var licenseNumberMap = {};
+        var duplicateLicenseNumbers = {};
+
+        licenseNumbers.forEach(function (item) {
+            var licenseNumber = item.license;
+            var name = item.name.trim(); // Trim to handle empty or whitespace-only names
+
+            if (name !== '' && licenseNumber !== '') {
+                if (!licenseNumberMap[licenseNumber]) {
+                    licenseNumberMap[licenseNumber] = [];
+                }
+
+                licenseNumberMap[licenseNumber].push(name);
+
+                if (licenseNumberMap[licenseNumber].length > 1) {
+                    duplicateLicenseNumbers[licenseNumber] = true;
+                }
+            }
+        });
+
+        for (var number in licenseNumberMap) {
+            if (licenseNumberMap.hasOwnProperty(number)) {
+                var names = licenseNumberMap[number];
+
+                if (names.length > 1 && duplicateLicenseNumbers[number]) {
+                    console.log("License Number: " + number + ", Names: " + names.join(", "));
+
+                    allErrors.push({
+                        role: "Duplicate license numbers",
+                        name: number,
+                        rowErrors: names
+                    });
+                }
+            }
+        }
 
         if (!isValid) {
             $("#submissionErrors").show();
@@ -513,13 +594,155 @@
         return isValid;
     }
 
-    function findDuplicates(value, array, currentIndex) {
-        var duplicates = [];
-        for (var i = 0; i < array.length; i++) {
-            if (i !== currentIndex && array[i] === value) {
-                duplicates.push($('input[name="PlayerName[]"]').eq(i).val());
+    function validateBenchOfficialsForm() {
+        var isValid = true;
+        var errors = [];
+        var rowCount = $('#formRowsBench tr').length;
+        console.log("Bench officials row count = " + rowCount);
+
+        for (var i = 0; i < rowCount; i++) {
+            $('#formRowsBench tr').eq(i).removeClass('table-danger');
+            var rowErrors = validateBenchOfficialsRow(i);
+            var officialName = $('input[name="BenchOfficialName[]"]').eq(i).val();
+            var licenseNumber = $('input[name="BenchLicense[]"]').eq(i).val();
+            // Check for duplicate license numbers
+            benchOfficialLicenseNumbers.push({
+                role: "Bench Official License",
+                name: officialName,
+                license: licenseNumber
+            })
+
+            if (rowErrors.length > 0) {
+                isValid = false;
+                // Add class only to rows in the tbody, excluding the thead
+                $('#formRowsBench tr').eq(i).addClass('table-danger');
+                allErrors.push({
+                    role : "Bench Issues",
+                    name: officialName,
+                    rowErrors: rowErrors
+                });
             }
         }
+
+        var licenseNumberMap = {};
+        var duplicateLicenseNumbers = {};
+
+        benchOfficialLicenseNumbers.forEach(function (item) {
+            var licenseNumber = item.license;
+            var name = item.name.trim(); // Trim to handle empty or whitespace-only names
+
+            if (name !== '' && licenseNumber !== '') {
+                if (!licenseNumberMap[licenseNumber]) {
+                    licenseNumberMap[licenseNumber] = [];
+                }
+
+                licenseNumberMap[licenseNumber].push(name);
+
+                if (licenseNumberMap[licenseNumber].length > 1) {
+                    duplicateLicenseNumbers[licenseNumber] = true;
+                }
+            }
+        });
+
+        for (var number in licenseNumberMap) {
+            if (licenseNumberMap.hasOwnProperty(number)) {
+                var names = licenseNumberMap[number];
+
+                if (names.length > 1 && duplicateLicenseNumbers[number]) {
+                    console.log("License Number: " + number + ", Names: " + names.join(", "));
+
+                    allErrors.push({
+                        role: "Duplicate license numbers",
+                        name: number,
+                        rowErrors: names
+                    });
+                }
+            }
+        }
+        
+        if (!isValid) {
+            $("#submissionErrors").show();
+        } else {
+            $("#submissionErrors").hide();
+        }
+
+        return isValid;
+    }
+        
+    function validateBenchOfficialsRow(index) {
+        var rowErrors = [];
+        var isEmptyRow = true;
+        var license = $('input[name="BenchLicense[]"]').eq(index).val();
+        var role = $('select[name="BenchRole[]"]').eq(index).val();
+        var nationality = $('select[name="BenchNationality[]"]').eq(index).val();
+        var gender = $('select[name="BenchGender[]"]').eq(index).val();
+        var officialName = $('input[name="BenchOfficialName[]"]').eq(index).val();
+        var dateOfBirth = $('input[name="BenchDateOfBirth[]"]').eq(index).val();
+
+        console.log(license);
+        console.log(role);
+        console.log(nationality);
+        console.log(gender);
+        console.log(officialName);
+        console.log(dateOfBirth);
+
+        // Check if all fields are empty
+        if (
+            (!license || license.trim() === "") &&
+            (!role || role === "") &&
+            (!officialName || officialName.trim() === "") &&
+            (!nationality || nationality === "") &&
+            (!gender || gender === "")
+        ) {
+            isEmptyRow = true;
+        } else {
+            isEmptyRow = false;
+
+            // Validate License (can be empty)
+            if (license && license.trim() !== "") {
+                // Add your additional license validation logic if needed
+            }
+
+            // Validate Role
+            if (!role || role === "") {
+                rowErrors.push("Role must have a selected value");
+            }
+
+            // Validate Official Name
+            if (!officialName || officialName.trim() === "") {
+                rowErrors.push("Official Name cannot be empty");
+            }
+
+            // Validate Nationality
+            if (!nationality || nationality === "") {
+                rowErrors.push("Nationality must have a selected value");
+            }
+
+            // Validate Gender
+            if (!gender || gender === "") {
+                rowErrors.push("Gender must have a selected value");
+            }
+        }
+
+        // If the row is empty, add an error message
+        if (isEmptyRow) {
+            rowErrors.push("Bench Official Row " + (index + 1) + " is empty.");
+        }
+
+        return rowErrors;
+    }
+
+    function findDuplicates(value, array, currentIndex, playerName) {
+        var duplicates = [];
+        var duplicateValues = [];
+
+        for (var i = 0; i < array.length; i++) {
+            if (i !== currentIndex && array[i] === value && !duplicateValues.includes(value)) {
+                duplicates.push(playerName);
+                duplicateValues.push(value);
+            }
+        }
+
         return duplicates.join(', ');
     }
 
@@ -617,9 +840,6 @@
             rowErrors.push("Player Row " + (index + 1) + " is empty.");
         }
 
-        // Display validation errors
-        displayValidationErrors(rowErrors);
-
         return rowErrors;
     }
 
@@ -637,26 +857,113 @@
             errorContainer.show();
             var errorList = $('<ul></ul>');
 
+            // Create a mapping to organize errors by role
+            var errorMap = {};
+
             for (var i = 0; i < errors.length; i++) {
-                if (errors[i] && errors[i].rowErrors && errors[i].rowErrors.length > 0) {
+                if (errors[i] && errors[i].role) {
+                    var role = errors[i].role;
                     var rowErrors = errors[i].rowErrors;
-                    var playerName = errors[i].playerName;
+                    var name = errors[i].name;
 
-                    var error = playerName + " - " + rowErrors.join(", ")
-
-                    if (playerName === "") {
-                        error = rowErrors.join(", ")
+                    // Create a new list for each role if it doesn't exist
+                    if (!errorMap[role]) {
+                        errorMap[role] = {
+                            roleList: $('<ul></ul>'),
+                            roleItem: $('<li></li>').text(role)
+                        };
                     }
 
-                    var listItem = $('<li></li>').text(error);
-                    errorList.append(listItem);
+                    var error = name !== "" ? `${name} - ${rowErrors.join(", ")}` : `${rowErrors.join(", ")}`;
+
+                    // Add the error information to the corresponding role list
+                    errorMap[role].roleList.append($('<li></li>').text(error));
                 }
             }
 
+            // Generate HTML for the nested list structure
+            for (var role in errorMap) {
+                errorMap[role].roleItem.append(errorMap[role].roleList);
+                errorList.append(errorMap[role].roleItem);
+            }
+
+            // Append the final error list to the container
             errorContainer.append(errorList);
         } else {
             errorContainer.hide();
         }
+    }
+
+    function validateForms() {
+        allErrors = [];
+        licenseNumbers = [];
+        benchOfficialLicenseNumbers = []
+        playersAndOfficials = []
+        validateBenchOfficialsForm();
+        validateForm();
+
+        var licenseRoleMap = {}; // Define licenseRoleMap here
+        var duplicateLicenseNumbers = {};
+
+        benchOfficialLicenseNumbers.forEach(function (item) {
+            var name = item.name.trim(); // Trim to handle empty or whitespace-only values
+            var licenseNumber = item.license.trim(); // Trim to handle empty or whitespace-only values
+
+            if (name !== "" && licenseNumber !== "") {
+                if (!licenseRoleMap[licenseNumber]) {
+                    licenseRoleMap[licenseNumber] = [];
+                }
+
+                licenseRoleMap[licenseNumber].push(item.role);
+
+                if (licenseRoleMap[licenseNumber].length > 1) {
+                    duplicateLicenseNumbers[licenseNumber] = {
+                        license: licenseNumber,
+                        name: name
+                    };
+                }
+            }
+        });
+
+        licenseNumbers.forEach(function (item) {
+            var name = item.name.trim(); // Trim to handle empty or whitespace-only values
+            var licenseNumber = item.license.trim(); // Trim to handle empty or whitespace-only values
+
+            if (name !== "" && licenseNumber !== "") {
+                if (!licenseRoleMap[licenseNumber]) {
+                    licenseRoleMap[licenseNumber] = [];
+                }
+
+                licenseRoleMap[licenseNumber].push(item.role);
+
+                if (licenseRoleMap[licenseNumber].length > 1) {
+                    duplicateLicenseNumbers[licenseNumber] = {
+                        license: licenseNumber,
+                        name: name
+                    };
+                }
+            }
+        });
+
+        // Display and log errors for duplicate license numbers
+        for (var licenseNumber in duplicateLicenseNumbers) {
+            if (duplicateLicenseNumbers.hasOwnProperty(licenseNumber)) {
+                var entry = duplicateLicenseNumbers[licenseNumber];
+                var names = licenseRoleMap[licenseNumber];
+
+                if (names && names.length > 1) {
+                    console.log("License Number: " + entry.license + ", Names: " + entry.name);
+
+                    allErrors.push({
+                        role: "ITC Members listed as both player and bench official",
+                        name: entry.license,
+                        rowErrors: [entry.name]
+                    });
+                }
+            }
+        }
+
+        displayValidationErrors(allErrors);
     }
 
     $(document).ready(function () {
