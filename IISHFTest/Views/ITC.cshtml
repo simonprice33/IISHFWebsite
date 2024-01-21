@@ -128,62 +128,62 @@
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-bench" role="tabpanel" aria-labelledby="v-pills-bench-tab">
                     <table id="benchOfficials" class="table table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
                         <thead>
-                        <tr>
-                            <th style="width: 150px">License</th>
-                            <th>Role</th>
-                            <th>Official Name</th>
-                            <th>Date of Birth</th>
-                            <th>Nationality</th>
-                            <th>Gender</th>
-                            <th></th>
-                        </tr>
+                            <tr>
+                                <th style="width: 150px">License</th>
+                                <th>Role</th>
+                                <th>Official Name</th>
+                                <th>Date of Birth</th>
+                                <th>Nationality</th>
+                                <th>Gender</th>
+                                <th></th>
+                            </tr>
                         </thead>
                         <tbody id="formRowsBench">
-                        @for (int i = 0; i < benchOfficials.Count(); i++)
-                        {
-                            <tr>
-                                <td><input type="text" class="form-control" name="License[]" value="@benchOfficials[i].Value("licenseNumber")" /></td>
-                                <td>
-                                    <select class="form-control" name="Role[]">
-                                        <option value="Captain" selected="@(benchOfficials[i].Value<string>("role") == "Captain")">Captain</option>
-                                        <option value="Assistant Captain" selected="@(benchOfficials[i].Value<string>("role") == "Assistant Captain")">Assistant Captain</option>
-                                        <option value="Netminder" selected="@(benchOfficials[i].Value<string>("role") == "Netminder")">Netminder</option>
-                                        <option value="Player" selected="@(benchOfficials[i].Value<string>("role") == "Player")">Player</option>
-                                        <option value="" selected="@(string.IsNullOrWhiteSpace(benchOfficials[i].Value<string>("role")))">Role</option>
-                                    </select>
-                                </td>
-                                <td><input type="text" class="form-control" name="PlayerName[]" value="@players[i].Value("playerName")" /></td>
-                                <td>
-                                    @{
-                                        var dob = players[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
-                                    }
-                                    <input type="text" class="form-control" name="DateOfBirth[]" placeholder="DD.MM.YYYY" value="@dob" />
-                                </td>
-                                <td>
-                                    <select class="form-control" name="Nationality[]">
-                                        <option value="">Nationality</option>
-                                        @foreach (var country in countries)
-                                        {
-                                            var isSelected = country.Country.Equals(benchOfficials[i].Value<string>("nationality"));
-                                            <option value="@country.ISO3" selected="@isSelected">@country.Country</option>
+                            @for (int i = 0; i < benchOfficials.Count(); i++)
+                            {
+                                <tr>
+                                    <td><input type="text" class="form-control" name="License[]" value="@benchOfficials[i].Value("licenseNumber")" /></td>
+                                    <td>
+                                        <select class="form-control" name="Role[]">
+                                            <option value="Captain" selected="@(benchOfficials[i].Value<string>("role") == "Captain")">Captain</option>
+                                            <option value="Assistant Captain" selected="@(benchOfficials[i].Value<string>("role") == "Assistant Captain")">Assistant Captain</option>
+                                            <option value="Netminder" selected="@(benchOfficials[i].Value<string>("role") == "Netminder")">Netminder</option>
+                                            <option value="Player" selected="@(benchOfficials[i].Value<string>("role") == "Player")">Player</option>
+                                            <option value="" selected="@(string.IsNullOrWhiteSpace(benchOfficials[i].Value<string>("role")))">Role</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" class="form-control" name="PlayerName[]" value="@players[i].Value("playerName")" /></td>
+                                    <td>
+                                        @{
+                                            var dob = players[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
                                         }
-                                    </select>
-                                </td>
-                                <td>
-                                    <select class="form-control" name="Gender[]">
-                                        <option value="Male" selected="@(benchOfficials[i].Value<string>("gender") == "Male")">Male</option>
-                                        <option value="Female" selected="@(benchOfficials[i].Value<string>("gender") == "Female")">Female</option>
-                                        <option value="" selected="@(string.IsNullOrWhiteSpace(benchOfficials[i].Value<string>("gender")))">Gender</option>
-                                    </select>
-                                </td>
-                                <button type="button" class="btn btn-danger" onclick="deleteRow(this)">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </tr>
-                        }
+                                        <input type="text" class="form-control" name="DateOfBirth[]" placeholder="DD.MM.YYYY" value="@dob" />
+                                    </td>
+                                    <td>
+                                        <select class="form-control" name="Nationality[]">
+                                            <option value="">Nationality</option>
+                                            @foreach (var country in countries)
+                                            {
+                                                var isSelected = country.Country.Equals(benchOfficials[i].Value<string>("nationality"));
+                                                <option value="@country.ISO3" selected="@isSelected">@country.Country</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select class="form-control" name="Gender[]">
+                                            <option value="Male" selected="@(benchOfficials[i].Value<string>("gender") == "Male")">Male</option>
+                                            <option value="Female" selected="@(benchOfficials[i].Value<string>("gender") == "Female")">Female</option>
+                                            <option value="" selected="@(string.IsNullOrWhiteSpace(benchOfficials[i].Value<string>("gender")))">Gender</option>
+                                        </select>
+                                    </td>
+                                    <button type="button" class="btn btn-danger" onclick="deleteRow(this)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </tr>
+                            }
                         </tbody>
                     </table>
-                    
+
                     <div id="addBenchOfficialButtonErrors" class="alert alert-danger" role="alert">
                         <h3>Cannot add more than 8 bench officials</h3>
                     </div>
@@ -195,12 +195,11 @@
                     <button onclick="SaveAsDraft()">Submit</button>
                     <button onclick="Submit()">Submit</button>
                     <div id="submissionErrors" class="alert alert-danger mb-3" role="alert">
-                        
                     </div>
                 </div>
             </div>
         </div>
-        
+
     </div>
 </div>
 
@@ -211,7 +210,7 @@
 
     var deletedLicenseNumbers = [];
     var selectedRoles = [];
-       
+
     function deleteRow(button) {
         var row = button.parentNode.parentNode;
         var licenseNumber = row.querySelector('input[name="License[]"]').value;
@@ -454,52 +453,46 @@
         formRowsBench.append(newRow);
     }
 
-    ////function validateForm() {
-
-    ////    var isValid = true;
-    ////    var errors = [];
-
-    ////    // Validate existing rows
-    ////    var rowCount = $('#formRows tr').length;
-    ////    for (var i = 0; i < rowCount; i++) {
-    ////        var rowErrors = validateRow(i);
-    ////        var playerName = $('input[name="PlayerName[]"]').eq(i).val();
-
-    ////        if (rowErrors.length > 0) {
-    ////            isValid = false;
-    ////            $('tr').eq(i).addClass('table-danger');
-    ////            errors.push({
-    ////                playerName: playerName,
-    ////                rowErrors: rowErrors
-    ////            });
-    ////        }
-    ////    }
-
-    ////    // Display validation errors
-    ////    displayValidationErrors(errors);
-    ////    if (!isValid) {
-    ////    // Slide down with a specific duration (e.g., 500 milliseconds)
-    ////    $("#submissionErrors").show();
-    ////  } else {
-    ////    $("#submissionErrors").hide();
-    ////  }
-    ////    return isValid;
-    ////}
-
     function validateForm() {
         var isValid = true;
         var errors = [];
-
-        // Validate existing rows
         var rowCount = $('#formRows tr').length;
+        console.log("row count = " + rowCount)
+        var licenseNumbers = [];
+        var jerseyNumbers = [];
 
         for (var i = 0; i < rowCount; i++) {
+
+            $('#formRows tr').eq(i).removeClass('table-danger');
+
             var rowErrors = validateRow(i);
             var playerName = $('input[name="PlayerName[]"]').eq(i).val();
-            debugger
+            var licenseNumber = $('input[name="License[]"]').eq(i).val();
+            var jerseyNumber = $('input[name="JerseyNumber[]"]').eq(i).val();
+
+            // Check for duplicate license numbers
+            if (licenseNumber) {
+                if (licenseNumbers.includes(licenseNumber)) {
+                    rowErrors.push("Duplicate License Number with: " + findDuplicates(licenseNumber, licenseNumbers, i));
+                    isValid = false;
+                } else {
+                    licenseNumbers.push(licenseNumber);
+                }
+            }
+
+            // Check for duplicate jersey numbers
+            if (jerseyNumber) {
+                if (jerseyNumbers.includes(jerseyNumber)) {
+                    rowErrors.push("Duplicate Jersey Number with: " + findDuplicates(jerseyNumber, jerseyNumbers, i));
+                    isValid = false;
+                } else {
+                    jerseyNumbers.push(jerseyNumber);
+                }
+            }
+
             if (rowErrors.length > 0) {
                 isValid = false;
-                // Add class to all rows, including the last one
+                // Add class only to rows in the tbody, excluding the thead
                 $('#formRows tr').eq(i).addClass('table-danger');
                 errors.push({
                     playerName: playerName,
@@ -510,13 +503,24 @@
 
         // Display validation errors
         displayValidationErrors(errors);
+
         if (!isValid) {
-            // Slide down with a specific duration (e.g., 500 milliseconds)
             $("#submissionErrors").show();
         } else {
             $("#submissionErrors").hide();
         }
+
         return isValid;
+    }
+
+    function findDuplicates(value, array, currentIndex) {
+        var duplicates = [];
+        for (var i = 0; i < array.length; i++) {
+            if (i !== currentIndex && array[i] === value) {
+                duplicates.push($('input[name="PlayerName[]"]').eq(i).val());
+            }
+        }
+        return duplicates.join(', ');
     }
 
     function validateRow(index) {
@@ -548,7 +552,6 @@
             (!dateOfBirth || !dateOfBirth.val() || dateOfBirth.val().trim() === "" || dateOfBirth.val().trim() === "01.01.0001")
         ) {
             isEmptyRow = true;
-            
 
         } else {
             isEmptyRow = false;
@@ -611,9 +614,8 @@
 
         // If the row is empty, add an error message
         if (isEmptyRow) {
-            rowErrors.push("Row " + (index + 1) + " is empty.");
+            rowErrors.push("Player Row " + (index + 1) + " is empty.");
         }
-               
 
         // Display validation errors
         displayValidationErrors(rowErrors);
@@ -640,7 +642,13 @@
                     var rowErrors = errors[i].rowErrors;
                     var playerName = errors[i].playerName;
 
-                    var listItem = $('<li></li>').text(playerName + " - " + rowErrors.join(", "));
+                    var error = playerName + " - " + rowErrors.join(", ")
+
+                    if (playerName === "") {
+                        error = rowErrors.join(", ")
+                    }
+
+                    var listItem = $('<li></li>').text(error);
                     errorList.append(listItem);
                 }
             }
@@ -650,7 +658,7 @@
             errorContainer.hide();
         }
     }
-   
+
     $(document).ready(function () {
         // Validate existing rows on page load
         validateAllLicenses();
@@ -692,8 +700,8 @@
         var minPlayers = 8;
         var currentOnRoster = $('#formRows tr').length;
         var rowCountToAdd = minPlayers - currentOnRoster;
-        if(rowCountToAdd > 0){
-            for(var i = 0; i < rowCountToAdd; i++){
+        if (rowCountToAdd > 0) {
+            for (var i = 0; i < rowCountToAdd; i++) {
                 addRowToPlayer();
             }
         }
@@ -718,7 +726,7 @@
             } else {
                 // Display an alert or perform other actions if needed
                 $("#addBenchOfficialButtonErrors").slideToggle()
-                setTimeout(function(){
+                setTimeout(function () {
                     $("#addBenchOfficialButtonErrors").slideToggle()
                 }, 2500)
             }
