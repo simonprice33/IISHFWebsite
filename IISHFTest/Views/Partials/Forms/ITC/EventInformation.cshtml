@@ -1,0 +1,31 @@
+﻿@using IISHFTest.Core.Controllers
+@using MailKit.Search
+@model IISHFTest.Core.Models.ITCEventInformationViewModel
+
+<div class="container container-custom mt-3">
+    
+    <div class="row">
+        <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+            <strong>Age Group</strong>
+            <p>@Model.AgeGroup</p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+            <strong>Start and End Date</strong>
+            <p class="">@Model.EventStartDate.ToString("dd.MM.yyyy") - @Model.EventEndDate.ToString("dd.MM.yyyy")</p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+            <strong>Hosting Club</strong>
+            <p>@Model.HostingClub</p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+            <strong>Event Location</strong>
+            <p>@Model.EvenLocation.Replace("\n", ", ")</p>
+        </div>
+    </div>
+</div>

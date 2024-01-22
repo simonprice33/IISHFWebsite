@@ -190,6 +190,49 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
             return PartialView("~/Views/Partials/Events/PlayerStatistics.cshtml", model);
         }
 
+        [HttpGet]
+        public IActionResult GetEventInformation(int id)
+        {
+            var rootContent = _contentQuery.ContentAtRoot().ToList();
+            var tournaments = rootContent
+                .FirstOrDefault(x => x.Name == "Home")!.Children()?
+                .FirstOrDefault(x => x.Name == "Tournaments")!.Children().ToList();
+
+            var cups = tournaments
+                .FirstOrDefault(x => x.Name == "European Cups")
+                .Children()
+                .Select(x => x.Children.FirstOrDefault(x => x.Name == "2024"))
+                .ToList();
+
+            var championships = tournaments
+                .FirstOrDefault(x => x.Name == "European Championships")
+                .Children()
+                .Select(x => x.Children.FirstOrDefault(x => x.Name == "2024"))
+                .ToList();
+
+            var selectedEvent = cups.Where(x => x != null).ToList().Concat(championships.Where(x => x != null).ToList())
+                .FirstOrDefault(x => x.Id == id);
+
+            if (selectedEvent == null)
+            {
+                return PartialView("~/Views/Partials/Forms/ITC/EventInformation.cshtml", new ITCEventInformationViewModel());
+            }
+
+            var model = new ITCEventInformationViewModel
+            {
+                EventName = selectedEvent.Parent.Name,
+                AgeGroup = selectedEvent.Parent.Value<string>("EventShotCode"),
+                EvenLocation = selectedEvent.Value<string>("venueAddress"),
+                EventStartDate = selectedEvent.Value<DateTime>("eventStartDate"),
+                EventEndDate = selectedEvent.Value<DateTime>("eventEndDate"),
+                HostingClub = selectedEvent.Value<string>("hostClub"),
+                SanctionNumber = selectedEvent.Value<string>("hostClub"),
+            };
+
+            return PartialView("~/Views/Partials/Forms/ITC/EventInformation.cshtml", model);
+
+        }
+
         private static List<IPublishedContent> FilterData(int year, string titleEvent, List<IPublishedContent> rootContent)
         {
             var eventTeams = rootContent.Where(x =>
