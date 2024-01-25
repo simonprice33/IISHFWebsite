@@ -11,7 +11,7 @@
 
 
     <!-- Bootstrap CSS -->
-    
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://s3-us-west-2.amazonaws.com/s.cdpn.io/123941/tablesaw.stackonly.css">
     <!-- jQuery (first) -->
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="/scripts/cookiealert.js"></script>
     <!-- Bootstrap JS (optional, if you need JavaScript features) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
     <script src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/tablesaw.stackonly.js"></script>
@@ -51,8 +51,16 @@
     <link rel="stylesheet" type="text/css" href="/css/slick-theme.css" />
     <link rel="stylesheet" type="text/css" href="/css/cookiealert.css" />
     <link rel="stylesheet" type="text/css" href="/css/screen.css" />
-    <link rel="stylesheet" type="text/css" href="/css/itc.css" />
     <link rel="stylesheet" href="/css/tables.css">
+    
+    @*Colour Picker*@
+    @{
+        var pickrStyleSheetUrl = "https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css";
+        var pickrScriptUrl = "https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js";
+    }
+
+    <link rel="stylesheet" href="@pickrStyleSheetUrl" />
+    <script src="@pickrScriptUrl"></script>
 
     @RenderSection("head", false)
 
@@ -74,7 +82,7 @@
                     <div>
                         We use cookies to improve your experience on our website. By browsing this website, you agree to our use of cookies. Read more about our Privacy Policy.
                     </div>
-                    
+
                 </div>
                 <div class="col-12 col-sm-12 col-md-12 col-lg-12">
                     <div>

@@ -8,6 +8,8 @@ namespace IISHFTest.Core.Models
 {
     public class ITCEventInformationViewModel
     {
+        public bool IsChampionship { get; set; }
+
         public string EventName { get; set; }
 
         public string EventDescription { get; set; }
@@ -26,5 +28,6 @@ namespace IISHFTest.Core.Models
 
         public string HostingClub{ get; set; }
 
+        public string ShortCode { get; set; }
     }
 }

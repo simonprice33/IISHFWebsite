@@ -20,3 +20,167 @@
 .is-empty-error {
     border: 1px solid red !important;
 }
+
+#colorPicker,
+.pcr-button {
+    border: 1px solid #ccc !important; /* Add a light grey border */
+    display: inline-block; /* Make the color picker inline */
+    vertical-align: middle; /* Align it vertically with the text box */
+    width: 40px; /* You can adjust the width */
+    height: 40px; /* Adjust the height as needed */
+    margin-right: 10px; /* Add some space between the picker and the text box */
+}
+
+#jerseyOneColour {
+    display: inline-block; /* Make the text box inline */
+    vertical-align: middle; /* Align it vertically with the color picker */
+    width: calc(100% - 60px); /* Adjust width to take into account the picker's width and margin */
+}
+
+.color-picker-container {
+    display: flex; /* Use flexbox to align items inline */
+    align-items: center; /* Center-align items vertically */
+}
+
+/* Custom styles for mobile view */
+@media (max-width: 992px) {
+    #players .table-responsive {
+        overflow-x: unset;
+        margin-bottom: 0;
+    }
+
+    #players table {
+        width: 100%;
+        border-collapse: collapse; /* Add this line */
+    }
+
+        #players table th,
+        #players table td {
+            display: block;
+            width: 100%;
+            text-align: left; /* Adjust alignment as needed */
+        }
+
+        #players table thead {
+            display: none; /* Hide table header on mobile */
+        }
+
+        #players table tbody tr {
+            margin-bottom: 1rem;
+            display: block;
+            border: 1px solid #ccc; /* Add a border to separate rows */
+            padding: 10px; /* Add padding for better spacing */
+        }
+
+        #players table td::before {
+            content: attr(data-label);
+            font-weight: bold;
+            display: inline-block;
+            width: 50%; /* Adjust width as needed */
+            margin-right: 10px;
+        }
+}
+
+
+@media (max-width: 767.98px) {
+    #players .table-responsive {
+        overflow-x: unset;
+        margin-bottom: 0;
+    }
+
+    #players table {
+        width: 100%;
+        border-collapse: collapse; /* Add this line */
+    }
+
+        #players table th,
+        #players table td {
+            display: block;
+            width: 100%;
+            text-align: left; /* Adjust alignment as needed */
+        }
+
+        #players table thead {
+            display: none; /* Hide table header on mobile */
+        }
+
+        #players table tbody tr {
+            margin-bottom: 1rem;
+            display: block;
+            border: 1px solid #ccc; /* Add a border to separate rows */
+            padding: 10px; /* Add padding for better spacing */
+        }
+
+        #players table td::before {
+            content: attr(data-label);
+            font-weight: bold;
+            display: inline-block;
+            width: 50%; /* Adjust width as needed */
+            margin-right: 10px;
+        }
+
+    /*.tablesaw-cell-label {
+        display: none;
+    }
+
+    .tablesaw-cell-label,
+    .tablesaw-cell-content label,
+    .tablesaw-cell-content input,
+    .tablesaw-cell-content select {
+        width: 100%;
+        display: block;
+        margin-bottom: 5px;*/ /* Add some spacing between fields */
+    /*}*/
+}
+
+@media (max-width: 480px) {
+    #players .table-responsive {
+        overflow-x: unset;
+        margin-bottom: 0;
+    }
+
+    #players table {
+        width: 100%;
+        border-collapse: collapse; /* Add this line */
+    }
+
+        #players table th,
+        #players table td {
+            display: block;
+            width: 100%;
+            text-align: left; /* Adjust alignment as needed */
+        }
+
+        #players table thead {
+            display: none; /* Hide table header on mobile */
+        }
+
+        #players table tbody tr {
+            margin-bottom: 1rem;
+            display: block;
+            border: 1px solid #ccc; /* Add a border to separate rows */
+            padding: 10px; /* Add padding for better spacing */
+        }
+
+        #players table td::before {
+            content: attr(data-label);
+            font-weight: bold;
+            display: inline-block;
+            width: 50%; /* Adjust width as needed */
+            margin-right: 10px;
+        }
+
+    .tablesaw-cell-label {
+        display: none !important;
+    }
+
+    .tablesaw-cell-label,
+    .tablesaw-cell-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        display: block;
+        margin-bottom: 5px; /* Add some spacing between fields */
+    }
+
+    ;
+}

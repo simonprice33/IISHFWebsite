@@ -215,18 +215,21 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
 
             if (selectedEvent == null)
             {
-                return PartialView("~/Views/Partials/Forms/ITC/EventInformation.cshtml", new ITCEventInformationViewModel());
+                return PartialView("~/Views/Partials/Forms/ITC/EventInformation.cshtml", null);
             }
 
             var model = new ITCEventInformationViewModel
             {
                 EventName = selectedEvent.Parent.Name,
-                AgeGroup = selectedEvent.Parent.Value<string>("EventShotCode"),
+                AgeGroup = selectedEvent.Parent.Value<string>("AgeGroup"),
+                ShortCode = selectedEvent.Parent.Value<string>("EventShotCode"),
                 EvenLocation = selectedEvent.Value<string>("venueAddress"),
                 EventStartDate = selectedEvent.Value<DateTime>("eventStartDate"),
                 EventEndDate = selectedEvent.Value<DateTime>("eventEndDate"),
                 HostingClub = selectedEvent.Value<string>("hostClub"),
-                SanctionNumber = selectedEvent.Value<string>("hostClub"),
+                HostingCountry = selectedEvent.Value<string>("hostCountry"),
+                SanctionNumber = selectedEvent.Value<string>("sanctionNumber"),
+                IsChampionship = false,
             };
 
             return PartialView("~/Views/Partials/Forms/ITC/EventInformation.cshtml", model);

@@ -1,8 +1,6 @@
 ﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.ITC>
 @using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
 @using System.Globalization
-@using System.Text.Json
-@using System.Text.Json.Serialization
 @using Umbraco.Cms.Core.Security
 @inject IMemberManager MemberManager
 @{
@@ -14,6 +12,8 @@
     var heroImageObj = Model.Value<IPublishedContent>("heroImage");
     var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
 
+    var eventYear = DateTime.Now.Year.ToString();
+
     var rootContent = Umbraco.ContentAtRoot().ToList();
     var tournaments = rootContent
         .FirstOrDefault(x => x.Name == "Home")!.Children()?
@@ -22,13 +22,13 @@
     var cups = tournaments
         .FirstOrDefault(x => x.Name == "European Cups")
         .Children()
-        .Select(x => x.Children.FirstOrDefault(x => x.Name == "2024"))
+        .Select(x => x.Children.FirstOrDefault(x => x.Name == eventYear))
         .ToList();
 
     var championships = tournaments
         .FirstOrDefault(x => x.Name == "European Championships")
         .Children()
-        .Select(x => x.Children.FirstOrDefault(x => x.Name == "2024"))
+        .Select(x => x.Children.FirstOrDefault(x => x.Name == eventYear))
         .ToList();
 
     var allEvents = cups.Where(x => x != null).ToList().Concat(championships.Where(x => x != null).ToList()).ToList().Select(x => new
@@ -61,6 +61,12 @@
         // Retrieve user details
         user = await MemberManager.GetCurrentMemberAsync();
     }
+
+    Guid.TryParse(Context.Request.Query["team"].ToString(), out var teamInformation);
+    if (teamInformation == Guid.Empty)
+    {
+        // build itc information from team information for event
+    }
 }
 
 <div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
@@ -91,11 +97,13 @@
                             }
                         }
                     </select>
-                    
+
                     <div id="eventInformation"></div>
                 </span>
-
-                <a class="nav-link mb-3 p-3 shadow active" id="v-pills-players-tab" data-bs-toggle="pill" href="#v-pills-players" role="tab" aria-controls="v-players-players" aria-selected="true">
+                <a class="nav-link mb-3 p-3 shadow active" id="v-pills-team-tab" data-bs-toggle="pill" href="#v-pills-team" role="tab" aria-controls="v-players-team" aria-selected="true">
+                    <span class="font-weight-bold small text-uppercase">Team Information</span>
+                </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-players-tab" data-bs-toggle="pill" href="#v-pills-players" role="tab" aria-controls="v-players-players" aria-selected="true">
                     <span class="font-weight-bold small text-uppercase">Players</span>
                 </a>
                 <a class="nav-link mb-3 p-3 shadow" id="v-pills-bench-tab" data-bs-toggle="pill" href="#v-pills-bench" role="tab" aria-controls="v-bench-bench" aria-selected="true">
@@ -110,70 +118,109 @@
         <div class="col-md-9">
             <!-- Tabs content -->
             <div class="tab-content" id="v-pills-tabContent">
-                <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-players" role="tabpanel" aria-labelledby="v-pills-players-tab">
-                    <table class="table table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
-                        <thead>
-                            <tr>
-                                <th style="width: 150px">License</th>
-                                <th>Role</th>
-                                <th>Player Name</th>
-                                <th style="width: 50px">Jersey Number</th>
-                                <th>Date of Birth</th>
-                                <th>Nationality</th>
-                                <th>Gender</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="formRows">
-                            @for (int i = 0; i < players.Count(); i++)
-                            {
+                <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-team" role="tabpanel" aria-labelledby="v-pills-team-tab">
+                    <div class="row form-group">
+                        <div class="col-12 col-md-10">
+                            <input type="text" class="form-control" placeholder="Team Name" id="teamName" />
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <div class="col-12 col-md-10">
+                            <input type="text" class="form-control" placeholder="Team Signatory" id="teamSignatory" />
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <div class="col-12 col-md-10">
+                            <input type="text" class="form-control" placeholder="Issuing Country" id="issuingCountry" />
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <label for="jerseyOneColour" class="col-12 col-md-2 col-form-label">First Jersey Colour:</label>
+                        <div class="col-12 col-md-8">
+                            <div id="colorPicker" class="color-picker-container"></div>
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <label for="jerseyTwoColour" class="col-12 col-sm-4 col-md-2 col-form-label">Second Jersey Colour:</label>
+                        <div class="col-12 col-md-10">
+                            <div id="colorPicker2" class="color-picker-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-players" role="tabpanel" aria-labelledby="v-pills-players-tab">
+                    <div class="table-responsive">
+                        <table id="data-table" class="table table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
+                            <thead>
                                 <tr>
-                                    <td><input type="text" class="form-control" name="License[]" value="@players[i].Value("licenseNumber")" /></td>
-                                    <td>
-                                        <select class="form-control" name="Role[]">
-                                            <option value="Captain" selected="@(players[i].Value<string>("role") == "Captain")">Captain</option>
-                                            <option value="Assistant Captain" selected="@(players[i].Value<string>("role") == "Assistant Captain")">Assistant Captain</option>
-                                            <option value="Netminder" selected="@(players[i].Value<string>("role") == "Netminder")">Netminder</option>
-                                            <option value="Player" selected="@(players[i].Value<string>("role") == "Player")">Player</option>
-                                            <option value="" selected="@(string.IsNullOrWhiteSpace(players[i].Value<string>("role")))">Role</option>
-                                        </select>
-                                    </td>
-                                    <td><input type="text" class="form-control" name="PlayerName[]" value="@players[i].Value("playerName")" /></td>
-                                    <td><input type="text" class="form-control" name="JerseyNumber[]" oninput="validateNumber(this)" value="@players[i].Value("jerseyNumber")" /></td>
-                                    <td>
-                                        @{
-                                            var dob = players[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
-                                        }
-                                        <input type="text" class="form-control" name="DateOfBirth[]" placeholder="DD.MM.YYYY" value="@dob" />
-                                    </td>
-                                    <td>
-                                        <select class="form-control" name="Nationality[]">
-                                            <option value="">Nationality</option>
-                                            @foreach (var country in countries)
-                                            {
-                                                var isSelected = country.Country.Equals(players[i].Value<string>("nationality"));
-                                                <option value="@country.ISO3" selected="@isSelected">@country.Country</option>
-                                            }
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-control" name="Gender[]">
-                                            <option value="Male" selected="@(players[i].Value<string>("gender") == "Male")">Male</option>
-                                            <option value="Female" selected="@(players[i].Value<string>("gender") == "Female")">Female</option>
-                                            <option value="" selected="@(string.IsNullOrWhiteSpace(players[i].Value<string>("gender")))">Gender</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <button type="button" class="btn btn-danger" onclick="deleteRow(this)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
+                                    <th style="width: 150px">License</th>
+                                    <th>Role</th>
+                                    <th>Player Name</th>
+                                    <th style="width: 50px">Jersey Number</th>
+                                    <th>Date of Birth</th>
+                                    <th>Nationality</th>
+                                    <th>Gender</th>
+                                    <th></th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
-                    @*Move these into their own tab*@
+                            </thead>
+                            <tbody id="formRows">
+                                @for (int i = 0; i < players.Count(); i++)
+                                {
+                                    <tr>
+                                        <td>
+                                            @*<input type="text" class="form-control" id="License" name="License[]" value="@players[i].Value("licenseNumber")" />*@
+                                            <span>@players[i].Value("licenseNumber")</span>
+                                        </td>
+                                        <td>
+
+                                            <span>@players[i].Value("role")</span>
+                                        </td>
+                                        <td>
+                                            
+                                            <span>@players[i].Value("playerName")</span>
+                                        </td>
+                                        <td>
+                                            <!-- Label and input for Jersey Number -->
+                                            @*<input type="text" class="form-control" id="JerseyNumber" name="JerseyNumber[]" oninput="validateNumber(this)" value="@players[i].Value("jerseyNumber")" />*@
+                                            <span>@players[i].Value("jerseyNumber")</span>
+                                        </td>
+                                        <td>
+                                            <!-- Label and input for Date of Birth -->
+                                            @{
+                                                var dob = players[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
+                                            }
+                                            @*<input type="text" class="form-control" id="DateOfBirth" name="DateOfBirth[]" placeholder="DD.MM.YYYY" value="@dob" />*@
+                                            <span>@dob</span>
+                                        </td>
+                                        <td>
+                                            <!-- Label and select for Nationality -->
+                                            @*<select class="form-control" id="Nationality" name="Nationality[]">
+                                        <option value="">Nationality</option>
+                                        @foreach (var country in countries)
+                                        {
+                                        var isSelected = country.Country.Equals(players[i].Value<string>("nationality"));
+                                        <option value="@country.ISO3" selected="@isSelected">@country.Country</option>
+                                        }
+                                        </select>*@
+                                            <span>@players[i].Value("nationality")</span>
+                                        </td>
+                                        <td>
+                                            
+                                            <span>@players[i].Value("gender")</span>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-danger" onclick="deleteRow(this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                     <button type="button" onclick="addRowToPlayer()">Add Row</button>
+                    <button type="submit" onclick="validateForms()">Validate</button>
+
                 </div>
 
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-bench" role="tabpanel" aria-labelledby="v-pills-bench-tab">
@@ -250,9 +297,78 @@
                 </div>
             </div>
         </div>
-
     </div>
 </div>
+
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">Edit Data</h5>
+                <button type="button" class="close close-edit" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- The form inside the modal -->
+                <form id="edit-form">
+                    <div class="form-group">
+                        <label for="license">License:</label>
+                        <input type="text" class="form-control" id="license" name="license">
+                    </div>
+                    <div class="form-group">
+                        <label for="role">Role:</label>
+                        <select class="form-control" id="role" name="role">
+                                                <option value="">Select Role</option>
+                                                <option value="Captain">Captain</option>
+                                                <option value="Assistant Captain">Assistant Captain</option>
+                                                <option value="Netminder">Netminder</option>
+                                                <!-- Add other role options here -->
+                                            </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="playerName">Name:</label>
+                        <input type="text" class="form-control" id="playerName" name="playerName">
+                    </div>
+                    <div class="form-group">
+                        <label for="jerseyNumber">Jersey Number:</label>
+                        <input type="text" class="form-control" id="jerseyNumber" name="jerseyNumber">
+                    </div>
+                    <div class="form-group">
+                        <label for="dateOfBirth">Date of Birth:</label>
+                        <input type="text" class="form-control" id="dateOfBirth" name="dateOfBirth">
+                    </div>
+                    <div class="form-group">
+                        <label for="nationality">Nationality:</label>
+                        <select class="form-control" id="nationality" name="nationality">
+                        <option value="">Nationality</option>
+                        @foreach (var country in countries)
+                        {
+                                <option value="@country.Country">@country.Country</option>
+                        }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="gender">Gender:</label>
+                        <!-- Label and select for Gender -->
+                        <select class="form-control" id="gender" name="gender">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <!-- Add other gender options here -->
+                        </select>
+                    </div>
+
+                    <!-- Add more input fields as necessary -->
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary close-edit" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveChanges">Update table</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <script>
 
@@ -264,6 +380,8 @@
     var allErrors = [];
     var licenseNumbers = [];
     var benchOfficialLicenseNumbers = []
+    var licenseNumbersEncountered = [];
+    var jerseyNumbersEncountered = [];
 
     function deleteRow(button) {
         var row = button.parentNode.parentNode;
@@ -339,304 +457,136 @@
         });
     }
 
-    function addRowToPlayer() {
-
-        var formRows = $('#formRows');
-        var newRow = $('<tr></tr>');
-        newRow.hide();
-
-        var inputs = ['License', 'Role', 'PlayerName', 'JerseyNumber', 'DateOfBirth', 'Nationality', 'Gender'];
-
-        var deleteButton = $('<button type="button" class="btn btn-danger"><i class="fas fa-trash"></i></button>');
-        deleteButton.on('click', function () {
-            deleteRow(this);
-        });
-
-        $.each(inputs, function (index, input) {
-            var inputContainer = $('<td></td>');
-            var newInput;
-            if (input === 'Role' || input === 'Nationality' || input === 'Gender') {
-                newInput = $('<select class="form-control"></select>');
-                // Add default option
-                newInput.append('<option selected="selected" value="">' + input + '</option>');
-
-                // Populate options dynamically
-                switch (input) {
-                    case 'Role':
-                        newInput.append('<option value="Captain">Captain</option>');
-                        newInput.append('<option value="Assistant Captain">Assistant Captain</option>');
-                        newInput.append('<option value="Netminder">Netminder</option>');
-                        newInput.append('<option value="Player">Player</option>');
-                        break;
-                    case 'Nationality':
-                        // Assuming you have a list of countries in the 'countries' variable
-                        $.each(countries, function (i, country) {
-                            newInput.append('<option value="' + country.isO3 + '">' + country.country + '</option>');
-                        });
-                        break;
-                    case 'Gender':
-                        newInput.append('<option value="Male">Male</option>');
-                        newInput.append('<option value="Female">Female</option>');
-                        break;
-                }
-            } else {
-                newInput = $('<input type="text" class="form-control">');
-            }
-
-            newInput.attr('name', input + '[]');
-
-            // Update the placeholder based on Umbraco form values
-            switch (input) {
-                case 'License':
-                    newInput.attr('placeholder', input);
-                    break;
-                case 'Role':
-                    // You can set the options dynamically based on Umbraco form values if needed
-                    break;
-                case 'PlayerName':
-                    newInput.attr('placeholder', "Player Name");
-                    break;
-                case 'JerseyNumber':
-                    newInput.attr('placeholder', "##");
-                    newInput.on('input', function () {
-                        validateAllJerseyNumbers();
-                    });
-                    // Attach blur event for jerseyNumber textboxes
-                    newInput.on('blur', function () {
-                        validateAllJerseyNumbers();
-                    });
-                    break;
-                case 'DateOfBirth':
-                    newInput.attr('placeholder', "DD.MM.YYYY");
-                    break;
-                case 'Nationality':
-                    newInput.attr('placeholder', input);
-                    break;
-                case 'Gender':
-                    newInput.attr('placeholder', input);
-                    break;
-            }
-
-
-            inputContainer.append(newInput);
-            newRow.append(inputContainer);
-
-        });
-        newRow.append($('<td></td>').append(deleteButton));
-
-        newRow.toggle(500);
-
-        formRows.append(newRow);
-    }
-
-    function addRowToBenchOfficial() {
-
-        var formRowsBench = $('#formRowsBench');
-        var newRow = $('<tr></tr>');
-        newRow.hide();
-
-        var inputs = ['BenchLicense', 'BenchRole', 'BenchOfficialName', 'BenchDateOfBirth', 'BenchNationality', 'BenchGender'];
-
-        var deleteButton = $('<button type="button" class="btn btn-danger"><i class="fas fa-trash"></i></button>');
-        deleteButton.on('click', function () {
-            deleteRow(this);
-        });
-
-        $.each(inputs, function (index, input) {
-            var inputContainer = $('<td></td>');
-            var newInput;
-            if (input === 'BenchRole' || input === 'BenchNationality' || input === 'BenchGender') {
-                newInput = $('<select class="form-control"></select>');
-                // Add default option
-                newInput.append('<option value="">' + input + '</option>');
-
-                // Populate options dynamically
-                switch (input) {
-                    case 'BenchRole':
-                        newInput.append('<option value="Captain">Captain</option>');
-                        newInput.append('<option value="Assistant Captain">Assistant Captain</option>');
-                        newInput.append('<option value="Netminder">Netminder</option>');
-                        newInput.append('<option value="Player">Player</option>');
-                        break;
-                    case 'BenchNationality':
-                        // Assuming you have a list of countries in the 'countries' variable
-                        $.each(countries, function (i, country) {
-                            newInput.append('<option value="' + country.isO3 + '">' + country.country + '</option>');
-                        });
-                        break;
-                    case 'BenchGender':
-                        newInput.append('<option value="Male">Male</option>');
-                        newInput.append('<option value="Female">Female</option>');
-                        break;
-                }
-            } else {
-                newInput = $('<input type="text" class="form-control">');
-            }
-
-            newInput.attr('name', input + '[]');
-
-            // Update the placeholder based on Umbraco form values
-            switch (input) {
-                case 'BenchLicense':
-                    newInput.attr('placeholder', input);
-                    break;
-                case 'BenchRole':
-                    // You can set the options dynamically based on Umbraco form values if needed
-                    break;
-                case 'BenchOfficialName': // Adjusted for "Official Name"
-                    newInput.attr('placeholder', "Official Name");
-                    break;
-                case 'BenchDateOfBirth':
-                    newInput.attr('placeholder', "DD.MM.YYYY");
-                    break;
-                case 'BenchNationality':
-                    newInput.attr('placeholder', input);
-                    break;
-                case 'BenchGender':
-                    newInput.attr('placeholder', input);
-                    break;
-            }
-
-            inputContainer.append(newInput);
-            newRow.append(inputContainer);
-
-        });
-        newRow.append($('<td></td>').append(deleteButton));
-        newRow.toggle(500);
-
-        formRowsBench.append(newRow);
-    }
-
     function validateForm() {
         var isValid = true;
-        var errors = [];
-        var rowCount = $('#formRows tr').length;
+        var captains = [];
+        var assistantCaptains = [];
 
-        var jerseyNumbers = [];
+        // Clear any previous error indicators
+        $('#formRows tr').removeClass('table-danger');
+        $('#submissionErrors').empty().hide();
 
-        for (var i = 0; i < rowCount; i++) {
+        // Reset the encountered numbers before validation
+        licenseNumbersEncountered = [];
+        jerseyNumbersEncountered = [];
 
-            $('#formRows tr').eq(i).removeClass('table-danger');
+        // First, collect all license and jersey numbers and roles
+        $('#formRows tr').each(function (index, row) {
+            var currentRow = $(row);
+            var licenseNumber = currentRow.find("td:eq(0) span span").text().trim();
+            var jerseyNumber = currentRow.find("td:eq(3) span span").text().trim();
+            var role = currentRow.find("td:eq(1) span span").text().trim();
 
-            var rowErrors = validateRow(i);
-            var playerName = $('input[name="PlayerName[]"]').eq(i).val();
-            var licenseNumber = $('input[name="License[]"]').eq(i).val();
-            var jerseyNumber = $('input[name="JerseyNumber[]"]').eq(i).val();
-            licenseNumbers.push({
-                role: "License Numbers",
-                name: playerName,
-                license: licenseNumber
-            })
-            jerseyNumbers.push({
-                role: "License Numbers",
-                name: playerName,
-                jerseyNumber: jerseyNumber
-            });
-            playersAndOfficials.push({
-                role: "License Numbers",
-                name: playerName,
-                license: licenseNumber
-            })
+            if (licenseNumber) {
+                licenseNumbersEncountered.push({ number: licenseNumber, index: index });
+            }
+            if (jerseyNumber) {
+                jerseyNumbersEncountered.push({ number: jerseyNumber, index: index });
+            }
 
+            // Collect roles
+            if (role === 'Captain') {
+                captains.push(index);
+            } else if (role === 'Assistant Captain') {
+                assistantCaptains.push(index);
+            }
+        });
+
+        // Check for duplicates
+        var duplicateLicenseNumbers = findDuplicates(licenseNumbersEncountered);
+        var duplicateJerseyNumbers = findDuplicates(jerseyNumbersEncountered);
+
+        // Check if there are more than one Captain or Assistant Captain
+        var isDuplicateCaptain = captains.length > 1;
+        var isDuplicateAssistantCaptain = assistantCaptains.length > 1;
+
+        // Now validate each row
+        $('#formRows tr').each(function (index, row) {
+            var currentRow = $(row);
+            var licenseNumber = currentRow.find("td:eq(0) span span").text().trim();
+            var role = currentRow.find("td:eq(1) span span").text().trim();
+            var playerName = currentRow.find("td:eq(2) span span").text().trim();
+            var jerseyNumber = currentRow.find("td:eq(3) span span").text().trim();
+            var dateOfBirth = currentRow.find("td:eq(4) span span").text().trim();
+            var nationality = currentRow.find("td:eq(5) span span").text().trim();
+            var gender = currentRow.find("td:eq(6) span span").text().trim();
+            var rowErrors = validateRow(licenseNumber, jerseyNumber, playerName, role, dateOfBirth, nationality, gender, index);
+
+            // Add errors for duplicates
+            if (duplicateLicenseNumbers.has(licenseNumber)) {
+                rowErrors.push('Duplicate license number: ' + licenseNumber);
+            }
+            if (duplicateJerseyNumbers.has(jerseyNumber)) {
+                rowErrors.push('Duplicate jersey number: ' + jerseyNumber);
+            }
+
+            // Add errors for duplicate roles
+            if (role === 'Captain' && isDuplicateCaptain) {
+                rowErrors.push('There can only be one Captain');
+            }
+            if (role === 'Assistant Captain' && isDuplicateAssistantCaptain) {
+                rowErrors.push('There can only be one Assistant Captain');
+            }
+
+            // Highlight the row if there are errors
             if (rowErrors.length > 0) {
                 isValid = false;
-                // Add class only to rows in the tbody, excluding the thead
-                $('#formRows tr').eq(i).addClass('table-danger');
-
-                // Check for duplicate license and jersey numbers
-                var duplicateLicenseNumberError = findDuplicates(licenseNumber, licenseNumbers, i);
-                var duplicateJerseyNumberError = findDuplicates(jerseyNumber, jerseyNumbers, i);
-
-                // Combine all errors into a single array
-                var allRowErrors = rowErrors;
-
-                if (duplicateLicenseNumberError) {
-                    allRowErrors.push(duplicateLicenseNumberError);
-                }
-
-                if (duplicateJerseyNumberError) {
-                    allRowErrors.push(duplicateJerseyNumberError);
-                }
-
+                currentRow.addClass('table-danger');
                 allErrors.push({
-                    role: "Roster Issues",
+                    row: index + 1,
                     name: playerName,
-                    rowErrors: allRowErrors
+                    errors: rowErrors
                 });
             }
-        }
-
-        var jerseyNumberMap = {};
-
-        jerseyNumbers.forEach(function (item) {
-            var jerseyNumber = item.jerseyNumber;
-
-            if (!jerseyNumberMap[jerseyNumber]) {
-                jerseyNumberMap[jerseyNumber] = [];
-            }
-
-            jerseyNumberMap[jerseyNumber].push(item.name);
         });
-
-        for (var number in jerseyNumberMap) {
-            if (jerseyNumberMap.hasOwnProperty(number)) {
-                var names = jerseyNumberMap[number].filter(function (name) {
-                    return name.trim() !== ""; // Filter out empty names
-                });
-
-                if (names.length > 0) {
-
-                    allErrors.push({
-                        role: "Duplicate jersey numbers",
-                        name: number,
-                        rowErrors: names
-                    });
-                }
-            }
-        }
-
-        var licenseNumberMap = {};
-        var duplicateLicenseNumbers = {};
-
-        licenseNumbers.forEach(function (item) {
-            var licenseNumber = item.license;
-            var name = item.name.trim(); // Trim to handle empty or whitespace-only names
-
-            if (name !== '' && licenseNumber !== '') {
-                if (!licenseNumberMap[licenseNumber]) {
-                    licenseNumberMap[licenseNumber] = [];
-                }
-
-                licenseNumberMap[licenseNumber].push(name);
-
-                if (licenseNumberMap[licenseNumber].length > 1) {
-                    duplicateLicenseNumbers[licenseNumber] = true;
-                }
-            }
-        });
-
-        for (var number in licenseNumberMap) {
-            if (licenseNumberMap.hasOwnProperty(number)) {
-                var names = licenseNumberMap[number];
-
-                if (names.length > 1 && duplicateLicenseNumbers[number]) {
-
-                    allErrors.push({
-                        role: "Duplicate license numbers",
-                        name: number,
-                        rowErrors: names
-                    });
-                }
-            }
-        }
-
-        if (!isValid) {
-            $("#submissionErrors").show();
-        } else {
-            $("#submissionErrors").hide();
-        }
 
         return isValid;
+    }
+
+    function validateRow(licenseNumber, jerseyNumber, playerName, role, dateOfBirth, nationality, gender, rowIndex) {
+        var errors = [];
+        if (!licenseNumber || isNaN(parseInt(licenseNumber))) {
+            errors.push('Invalid license number at row ' + (rowIndex + 1));
+        }
+        if (!jerseyNumber || isNaN(parseInt(jerseyNumber))) {
+            errors.push('Invalid jersey number at row ' + (rowIndex + 1));
+        }
+
+        if (!playerName || playerName === "") {
+            errors.push('Player name is required');
+        }
+
+        if (!dateOfBirth || dateOfBirth === "" || dateOfBirth === "01.01.0001") {
+            errors.push('Date of birth is requried');
+        }
+
+        if (!nationality || nationality === "") {
+            errors.push('Nationality is requried');
+        }
+
+        if (!role || role === "") {
+            errors.push('Roster member role is requried');
+        }
+
+        if (!gender || gender === "") {
+            errors.push('Roster member gender is requried');
+        }
+
+        return errors;
+    }
+
+    function findDuplicates(numbers) {
+        var seen = new Set();
+        var duplicates = new Set();
+
+        numbers.forEach(item => {
+            if (seen.has(item.number)) {
+                duplicates.add(item.number);
+            }
+            seen.add(item.number);
+        });
+
+        return duplicates;
     }
 
     function validateBenchOfficialsForm() {
@@ -766,117 +716,7 @@
         }
 
         return rowErrors;
-    }
-
-    function findDuplicates(value, array, currentIndex, playerName) {
-        var duplicates = [];
-        var duplicateValues = [];
-
-        for (var i = 0; i < array.length; i++) {
-            if (i !== currentIndex && array[i] === value && !duplicateValues.includes(value)) {
-                duplicates.push(playerName);
-                duplicateValues.push(value);
-            }
-        }
-
-        return duplicates.join(', ');
-    }
-
-    function validateRow(index) {
-        var rowErrors = [];
-        var isEmptyRow = true;
-        var license = $('input[name="License[]"]').eq(index);
-        var jerseyNumber = $('input[name="JerseyNumber[]"]').eq(index);
-        var role = $('select[name="Role[]"]').eq(index);
-        var nationality = $('select[name="Nationality[]"]').eq(index);
-        var gender = $('select[name="Gender[]"]').eq(index);
-        var playerName = $('input[name="PlayerName[]"]').eq(index);
-        var dateOfBirth = $('input[name="DateOfBirth[]"]').eq(index);
-
-        // Check if all fields are empty
-        if (
-            (!license || !license.val() || license.val().trim() === "") &&
-            (!jerseyNumber || !jerseyNumber.val() || jerseyNumber.val().trim() === "") &&
-            (!role || !role.val() || role.val() === "") &&
-            (!nationality || !nationality.val() || nationality.val() === "") &&
-            (!gender || !gender.val() || gender.val() === "") &&
-            (!playerName || !playerName.val() || playerName.val().trim() === "") &&
-            (!dateOfBirth || !dateOfBirth.val() || dateOfBirth.val().trim() === "" || dateOfBirth.val().trim() === "01.01.0001")
-        ) {
-            isEmptyRow = true;
-
-        } else {
-            isEmptyRow = false;
-
-            // Validate License
-            if (!license || license.val().trim() === "") {
-                rowErrors.push("License Number cannot be empty");
-                if (license) {
-                    license.addClass('is-duplicate');
-                }
-            }
-
-            // Validate Jersey Number
-            if (!jerseyNumber || jerseyNumber.val().trim() === "") {
-                rowErrors.push("Jersey Number cannot be empty");
-                if (jerseyNumber) {
-                    jerseyNumber.addClass('is-duplicate');
-                }
-            }
-
-            // Validate Role
-            if (!role || role.val() === "") {
-                rowErrors.push("Role must have a selected value");
-                if (role) {
-                    role.addClass('is-duplicate-role');
-                }
-            }
-
-            // Validate Nationality
-            if (!nationality || nationality.val() === "") {
-                rowErrors.push("Nationality must have a selected value");
-                if (nationality) {
-                    nationality.addClass('is-duplicate');
-                }
-            }
-
-            if (!gender || gender.val() === "") {
-                rowErrors.push("Gender must have a selected value");
-                if (gender) {
-                    gender.addClass('is-duplicate-role');
-                }
-            }
-
-            // Validate Player Name
-            if (!playerName || playerName.val().trim() === "") {
-                rowErrors.push("Player Name cannot be empty");
-                if (playerName) {
-                    playerName.addClass('is-duplicate');
-                }
-            }
-
-            // Validate Date of Birth
-            if (!dateOfBirth || dateOfBirth.val().trim() === "" || dateOfBirth.val().trim() === "01.01.0001") {
-                rowErrors.push("Date of Birth cannot be empty or equal to 01.01.0001");
-                if (dateOfBirth) {
-                    dateOfBirth.addClass('is-duplicate');
-                }
-            }
-        }
-
-        // If the row is empty, add an error message
-        if (isEmptyRow) {
-            rowErrors.push("Player Row " + (index + 1) + " is empty.");
-        }
-
-        return rowErrors;
-    }
-
-    function removeValidationHighlight(elements) {
-        elements.forEach(function (element) {
-            element.removeClass('is-duplicate is-duplicate-role');
-        });
-    }
+    }    
 
     function displayValidationErrors(errors) {
         var errorContainer = $('#submissionErrors');
@@ -886,37 +726,13 @@
             errorContainer.show();
             var errorList = $('<ul></ul>');
 
-            // Create a mapping to organize errors by role
-            var errorMap = {};
-
             for (var i = 0; i < errors.length; i++) {
-                if (errors[i] && errors[i].role) {
-                    var role = errors[i].role;
-                    var rowErrors = errors[i].rowErrors;
-                    var name = errors[i].name;
-
-                    // Create a new list for each role if it doesn't exist
-                    if (!errorMap[role]) {
-                        errorMap[role] = {
-                            roleList: $('<ul></ul>'),
-                            roleItem: $('<li></li>').text(role)
-                        };
-                    }
-
-                    var error = name !== "" ? `${name} - ${rowErrors.join(", ")}` : `${rowErrors.join(", ")}`;
-
-                    // Add the error information to the corresponding role list
-                    errorMap[role].roleList.append($('<li></li>').text(error));
+                if (errors[i]) {
+                    var errorText = errors[i].name +': ' + errors[i].errors.join(', ');
+                    errorList.append($('<li></li>').text(errorText));
                 }
             }
 
-            // Generate HTML for the nested list structure
-            for (var role in errorMap) {
-                errorMap[role].roleItem.append(errorMap[role].roleList);
-                errorList.append(errorMap[role].roleItem);
-            }
-
-            // Append the final error list to the container
             errorContainer.append(errorList);
         } else {
             errorContainer.hide();
@@ -934,7 +750,7 @@
         var licenseRoleMap = {}; // Define licenseRoleMap here
         var duplicateLicenseNumbers = {};
 
-        benchOfficialLicenseNumbers.forEach(function (item) {
+       @* benchOfficialLicenseNumbers.forEach(function (item) {
             var name = item.name.trim(); // Trim to handle empty or whitespace-only values
             var licenseNumber = item.license.trim(); // Trim to handle empty or whitespace-only values
 
@@ -989,25 +805,23 @@
                     });
                 }
             }
-        }
+        }*@
 
         displayValidationErrors(allErrors);
     }
 
     function saveAsDraft() {
-
         var json = generateJson();
         console.log(JSON.stringify(json));
-
     }
 
     function generateJson() {
         var formData = {
-            ////"EventYear": document.getElementById('eventYear').value, // Assuming you have an input for EventYear
-            ////"TitleEvent": document.getElementById('titleEvent').value, // Assuming you have an input for TitleEvent
-            ////"IsChampionship": document.getElementById('isChampionship').checked, // Assuming you have a checkbox for IsChampionship
+            "EventYear": @eventYear, // Assuming you have an input for EventYear
+            "TitleEvent": document.getElementById('shortCode').value, // Assuming you have an input for TitleEvent
+            "isChampionship": document.getElementById('isChampionship').checked, // Assuming you have a checkbox for IsChampionship
             "ItcRosterMembers": [],
-            ////"TeamName": document.getElementById('teamName').value // Assuming you have an input for TeamName
+            "TeamName": document.getElementById('teamName').value // Assuming you have an input for TeamName
         };
 
         var processRow = function (row, isBench) {
@@ -1042,8 +856,82 @@
         return formData;
     }
 
-
     $(document).ready(function () {
+
+        var currentRow = null;
+
+        $("#data-table tbody tr").on("click", function () {
+            // Get the current row
+            currentRow = $(this);
+
+            // Extract the data from the first visible span within the cells
+            var license = currentRow.find("td:eq(0) span:visible:first").text().trim();
+            var role = currentRow.find("td:eq(1) span:visible:first").text().trim();
+            var playerName = currentRow.find("td:eq(2) span:visible:first").text().trim();
+            var jerseyNumber = currentRow.find("td:eq(3) span:visible:first").text().trim();
+            var dateOfBirth = currentRow.find("td:eq(4) span:visible:first").text().trim();
+            var nationality = currentRow.find("td:eq(5) span:visible:first").text().trim();
+            var gender = currentRow.find("td:eq(6) span:visible:first").text().trim();
+
+            // Populate the modal fields
+            $('#edit-form #license').val(license);
+            $('#edit-form #role').val(role).prop('selected', true);
+            $('#edit-form #playerName').val(playerName);
+            $('#edit-form #jerseyNumber').val(jerseyNumber);
+            $('#edit-form #dateOfBirth').val(dateOfBirth);
+            $('#edit-form #nationality').val(nationality).prop('selected', true);
+            $('#edit-form #gender').val(gender).prop('selected', true);
+
+            // Show the modal
+            $('#editModal').modal('show');
+        });
+
+        $("#saveChanges").on("click", function () {
+            // Retrieve values from the modal's form
+            var license = $('#edit-form #license').val();
+            var role = $('#edit-form #role option:selected').text();
+            var playerName = $('#edit-form #playerName').val();
+            var jerseyNumber = $('#edit-form #jerseyNumber').val();
+            var dateOfBirth = $('#edit-form #dateOfBirth').val();
+            var nationality = $('#edit-form #nationality option:selected').text();
+            var gender = $('#edit-form #gender option:selected').text();
+
+            // Update the selected row's cells with new values
+            currentRow.find("td:eq(0) span span").text(license);
+            currentRow.find("td:eq(1) span span").text(role);
+            currentRow.find("td:eq(2) span span").text(playerName);
+            currentRow.find("td:eq(3) span span").text(jerseyNumber);
+            currentRow.find("td:eq(4) span span").text(dateOfBirth);
+            currentRow.find("td:eq(5) span span").text(nationality);
+            currentRow.find("td:eq(6) span span").text(gender);
+
+            // Hide the modal
+            $('#editModal').modal('hide');
+        });
+
+
+        // Handle the save button click
+        $(".close-edit").on("click", function () {
+            // TODO: Add code to handle the form data, e.g., send an AJAX request
+            $('#editModal').modal('hide');
+        });
+
+        // When the user clicks anywhere outside of the modal, close it
+        $(window).on("click", function (event) {
+            var modal = $("#edit-modal");
+            if ($(event.target).is(modal)) {
+                modal.hide();
+            }
+        });
+
+        // Handle the form submission
+        $("#edit-form").on("submit", function (event) {
+            event.preventDefault();
+            // TODO: Add code to handle the form data, e.g., send an AJAX request
+
+            $("#edit-modal").hide();
+        });
+
         // Validate existing rows on page load
         validateAllLicenses();
         validateAllJerseyNumbers();
@@ -1077,49 +965,86 @@
             nationalityDropdown.append(option);
         }
 
-        var minPlayers = 8;
-        var currentOnRoster = $('#formRows tr').length;
-        var rowCountToAdd = minPlayers - currentOnRoster;
-        if (rowCountToAdd > 0) {
-            for (var i = 0; i < rowCountToAdd; i++) {
-                addRowToPlayer();
-            }
-        }
-
-        if ($('#formRowsBench tr').length === 0) {
-            addRowToBenchOfficial();
-        }
-
-        $('#addPlayerButton').on('click', function () {
-            if ($('#formRows tr').length > 30) {
-                addRowToPlayer();
-            } else {
-                // Display an alert or perform other actions if needed
-                alert('Cannot add more than 30 rows to Players table.');
-            }
-        });
-
-        $('#addBenchOfficialButton').on('click', function () {
-            if ($('#formRowsBench tr').length < 8) {
-                addRowToBenchOfficial();
-            } else {
-                // Display an alert or perform other actions if needed
-                $("#addBenchOfficialButtonErrors").slideToggle()
-                setTimeout(function () {
-                    $("#addBenchOfficialButtonErrors").slideToggle()
-                }, 2500)
-            }
-        });
-
         $("#addBenchOfficialButtonErrors").hide()
 
         $('#eventSelect').on('change', function () {
             var selectedValue = $(this).val();
             $.get('/umbraco/surface/events/GetEventInformation', { id: selectedValue }, function (data) {
-                debugger;
                 $('#eventInformation').html(data);
             });
         });
 
     });
+
+    // Create the Pickr instance
+    const pickr = Pickr.create({
+        el: '#colorPicker',
+        theme: 'classic', // or 'monolith', or 'nano'
+
+        swatches: [
+            'rgba(244, 67, 54, 1)',
+            'rgba(233, 30, 99, 0.95)',
+            // ... more colors
+        ],
+
+        components: {
+            // Main components
+            preview: true,
+            opacity: true,
+            hue: true,
+
+            // Input / output Options
+            interaction: {
+                hex: true,
+                rgba: true,
+                hsla: false,
+                hsva: false,
+                cmyk: false,
+                input: true,
+                clear: true,
+                save: true
+            }
+        }
+    });
+
+    const pickr2 = Pickr.create({
+        el: '#colorPicker2',
+        theme: 'classic', // or 'monolith', or 'nano'
+
+        swatches: [
+            'rgba(244, 67, 54, 1)',
+            'rgba(233, 30, 99, 0.95)',
+            // ... more colors
+        ],
+
+        components: {
+            // Main components
+            preview: true,
+            opacity: false,
+            hue: true,
+
+            // Input / output Options
+            interaction: {
+                hex: true,
+                rgba: true,
+                hsla: false,
+                hsva: false,
+                cmyk: false,
+                input: true,
+                clear: true,
+                save: true
+            }
+        },
+        strings: {
+            save: 'Apply', // Change the text for the save button to 'Apply'
+            // ... other string customizations ...
+        }
+    });
+
+    // Add event listener for color change
+    pickr.on('change', (color, instance) => {
+        console.log('Selected color:', color.toRGBA().toString());
+        // Perform your action with the color value
+    });
+
 </script>
