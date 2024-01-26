@@ -373,7 +373,6 @@
     var currentMode = 'add';
     var currentRow = null;
 
-
     function deleteRow(button) {
         // Find the row containing the clicked button
         var row = $(button).closest('tr');
@@ -389,7 +388,6 @@
             deletedLicenseNumbers.push(licenseNumber);
         }
     }
-
 
     function validateAllLicenses() {
         var licenseInputs = $('input[name^="License"]');
@@ -822,20 +820,6 @@
         row.find("td:eq(6) .tablesaw-cell-content span").text($('#edit-form #gender').val());
     }
 
-    ////function addNewRowFromModal() {
-    ////    //var newRowHtml = '<tr>' +
-    ////    //    '<td><span>' + $('#edit-form #license').val() + '</span></td>' +
-    ////    //    '<td><span>' + $('#edit-form #role').val() + '</span></td>' +
-    ////    //    '<td><span>' + $('#edit-form #playerName').val() + '</span></td>' +
-    ////    //    '<td><span>' + $('#edit-form #jerseyNumber').val() + '</span></td>' +
-    ////    //    '<td><span>' + $('#edit-form #dateOfBirth').val() + '</span></td>' +
-    ////    //    '<td><span>' + $('#edit-form #nationality').val() + '</span></td>' +
-    ////    //    '<td><span>' + $('#edit-form #gender').val() + '</span></td>' +
-    ////    //    '<td><button type="button" class="btn btn-danger delete-btn" onclick="event.stopPropagation(); deleteRow(this);"><i class="fas fa-trash"></i></button></td>' +
-    ////    //    '</tr>';
-    ////    //$('#data-table tbody').append(newRowHtml);
-    ////}
-
     function addNewRowFromModal() {
         var newRowHtml = '<tr>' +
             '<td><b class="tablesaw-cell-label">License</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #license').val() + '</span></span></td>' +
@@ -850,11 +834,9 @@
         $('#data-table tbody').append(newRowHtml);
     }
 
-
     $(document).ready(function () {
 
         var currentRow = null;
-
 
         $('#data-table').on('click', '.btn-danger', function (event) {
             event.stopPropagation(); // Prevent click event from bubbling up to the row
