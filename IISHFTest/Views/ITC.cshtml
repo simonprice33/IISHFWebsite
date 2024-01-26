@@ -227,44 +227,33 @@
                             @for (int i = 0; i < benchOfficials.Count(); i++)
                             {
                                 <tr>
-                                    <td><input type="text" class="form-control" name="BenchLicense[]" value="@benchOfficials[i].Value("licenseNumber")" /></td>
                                     <td>
-                                        <select class="form-control" name="BenchRole[]">
-                                            <option value="Captain" selected="@(benchOfficials[i].Value<string>("role") == "Captain")">Captain</option>
-                                            <option value="Assistant Captain" selected="@(benchOfficials[i].Value<string>("role") == "Assistant Captain")">Assistant Captain</option>
-                                            <option value="Netminder" selected="@(benchOfficials[i].Value<string>("role") == "Netminder")">Netminder</option>
-                                            <option value="Player" selected="@(benchOfficials[i].Value<string>("role") == "Player")">Player</option>
-                                            <option value="" selected="@(string.IsNullOrWhiteSpace(benchOfficials[i].Value<string>("role")))">Role</option>
-                                        </select>
+                                        <span>@benchOfficials[i].Value("licenseNumber")</span>
                                     </td>
-                                    <td><input type="text" class="form-control" name="BenchOfficialName[]" value="@benchOfficials[i].Value("playerName")" /></td>
+                                    <td>
+                                        <span>@benchOfficials[i].Value("role")</span>
+
+                                    </td>
+                                    <td>
+                                        <span>@benchOfficials[i].Value("playerName")</span>
+                                    </td>
                                     <td>
                                         @{
                                             var dob = benchOfficials[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
                                         }
-                                        <input type="text" class="form-control" name="BenchDateOfBirth[]" placeholder="DD.MM.YYYY" value="@dob" />
+                                        <span>@dob</span>
                                     </td>
                                     <td>
-                                        <select class="form-control" name="BenchNationality[]">
-                                            <option value="">Nationality</option>
-                                            @foreach (var country in countries)
-                                            {
-                                                var isSelected = country.Country.Equals(benchOfficials[i].Value<string>("nationality"));
-                                                <option value="@country.ISO3" selected="@isSelected">@country.Country</option>
-                                            }
-                                        </select>
+                                        <span>@benchOfficials[i].Value("nationality")</span>
                                     </td>
                                     <td>
-                                        <select class="form-control" name="BenchGender[]">
-                                            <option value="Male" selected="@(benchOfficials[i].Value<string>("gender") == "Male")">Male</option>
-                                            <option value="Female" selected="@(benchOfficials[i].Value<string>("gender") == "Female")">Female</option>
-                                            <option value="" selected="@(string.IsNullOrWhiteSpace(benchOfficials[i].Value<string>("gender")))">Gender</option>
-                                        </select>
+                                        <span>@benchOfficials[i].Value("gender")</span>
                                     </td>
-                                    <button type="button" class="btn btn-danger" onclick="deleteRow(this)">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-
+                                    <td>
+                                        <button type="button" class="btn btn-danger" onclick="deleteRow(this)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -318,7 +307,7 @@
                         <label for="playerName">Name:</label>
                         <input type="text" class="form-control" id="playerName" name="playerName">
                     </div>
-                    <div class="form-group">
+                    <div id="jerseyNumberFormGroup" class="form-group">
                         <label for="jerseyNumber">Jersey Number:</label>
                         <input type="text" class="form-control" id="jerseyNumber" name="jerseyNumber">
                     </div>
@@ -372,6 +361,7 @@
     var jerseyNumbersEncountered = [];
     var currentMode = 'add';
     var currentRow = null;
+    var currentMode = 'player'; // Default mode
 
     function deleteRow(button) {
         // Find the row containing the clicked button
@@ -455,7 +445,6 @@
     function validateRow(licenseNumber, jerseyNumber, playerName, role, dateOfBirth, nationality, gender, rowIndex) {
 
         console.log("Row", rowIndex, "License:", licenseNumber, "Jersey:", jerseyNumber, "Name:", playerName);
-        debugger;
         var errors = [];
         if (!licenseNumber || isNaN(parseInt(licenseNumber))) {
             errors.push('Invalid license number at row ' + (rowIndex + 1));
@@ -487,9 +476,40 @@
         return errors;
     }
 
+    function validateBenchRow(licenseNumber, playerName, role, dateOfBirth, nationality, gender, rowIndex) {
+
+        console.log("Row", rowIndex, "License:", licenseNumber, "Name:", playerName);
+
+        var errors = [];
+        if (!licenseNumber || isNaN(parseInt(licenseNumber))) {
+            errors.push('Invalid license number at row ' + (rowIndex + 1));
+        }
+
+        if (!playerName || playerName === "") {
+            errors.push('Player name is required');
+        }
+
+        if (!dateOfBirth || dateOfBirth === "" || dateOfBirth === "01.01.0001") {
+            errors.push('Date of birth is requried');
+        }
+
+        if (!nationality || nationality === "") {
+            errors.push('Nationality is requried');
+        }
+
+        if (!role || role === "") {
+            errors.push('Roster member role is requried');
+        }
+
+        if (!gender || gender === "") {
+            errors.push('Roster member gender is requried');
+        }
+
+        return errors;
+    }
+
     function validateForm() {
         var isValid = true;
-        allErrors = [];
         var licenseNumbers = [];
         var jerseyNumbers = [];
 
@@ -528,7 +548,6 @@
             var nationality = currentRow.find("td:eq(5) span span").text().trim();
             var gender = currentRow.find("td:eq(6) span span").text().trim();
 
-            debugger
             var rowErrors = validateRow(licenseNumber, jerseyNumber, playerName, role, dateOfBirth, nationality, gender, index);
 
             // Check if license or jersey number is in duplicate arrays
@@ -537,6 +556,78 @@
             }
             if (duplicateJerseyNumbers.has(jerseyNumber)) {
                 rowErrors.push('Duplicate jersey number: ' + jerseyNumber);
+            }
+
+            // Highlight the row if there are errors
+            if (rowErrors.length > 0) {
+                isValid = false;
+                currentRow.addClass('table-danger');
+                allErrors.push({
+                    row: index + 1,
+                    name: playerName,
+                    errors: rowErrors
+                });
+            }
+
+            console.log(allErrors)
+        });
+
+        // Display any errors
+        if (!isValid) {
+            var errorMessages = allErrors.map(function (error) {
+                return 'Row ' + error.row + ': ' + error.errors.join(', ');
+            }).join('<br>');
+            $('#submissionErrors').html(errorMessages).show();
+        }
+
+        return isValid;
+    }
+
+    function validateBenchForm() {
+        var isValid = true;
+        var licenseNumbers = [];
+        var jerseyNumbers = [];
+
+        // Clear any previous error indicators
+        $('#formRowsBench tr').removeClass('table-danger');
+        $('#submissionErrors').empty().hide();
+        // Collect all license and jersey numbers
+        $('#formRowsBench tr').each(function (index) {
+            var currentRow = $(this);
+            var licenseNumber = currentRow.find("td:eq(0) span span").text().trim();
+            var jerseyNumber = currentRow.find("td:eq(3) span span").text().trim();
+
+            // Add numbers to arrays for duplicate checking
+            if (licenseNumber) {
+                licenseNumbers.push({ number: licenseNumber, row: index + 1 });
+            }
+            if (jerseyNumber) {
+                jerseyNumbers.push({ number: jerseyNumber, row: index + 1 });
+            }
+        });
+
+        // Check for duplicates in license and jersey numbers
+        var duplicateLicenseNumbers = findDuplicates(licenseNumbers);
+        var duplicateJerseyNumbers = findDuplicates(jerseyNumbers);
+
+        // Validate each row
+        $('#formRowsBench tr').each(function (index) {
+            var currentRow = $(this);
+            var rowErrors = [];
+
+            var licenseNumber = currentRow.find("td:eq(0) span span").text().trim();
+            var role = currentRow.find("td:eq(1) span span").text().trim();
+            var playerName = currentRow.find("td:eq(2) span span").text().trim();
+            //var jerseyNumber = currentRow.find("td:eq(3) span span").text().trim();
+            var dateOfBirth = currentRow.find("td:eq(3) span span").text().trim();
+            var nationality = currentRow.find("td:eq(4) span span").text().trim();
+            var gender = currentRow.find("td:eq(5) span span").text().trim();
+
+            var rowErrors = validateBenchRow(licenseNumber, playerName, role, dateOfBirth, nationality, gender, index);
+
+            // Check if license or jersey number is in duplicate arrays
+            if (duplicateLicenseNumbers.has(licenseNumber)) {
+                rowErrors.push('Duplicate license number: ' + licenseNumber);
             }
 
             // Highlight the row if there are errors
@@ -579,135 +670,6 @@
         return duplicates;
     }
 
-    function validateBenchOfficialsForm() {
-        var isValid = true;
-        var errors = [];
-        var rowCount = $('#formRowsBench tr').length;
-
-        for (var i = 0; i < rowCount; i++) {
-            $('#formRowsBench tr').eq(i).removeClass('table-danger');
-            var rowErrors = validateBenchOfficialsRow(i);
-            var officialName = $('input[name="BenchOfficialName[]"]').eq(i).val();
-            var licenseNumber = $('input[name="BenchLicense[]"]').eq(i).val();
-            // Check for duplicate license numbers
-            benchOfficialLicenseNumbers.push({
-                role: "Bench Official License",
-                name: officialName,
-                license: licenseNumber
-            })
-
-            if (rowErrors.length > 0) {
-                isValid = false;
-                // Add class only to rows in the tbody, excluding the thead
-                $('#formRowsBench tr').eq(i).addClass('table-danger');
-                allErrors.push({
-                    role: "Bench Issues",
-                    name: officialName,
-                    rowErrors: rowErrors
-                });
-            }
-        }
-
-        var licenseNumberMap = {};
-        var duplicateLicenseNumbers = {};
-
-        benchOfficialLicenseNumbers.forEach(function (item) {
-            var licenseNumber = item.license;
-            var name = item.name.trim(); // Trim to handle empty or whitespace-only names
-
-            if (name !== '' && licenseNumber !== '') {
-                if (!licenseNumberMap[licenseNumber]) {
-                    licenseNumberMap[licenseNumber] = [];
-                }
-
-                licenseNumberMap[licenseNumber].push(name);
-
-                if (licenseNumberMap[licenseNumber].length > 1) {
-                    duplicateLicenseNumbers[licenseNumber] = true;
-                }
-            }
-        });
-
-        for (var number in licenseNumberMap) {
-            if (licenseNumberMap.hasOwnProperty(number)) {
-                var names = licenseNumberMap[number];
-
-                if (names.length > 1 && duplicateLicenseNumbers[number]) {
-
-                    allErrors.push({
-                        role: "Duplicate license numbers",
-                        name: number,
-                        rowErrors: names
-                    });
-                }
-            }
-        }
-
-        if (!isValid) {
-            $("#submissionErrors").show();
-        } else {
-            $("#submissionErrors").hide();
-        }
-
-        return isValid;
-    }
-
-    function validateBenchOfficialsRow(index) {
-        var rowErrors = [];
-        var isEmptyRow = true;
-        var license = $('input[name="BenchLicense[]"]').eq(index).val();
-        var role = $('select[name="BenchRole[]"]').eq(index).val();
-        var nationality = $('select[name="BenchNationality[]"]').eq(index).val();
-        var gender = $('select[name="BenchGender[]"]').eq(index).val();
-        var officialName = $('input[name="BenchOfficialName[]"]').eq(index).val();
-        var dateOfBirth = $('input[name="BenchDateOfBirth[]"]').eq(index).val();
-
-        // Check if all fields are empty
-        if (
-            (!license || license.trim() === "") &&
-            (!role || role === "") &&
-            (!officialName || officialName.trim() === "") &&
-            (!nationality || nationality === "") &&
-            (!gender || gender === "")
-        ) {
-            isEmptyRow = true;
-        } else {
-            isEmptyRow = false;
-
-            // Validate License (can be empty)
-            if (license && license.trim() !== "") {
-                // Add your additional license validation logic if needed
-            }
-
-            // Validate Role
-            if (!role || role === "") {
-                rowErrors.push("Role must have a selected value");
-            }
-
-            // Validate Official Name
-            if (!officialName || officialName.trim() === "") {
-                rowErrors.push("Official Name cannot be empty");
-            }
-
-            // Validate Nationality
-            if (!nationality || nationality === "") {
-                rowErrors.push("Nationality must have a selected value");
-            }
-
-            // Validate Gender
-            if (!gender || gender === "") {
-                rowErrors.push("Gender must have a selected value");
-            }
-        }
-
-        // If the row is empty, add an error message
-        if (isEmptyRow) {
-            rowErrors.push("Bench Official Row " + (index + 1) + " is empty.");
-        }
-
-        return rowErrors;
-    }
-
     function displayValidationErrors(errors) {
         var errorContainer = $('#submissionErrors');
         errorContainer.empty();
@@ -734,8 +696,8 @@
         licenseNumbers = [];
         benchOfficialLicenseNumbers = []
         playersAndOfficials = []
-        validateBenchOfficialsForm();
         validateForm();
+        validateBenchForm()
 
         var licenseRoleMap = {}; // Define licenseRoleMap here
         var duplicateLicenseNumbers = {};
@@ -821,6 +783,34 @@
         row.find("td:eq(6) .tablesaw-cell-content span").text($('#edit-form #gender').val());
     }
 
+    function updateBenchOfficialRowFromModal(row) {
+        row.find("td:eq(0) .tablesaw-cell-content span").text($('#edit-form #license').val());
+        row.find("td:eq(1) .tablesaw-cell-content span").text($('#edit-form #role').val());
+        row.find("td:eq(2) .tablesaw-cell-content span").text($('#edit-form #playerName').val());
+        row.find("td:eq(3) .tablesaw-cell-content span").text($('#edit-form #dateOfBirth').val());
+        row.find("td:eq(4) .tablesaw-cell-content span").text($('#edit-form #nationality').val());
+        row.find("td:eq(5) .tablesaw-cell-content span").text($('#edit-form #gender').val());
+    }
+
+    function populateModalForBenchOfficial(currentRow) {
+        var license = currentRow.find("td:eq(0) .tablesaw-cell-content span").text().trim();
+        var role = currentRow.find("td:eq(1) .tablesaw-cell-content span").text().trim();
+        var officialName = currentRow.find("td:eq(2) .tablesaw-cell-content span").text().trim();
+        var dateOfBirth = currentRow.find("td:eq(3) .tablesaw-cell-content span").text().trim();
+        var nationality = currentRow.find("td:eq(4) .tablesaw-cell-content span").text().trim();
+        var gender = currentRow.find("td:eq(5) .tablesaw-cell-content span").text().trim();
+
+        $('#edit-form #license').val(license);
+        $('#edit-form #role').val(role);
+        $('#edit-form #playerName').val(officialName);
+        $('#edit-form #dateOfBirth').val(dateOfBirth);
+        $('#edit-form #nationality').val(nationality);
+        $('#edit-form #gender').val(gender);
+
+        // Hide the jersey number field for bench officials
+        $('#edit-form #jerseyNumber').closest('.form-group').hide();
+    }
+
     function addNewRowFromModal() {
         var newRowHtml = '<tr>' +
             '<td><b class="tablesaw-cell-label">License</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #license').val() + '</span></span></td>' +
@@ -835,6 +825,20 @@
         $('#data-table tbody').append(newRowHtml);
     }
 
+    function addBenchOfficialRowFromModal() {
+        var newRowHtml = '<tr>' +
+            '<td><b class="tablesaw-cell-label">License</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #license').val() + '</span></span></td>' +
+            '<td><b class="tablesaw-cell-label">Role</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #role').val() + '</span></span></td>' +
+            '<td><b class="tablesaw-cell-label">Player Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #playerName').val() + '</span></span></td>' +
+            //'<td><b class="tablesaw-cell-label">Jersey Number</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #jerseyNumber').val() + '</span></span></td>' +
+            '<td><b class="tablesaw-cell-label">Date of Birth</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #dateOfBirth').val() + '</span></span></td>' +
+            '<td><b class="tablesaw-cell-label">Nationality</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #nationality').val() + '</span></span></td>' +
+            '<td><b class="tablesaw-cell-label">Gender</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #gender').val() + '</span></span></td>' +
+            '<td><button type="button" class="btn btn-danger delete-btn" onclick="event.stopPropagation(); deleteRow(this);"><i class="fas fa-trash"></i></button></td>' +
+            '</tr>';
+        $('#benchOfficials tbody').append(newRowHtml);
+    }
+
     $(document).ready(function () {
 
         var currentRow = null;
@@ -844,8 +848,25 @@
             deleteRow(this); // Call your deleteRow function
         });
 
+        $("#benchOfficials tbody").on("click", "tr", function () {
+            currentMode = 'editBenchOfficial';
+            currentRow = $(this);
+            populateModalForBenchOfficial(currentRow);
+            $('#editModal').modal('show');
+        });
+
+
         $('#addRowButton').on('click', function () {
-            currentMode = 'add';
+            currentMode = 'addPlayer';
+            $("#jerseyNumberFormGroup").show()
+            currentRow = null;
+            clearModalFields();
+            $('#editModal').modal('show');
+        });
+
+        $('#addBenchOfficialButton').on('click', function () {
+            currentMode = 'addbenchOfficial';
+            $("#jerseyNumberFormGroup").hide()
             currentRow = null;
             clearModalFields();
             $('#editModal').modal('show');
@@ -853,20 +874,31 @@
 
         // Event handler for opening the modal to edit an existing row
         $("#data-table tbody").on("click", "tr", function () {
-            currentMode = 'edit';
+            currentMode = 'editPlayer';
             currentRow = $(this);
             populateModalFromRow(currentRow);
             $('#editModal').modal('show');
         });
 
-        // Event handler for saving changes in the modal
         $("#saveChanges").on("click", function () {
-            if (currentMode === 'edit' && currentRow) {
-                updateRowFromModal(currentRow);
+            
+            if (currentRow) {
+                if (currentMode === 'editPlayer') {
+                    updatePlayerRowFromModal(currentRow);
+                } else if (currentMode === 'editBenchOfficial') {
+                    updateBenchOfficialRowFromModal(currentRow);
+                }
             } else {
-                addNewRowFromModal();
+                if (currentMode === 'addPlayer') {
+                    // Update player row
+                    addNewRowFromModal();
+                } else if (currentMode === 'addbenchOfficial') {
+                    // Update bench official row
+                    addBenchOfficialRowFromModal();
+                }
             }
             $('#editModal').modal('hide');
+            clearModalFields();
         });
 
 
