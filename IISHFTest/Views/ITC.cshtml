@@ -168,7 +168,6 @@
                                 {
                                     <tr>
                                         <td>
-                                            @*<input type="text" class="form-control" id="License" name="License[]" value="@players[i].Value("licenseNumber")" />*@
                                             <span>@players[i].Value("licenseNumber")</span>
                                         </td>
                                         <td>
@@ -176,49 +175,37 @@
                                             <span>@players[i].Value("role")</span>
                                         </td>
                                         <td>
-                                            
+
                                             <span>@players[i].Value("playerName")</span>
                                         </td>
                                         <td>
-                                            <!-- Label and input for Jersey Number -->
-                                            @*<input type="text" class="form-control" id="JerseyNumber" name="JerseyNumber[]" oninput="validateNumber(this)" value="@players[i].Value("jerseyNumber")" />*@
                                             <span>@players[i].Value("jerseyNumber")</span>
                                         </td>
                                         <td>
-                                            <!-- Label and input for Date of Birth -->
                                             @{
                                                 var dob = players[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
                                             }
-                                            @*<input type="text" class="form-control" id="DateOfBirth" name="DateOfBirth[]" placeholder="DD.MM.YYYY" value="@dob" />*@
                                             <span>@dob</span>
                                         </td>
                                         <td>
-                                            <!-- Label and select for Nationality -->
-                                            @*<select class="form-control" id="Nationality" name="Nationality[]">
-                                        <option value="">Nationality</option>
-                                        @foreach (var country in countries)
-                                        {
-                                        var isSelected = country.Country.Equals(players[i].Value<string>("nationality"));
-                                        <option value="@country.ISO3" selected="@isSelected">@country.Country</option>
-                                        }
-                                        </select>*@
                                             <span>@players[i].Value("nationality")</span>
                                         </td>
                                         <td>
-                                            
+
                                             <span>@players[i].Value("gender")</span>
                                         </td>
                                         <td>
-                                            <button type="button" class="btn btn-danger" onclick="deleteRow(this)">
+                                            <button type="button" class="btn btn-danger delete-btn" onclick="event.stopPropagation(); deleteRow(this);">
                                                 <i class="fas fa-trash"></i>
                                             </button>
+
                                         </td>
                                     </tr>
                                 }
                             </tbody>
                         </table>
                     </div>
-                    <button type="button" onclick="addRowToPlayer()">Add Row</button>
+                    <button id="addRowButton" type="button">Add Row</button>
                     <button type="submit" onclick="validateForms()">Validate</button>
 
                 </div>
@@ -277,6 +264,7 @@
                                     <button type="button" class="btn btn-danger" onclick="deleteRow(this)">
                                         <i class="fas fa-trash"></i>
                                     </button>
+
                                 </tr>
                             }
                         </tbody>
@@ -319,12 +307,12 @@
                     <div class="form-group">
                         <label for="role">Role:</label>
                         <select class="form-control" id="role" name="role">
-                                                <option value="">Select Role</option>
-                                                <option value="Captain">Captain</option>
-                                                <option value="Assistant Captain">Assistant Captain</option>
-                                                <option value="Netminder">Netminder</option>
-                                                <!-- Add other role options here -->
-                                            </select>
+                            <option value="">Select Role</option>
+                            <option value="Captain">Captain</option>
+                            <option value="Assistant Captain">Assistant Captain</option>
+                            <option value="Netminder">Netminder</option>
+                            <!-- Add other role options here -->
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="playerName">Name:</label>
@@ -341,20 +329,20 @@
                     <div class="form-group">
                         <label for="nationality">Nationality:</label>
                         <select class="form-control" id="nationality" name="nationality">
-                        <option value="">Nationality</option>
-                        @foreach (var country in countries)
-                        {
+                            <option value="">Nationality</option>
+                            @foreach (var country in countries)
+                            {
                                 <option value="@country.Country">@country.Country</option>
-                        }
+                            }
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="gender">Gender:</label>
                         <!-- Label and select for Gender -->
                         <select class="form-control" id="gender" name="gender">
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <!-- Add other gender options here -->
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <!-- Add other gender options here -->
                         </select>
                     </div>
 
@@ -382,17 +370,26 @@
     var benchOfficialLicenseNumbers = []
     var licenseNumbersEncountered = [];
     var jerseyNumbersEncountered = [];
+    var currentMode = 'add';
+    var currentRow = null;
+
 
     function deleteRow(button) {
-        var row = button.parentNode.parentNode;
-        var licenseNumber = row.querySelector('input[name="License[]"]').value;
+        // Find the row containing the clicked button
+        var row = $(button).closest('tr');
+
+        // Extract the license number from the span
+        var licenseNumber = row.find("td:eq(0) span span").text().trim();
 
         // Remove the row from the table
-        row.parentNode.removeChild(row);
+        row.remove();
 
-        // Add the license number to the array
-        deletedLicenseNumbers.push(licenseNumber);
+        // Add the license number to the array (if it's not empty)
+        if (licenseNumber) {
+            deletedLicenseNumbers.push(licenseNumber);
+        }
     }
+
 
     function validateAllLicenses() {
         var licenseInputs = $('input[name^="License"]');
@@ -457,93 +454,10 @@
         });
     }
 
-    function validateForm() {
-        var isValid = true;
-        var captains = [];
-        var assistantCaptains = [];
-
-        // Clear any previous error indicators
-        $('#formRows tr').removeClass('table-danger');
-        $('#submissionErrors').empty().hide();
-
-        // Reset the encountered numbers before validation
-        licenseNumbersEncountered = [];
-        jerseyNumbersEncountered = [];
-
-        // First, collect all license and jersey numbers and roles
-        $('#formRows tr').each(function (index, row) {
-            var currentRow = $(row);
-            var licenseNumber = currentRow.find("td:eq(0) span span").text().trim();
-            var jerseyNumber = currentRow.find("td:eq(3) span span").text().trim();
-            var role = currentRow.find("td:eq(1) span span").text().trim();
-
-            if (licenseNumber) {
-                licenseNumbersEncountered.push({ number: licenseNumber, index: index });
-            }
-            if (jerseyNumber) {
-                jerseyNumbersEncountered.push({ number: jerseyNumber, index: index });
-            }
-
-            // Collect roles
-            if (role === 'Captain') {
-                captains.push(index);
-            } else if (role === 'Assistant Captain') {
-                assistantCaptains.push(index);
-            }
-        });
-
-        // Check for duplicates
-        var duplicateLicenseNumbers = findDuplicates(licenseNumbersEncountered);
-        var duplicateJerseyNumbers = findDuplicates(jerseyNumbersEncountered);
-
-        // Check if there are more than one Captain or Assistant Captain
-        var isDuplicateCaptain = captains.length > 1;
-        var isDuplicateAssistantCaptain = assistantCaptains.length > 1;
-
-        // Now validate each row
-        $('#formRows tr').each(function (index, row) {
-            var currentRow = $(row);
-            var licenseNumber = currentRow.find("td:eq(0) span span").text().trim();
-            var role = currentRow.find("td:eq(1) span span").text().trim();
-            var playerName = currentRow.find("td:eq(2) span span").text().trim();
-            var jerseyNumber = currentRow.find("td:eq(3) span span").text().trim();
-            var dateOfBirth = currentRow.find("td:eq(4) span span").text().trim();
-            var nationality = currentRow.find("td:eq(5) span span").text().trim();
-            var gender = currentRow.find("td:eq(6) span span").text().trim();
-            var rowErrors = validateRow(licenseNumber, jerseyNumber, playerName, role, dateOfBirth, nationality, gender, index);
-
-            // Add errors for duplicates
-            if (duplicateLicenseNumbers.has(licenseNumber)) {
-                rowErrors.push('Duplicate license number: ' + licenseNumber);
-            }
-            if (duplicateJerseyNumbers.has(jerseyNumber)) {
-                rowErrors.push('Duplicate jersey number: ' + jerseyNumber);
-            }
-
-            // Add errors for duplicate roles
-            if (role === 'Captain' && isDuplicateCaptain) {
-                rowErrors.push('There can only be one Captain');
-            }
-            if (role === 'Assistant Captain' && isDuplicateAssistantCaptain) {
-                rowErrors.push('There can only be one Assistant Captain');
-            }
-
-            // Highlight the row if there are errors
-            if (rowErrors.length > 0) {
-                isValid = false;
-                currentRow.addClass('table-danger');
-                allErrors.push({
-                    row: index + 1,
-                    name: playerName,
-                    errors: rowErrors
-                });
-            }
-        });
-
-        return isValid;
-    }
-
     function validateRow(licenseNumber, jerseyNumber, playerName, role, dateOfBirth, nationality, gender, rowIndex) {
+
+        console.log("Row", rowIndex, "License:", licenseNumber, "Jersey:", jerseyNumber, "Name:", playerName);
+        debugger;
         var errors = [];
         if (!licenseNumber || isNaN(parseInt(licenseNumber))) {
             errors.push('Invalid license number at row ' + (rowIndex + 1));
@@ -575,15 +489,92 @@
         return errors;
     }
 
+    function validateForm() {
+        var isValid = true;
+        allErrors = [];
+        var licenseNumbers = [];
+        var jerseyNumbers = [];
+
+        // Clear any previous error indicators
+        $('#formRows tr').removeClass('table-danger');
+        $('#submissionErrors').empty().hide();
+        // Collect all license and jersey numbers
+        $('#formRows tr').each(function (index) {
+            var currentRow = $(this);
+            var licenseNumber = currentRow.find("td:eq(0) span span").text().trim();
+            var jerseyNumber = currentRow.find("td:eq(3) span span").text().trim();
+
+            // Add numbers to arrays for duplicate checking
+            if (licenseNumber) {
+                licenseNumbers.push({ number: licenseNumber, row: index + 1 });
+            }
+            if (jerseyNumber) {
+                jerseyNumbers.push({ number: jerseyNumber, row: index + 1 });
+            }
+        });
+
+        // Check for duplicates in license and jersey numbers
+        var duplicateLicenseNumbers = findDuplicates(licenseNumbers);
+        var duplicateJerseyNumbers = findDuplicates(jerseyNumbers);
+
+        // Validate each row
+        $('#formRows tr').each(function (index) {
+            var currentRow = $(this);
+            var rowErrors = [];
+
+            var licenseNumber = currentRow.find("td:eq(0) span span").text().trim();
+            var role = currentRow.find("td:eq(1) span span").text().trim();
+            var playerName = currentRow.find("td:eq(2) span span").text().trim();
+            var jerseyNumber = currentRow.find("td:eq(3) span span").text().trim();
+            var dateOfBirth = currentRow.find("td:eq(4) span span").text().trim();
+            var nationality = currentRow.find("td:eq(5) span span").text().trim();
+            var gender = currentRow.find("td:eq(6) span span").text().trim();
+
+            debugger
+            var rowErrors = validateRow(licenseNumber, jerseyNumber, playerName, role, dateOfBirth, nationality, gender, index);
+
+            // Check if license or jersey number is in duplicate arrays
+            if (duplicateLicenseNumbers.has(licenseNumber)) {
+                rowErrors.push('Duplicate license number: ' + licenseNumber);
+            }
+            if (duplicateJerseyNumbers.has(jerseyNumber)) {
+                rowErrors.push('Duplicate jersey number: ' + jerseyNumber);
+            }
+
+            // Highlight the row if there are errors
+            if (rowErrors.length > 0) {
+                isValid = false;
+                currentRow.addClass('table-danger');
+                allErrors.push({
+                    row: index + 1,
+                    errors: rowErrors
+                });
+            }
+
+            console.log(allErrors)
+        });
+
+        // Display any errors
+        if (!isValid) {
+            var errorMessages = allErrors.map(function (error) {
+                return 'Row ' + error.row + ': ' + error.errors.join(', ');
+            }).join('<br>');
+            $('#submissionErrors').html(errorMessages).show();
+        }
+
+        return isValid;
+    }
+
     function findDuplicates(numbers) {
-        var seen = new Set();
         var duplicates = new Set();
+        var seen = new Map();
 
         numbers.forEach(item => {
             if (seen.has(item.number)) {
                 duplicates.add(item.number);
+            } else {
+                seen.set(item.number, item.row);
             }
-            seen.add(item.number);
         });
 
         return duplicates;
@@ -716,7 +707,7 @@
         }
 
         return rowErrors;
-    }    
+    }
 
     function displayValidationErrors(errors) {
         var errorContainer = $('#submissionErrors');
@@ -728,7 +719,7 @@
 
             for (var i = 0; i < errors.length; i++) {
                 if (errors[i]) {
-                    var errorText = errors[i].name +': ' + errors[i].errors.join(', ');
+                    var errorText = errors[i].name + ': ' + errors[i].errors.join(', ');
                     errorList.append($('<li></li>').text(errorText));
                 }
             }
@@ -749,63 +740,6 @@
 
         var licenseRoleMap = {}; // Define licenseRoleMap here
         var duplicateLicenseNumbers = {};
-
-       @* benchOfficialLicenseNumbers.forEach(function (item) {
-            var name = item.name.trim(); // Trim to handle empty or whitespace-only values
-            var licenseNumber = item.license.trim(); // Trim to handle empty or whitespace-only values
-
-            if (name !== "" && licenseNumber !== "") {
-                if (!licenseRoleMap[licenseNumber]) {
-                    licenseRoleMap[licenseNumber] = [];
-                }
-
-                licenseRoleMap[licenseNumber].push(item.role);
-
-                if (licenseRoleMap[licenseNumber].length > 1) {
-                    duplicateLicenseNumbers[licenseNumber] = {
-                        license: licenseNumber,
-                        name: name
-                    };
-                }
-            }
-        });
-
-        licenseNumbers.forEach(function (item) {
-            var name = item.name.trim(); // Trim to handle empty or whitespace-only values
-            var licenseNumber = item.license.trim(); // Trim to handle empty or whitespace-only values
-
-            if (name !== "" && licenseNumber !== "") {
-                if (!licenseRoleMap[licenseNumber]) {
-                    licenseRoleMap[licenseNumber] = [];
-                }
-
-                licenseRoleMap[licenseNumber].push(item.role);
-
-                if (licenseRoleMap[licenseNumber].length > 1) {
-                    duplicateLicenseNumbers[licenseNumber] = {
-                        license: licenseNumber,
-                        name: name
-                    };
-                }
-            }
-        });
-
-        // Display and log errors for duplicate license numbers
-        for (var licenseNumber in duplicateLicenseNumbers) {
-            if (duplicateLicenseNumbers.hasOwnProperty(licenseNumber)) {
-                var entry = duplicateLicenseNumbers[licenseNumber];
-                var names = licenseRoleMap[licenseNumber];
-
-                if (names && names.length > 1) {
-
-                    allErrors.push({
-                        role: "ITC Members listed as both player and bench official",
-                        name: entry.license,
-                        rowErrors: [entry.name]
-                    });
-                }
-            }
-        }*@
 
         displayValidationErrors(allErrors);
     }
@@ -856,59 +790,113 @@
         return formData;
     }
 
+    function clearModalFields() {
+        $('#edit-form').find('input[type="text"], select').val('');
+    }
+
+    function populateModalFromRow(currentRow) {
+        var license = currentRow.find("td:eq(0) .tablesaw-cell-content span").text().trim();
+        var role = currentRow.find("td:eq(1) .tablesaw-cell-content span").text().trim();
+        var playerName = currentRow.find("td:eq(2) .tablesaw-cell-content span").text().trim();
+        var jerseyNumber = currentRow.find("td:eq(3) .tablesaw-cell-content span").text().trim();
+        var dateOfBirth = currentRow.find("td:eq(4) .tablesaw-cell-content span").text().trim();
+        var nationality = currentRow.find("td:eq(5) .tablesaw-cell-content span").text().trim();
+        var gender = currentRow.find("td:eq(6) .tablesaw-cell-content span").text().trim();
+
+        $('#edit-form #license').val(license);
+        $('#edit-form #role').val(role);
+        $('#edit-form #playerName').val(playerName);
+        $('#edit-form #jerseyNumber').val(jerseyNumber);
+        $('#edit-form #dateOfBirth').val(dateOfBirth);
+        $('#edit-form #nationality').val(nationality);
+        $('#edit-form #gender').val(gender);
+    }
+
+    function updateRowFromModal(row) {
+        row.find("td:eq(0) .tablesaw-cell-content span").text($('#edit-form #license').val());
+        row.find("td:eq(1) .tablesaw-cell-content span").text($('#edit-form #role').val());
+        row.find("td:eq(2) .tablesaw-cell-content span").text($('#edit-form #playerName').val());
+        row.find("td:eq(3) .tablesaw-cell-content span").text($('#edit-form #jerseyNumber').val());
+        row.find("td:eq(4) .tablesaw-cell-content span").text($('#edit-form #dateOfBirth').val());
+        row.find("td:eq(5) .tablesaw-cell-content span").text($('#edit-form #nationality').val());
+        row.find("td:eq(6) .tablesaw-cell-content span").text($('#edit-form #gender').val());
+    }
+
+    ////function addNewRowFromModal() {
+    ////    //var newRowHtml = '<tr>' +
+    ////    //    '<td><span>' + $('#edit-form #license').val() + '</span></td>' +
+    ////    //    '<td><span>' + $('#edit-form #role').val() + '</span></td>' +
+    ////    //    '<td><span>' + $('#edit-form #playerName').val() + '</span></td>' +
+    ////    //    '<td><span>' + $('#edit-form #jerseyNumber').val() + '</span></td>' +
+    ////    //    '<td><span>' + $('#edit-form #dateOfBirth').val() + '</span></td>' +
+    ////    //    '<td><span>' + $('#edit-form #nationality').val() + '</span></td>' +
+    ////    //    '<td><span>' + $('#edit-form #gender').val() + '</span></td>' +
+    ////    //    '<td><button type="button" class="btn btn-danger delete-btn" onclick="event.stopPropagation(); deleteRow(this);"><i class="fas fa-trash"></i></button></td>' +
+    ////    //    '</tr>';
+    ////    //$('#data-table tbody').append(newRowHtml);
+    ////}
+
+    function addNewRowFromModal() {
+        var newRowHtml = '<tr>' +
+            '<td><b class="tablesaw-cell-label">License</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #license').val() + '</span></span></td>' +
+            '<td><b class="tablesaw-cell-label">Role</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #role').val() + '</span></span></td>' +
+            '<td><b class="tablesaw-cell-label">Player Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #playerName').val() + '</span></span></td>' +
+            '<td><b class="tablesaw-cell-label">Jersey Number</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #jerseyNumber').val() + '</span></span></td>' +
+            '<td><b class="tablesaw-cell-label">Date of Birth</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #dateOfBirth').val() + '</span></span></td>' +
+            '<td><b class="tablesaw-cell-label">Nationality</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #nationality').val() + '</span></span></td>' +
+            '<td><b class="tablesaw-cell-label">Gender</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #gender').val() + '</span></span></td>' +
+            '<td><button type="button" class="btn btn-danger delete-btn" onclick="event.stopPropagation(); deleteRow(this);"><i class="fas fa-trash"></i></button></td>' +
+            '</tr>';
+        $('#data-table tbody').append(newRowHtml);
+    }
+
+
     $(document).ready(function () {
 
         var currentRow = null;
 
-        $("#data-table tbody tr").on("click", function () {
-            // Get the current row
-            currentRow = $(this);
 
-            // Extract the data from the first visible span within the cells
-            var license = currentRow.find("td:eq(0) span:visible:first").text().trim();
-            var role = currentRow.find("td:eq(1) span:visible:first").text().trim();
-            var playerName = currentRow.find("td:eq(2) span:visible:first").text().trim();
-            var jerseyNumber = currentRow.find("td:eq(3) span:visible:first").text().trim();
-            var dateOfBirth = currentRow.find("td:eq(4) span:visible:first").text().trim();
-            var nationality = currentRow.find("td:eq(5) span:visible:first").text().trim();
-            var gender = currentRow.find("td:eq(6) span:visible:first").text().trim();
+        $('#data-table').on('click', '.btn-danger', function (event) {
+            event.stopPropagation(); // Prevent click event from bubbling up to the row
+            deleteRow(this); // Call your deleteRow function
+        });
 
-            // Populate the modal fields
-            $('#edit-form #license').val(license);
-            $('#edit-form #role').val(role).prop('selected', true);
-            $('#edit-form #playerName').val(playerName);
-            $('#edit-form #jerseyNumber').val(jerseyNumber);
-            $('#edit-form #dateOfBirth').val(dateOfBirth);
-            $('#edit-form #nationality').val(nationality).prop('selected', true);
-            $('#edit-form #gender').val(gender).prop('selected', true);
-
-            // Show the modal
+        $('#addRowButton').on('click', function () {
+            currentMode = 'add';
+            currentRow = null;
+            clearModalFields();
             $('#editModal').modal('show');
         });
 
+        // Event handler for opening the modal to edit an existing row
+        $("#data-table tbody").on("click", "tr", function () {
+            currentMode = 'edit';
+            currentRow = $(this);
+            populateModalFromRow(currentRow);
+            $('#editModal').modal('show');
+        });
+
+        // Event handler for saving changes in the modal
         $("#saveChanges").on("click", function () {
-            // Retrieve values from the modal's form
-            var license = $('#edit-form #license').val();
-            var role = $('#edit-form #role option:selected').text();
-            var playerName = $('#edit-form #playerName').val();
-            var jerseyNumber = $('#edit-form #jerseyNumber').val();
-            var dateOfBirth = $('#edit-form #dateOfBirth').val();
-            var nationality = $('#edit-form #nationality option:selected').text();
-            var gender = $('#edit-form #gender option:selected').text();
-
-            // Update the selected row's cells with new values
-            currentRow.find("td:eq(0) span span").text(license);
-            currentRow.find("td:eq(1) span span").text(role);
-            currentRow.find("td:eq(2) span span").text(playerName);
-            currentRow.find("td:eq(3) span span").text(jerseyNumber);
-            currentRow.find("td:eq(4) span span").text(dateOfBirth);
-            currentRow.find("td:eq(5) span span").text(nationality);
-            currentRow.find("td:eq(6) span span").text(gender);
-
-            // Hide the modal
+            if (currentMode === 'edit' && currentRow) {
+                updateRowFromModal(currentRow);
+            } else {
+                addNewRowFromModal();
+            }
             $('#editModal').modal('hide');
         });
 
+
+        function addRowToPlayer() {
+            // Clear the form fields in the modal
+            $('#edit-form').find('input[type="text"], select').val('');
+
+            // Open the modal
+            $('#editModal').modal('show');
+
+            // Clear the currentRow variable since this is for adding a new row
+            currentRow = null;
+        }
 
         // Handle the save button click
         $(".close-edit").on("click", function () {
