@@ -379,69 +379,6 @@
         }
     }
 
-    function validateAllLicenses() {
-        var licenseInputs = $('input[name^="License"]');
-        var licenseValues = [];
-
-        licenseInputs.each(function () {
-            var value = $(this).val().trim();
-            licenseValues.push(value);
-        });
-
-        licenseInputs.each(function () {
-            var value = $(this).val().trim();
-            var isDuplicate = licenseValues.indexOf(value) !== licenseValues.lastIndexOf(value);
-
-            if (isDuplicate) {
-                $(this).addClass('is-duplicate');
-            } else {
-                $(this).removeClass('is-duplicate');
-            }
-        });
-    }
-
-    function validateAllJerseyNumbers() {
-        var jerseyInputs = $('input[name^="JerseyNumber"]');
-        var jerseyValues = [];
-
-        jerseyInputs.each(function () {
-            var value = $(this).val().trim();
-            jerseyValues.push(value);
-        });
-
-        jerseyInputs.each(function () {
-            var value = $(this).val().trim();
-            var isDuplicate = jerseyValues.indexOf(value) !== jerseyValues.lastIndexOf(value);
-
-            if (isDuplicate) {
-                $(this).addClass('is-duplicate');
-            } else {
-                $(this).removeClass('is-duplicate');
-            }
-        });
-    }
-
-    function validateRoles() {
-        var roleSelects = $('select[name^="Role"]');
-        var roleSelections = [];
-
-        roleSelects.each(function () {
-            var selectedRole = $(this).val();
-            roleSelections.push(selectedRole);
-        });
-
-        roleSelects.each(function () {
-            var selectedRole = $(this).val();
-            var isDuplicate = roleSelections.indexOf(selectedRole) !== roleSelections.lastIndexOf(selectedRole);
-
-            if (isDuplicate && selectedRole) {
-                $(this).addClass('is-duplicate-role');
-            } else {
-                $(this).removeClass('is-duplicate-role');
-            }
-        });
-    }
-
     function validateRow(licenseNumber, jerseyNumber, playerName, role, dateOfBirth, nationality, gender, rowIndex) {
 
         console.log("Row", rowIndex, "License:", licenseNumber, "Jersey:", jerseyNumber, "Name:", playerName);
@@ -830,7 +767,6 @@
             '<td><b class="tablesaw-cell-label">License</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #license').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Role</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #role').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Player Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #playerName').val() + '</span></span></td>' +
-            //'<td><b class="tablesaw-cell-label">Jersey Number</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #jerseyNumber').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Date of Birth</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #dateOfBirth').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Nationality</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #nationality').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Gender</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #gender').val() + '</span></span></td>' +
@@ -855,7 +791,6 @@
             $('#editModal').modal('show');
         });
 
-
         $('#addRowButton').on('click', function () {
             currentMode = 'addPlayer';
             $("#jerseyNumberFormGroup").show()
@@ -872,7 +807,6 @@
             $('#editModal').modal('show');
         });
 
-        // Event handler for opening the modal to edit an existing row
         $("#data-table tbody").on("click", "tr", function () {
             currentMode = 'editPlayer';
             currentRow = $(this);
@@ -900,7 +834,6 @@
             $('#editModal').modal('hide');
             clearModalFields();
         });
-
 
         function addRowToPlayer() {
             // Clear the form fields in the modal
@@ -933,33 +866,6 @@
             // TODO: Add code to handle the form data, e.g., send an AJAX request
 
             $("#edit-modal").hide();
-        });
-
-        // Validate existing rows on page load
-        validateAllLicenses();
-        validateAllJerseyNumbers();
-        validateRoles();
-
-        // Attach event handlers for input changes
-        $('input[name^="License"]').on('input', function () {
-            validateAllLicenses();
-        });
-
-        $('input[name^="JerseyNumber"]').on('input', function () {
-            validateAllJerseyNumbers();
-        });
-
-        $(document).on('change', 'select[name^="Role"]', function () {
-            validateRoles();
-        });
-
-        // Attach event handlers for losing focus
-        $('input[name^="License"]').on('blur', function () {
-            validateAllLicenses();
-        });
-
-        $('input[name^="JerseyNumber"]').on('blur', function () {
-            validateAllJerseyNumbers();
         });
 
         var nationalityDropdown = $('select[name^="Nationality"]');
