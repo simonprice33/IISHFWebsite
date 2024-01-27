@@ -541,14 +541,45 @@
         var age = currentYear - birthYear;
 
         // Define age validation rules based on age group and gender
+        // Female check first
+        // Male check second
+        // Female players can be one year older in teh age group. 
+
+        var sanction = $("#sanction").text()
+        var classification = sanction.substring(1)
+        var isTitleEvent = classification === "A" || classification === "a";
+
+        var eventSelectValue = $("#eventSelect").val();
+        var isChampionshipEvent = eventSelectValue.toLowerCase().includes("championship");
+
+        // Define the additional age adjustment based on gender and age group for title events
+        var additionalAgeAdjustment = 0; // Default value
+
+        if (isTitleEvent && !isChampionshipEvent) {
+            if (!isFemale) {
+                // Male players can be one year older in U19, U16, U13, and U10 age groups
+                if (ageGroup === 'U19' || ageGroup === 'U16' || ageGroup === 'U13' || ageGroup === 'U10') {
+                    additionalAgeAdjustment = 1;
+                }
+            } else {
+                // Female players can be two years older in U19, U16, U13, and U10 age groups
+                if (ageGroup === 'U19' || ageGroup === 'U16' || ageGroup === 'U13' || ageGroup === 'U10') {
+                    additionalAgeAdjustment = 2;
+                }
+            }
+        }
+
+        // Adjust the age based on the additional age adjustment
+        age += additionalAgeAdjustment;
+
         switch (ageGroup) {
             case 'U19':
-                if ((isFemale && age >= 16 && age <= 19) || (!isFemale && age >= 16 && age <= 18)) {
+                if ((isFemale && age >= 13 && age <= 19) || (!isFemale && age >= 13 && age <= 18)) {
                     return true; // Valid age
                 }
                 break;
             case 'U16':
-                if ((isFemale && age >= 13 && age <= 16) || (!isFemale && age >= 13 && age <= 15)) {
+                if ((isFemale && age >= 10 && age <= 16) || (!isFemale && age >= 10 && age <= 15)) {
                     return true; // Valid age
                 }
                 break;
@@ -558,7 +589,7 @@
                 }
                 break;
             case 'U10':
-                if ((isFemale && age >= 9 && age <= 10) || (!isFemale && age >= 9)) {
+                if (age <= 9)) {
                     return true; // Valid age
                 }
                 break;
