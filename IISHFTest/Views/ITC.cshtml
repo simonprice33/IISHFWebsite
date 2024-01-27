@@ -408,6 +408,13 @@
         if (!gender || gender === "") {
             errors.push('Roster member gender is requried');
         }
+        var isFemale = gender !== "" && gender === "Female";
+        var ageGroup = $("#ageGroup").text();
+        debugger;
+        if (dateOfBirth !== "01.01.0001" && !validateAge(dateOfBirth, ageGroup, isFemale)) {
+            errors.push('Player is outside of the designated age range for this event');
+
+        }
 
         return errors;
     }
@@ -508,6 +515,78 @@
         });
 
         return isValid;
+    }
+
+    function validateAge(dateOfBirth, ageGroup, isFemale) {
+        // Parse the date of birth to a Date object
+        var parts = dateOfBirth.split('.');
+        if (parts.length !== 3) {
+            return false; // Invalid date format
+        }
+
+        var day = parseInt(parts[0], 10);
+        var month = parseInt(parts[1], 10) - 1; // Month is zero-based
+        var year = parseInt(parts[2], 10);
+
+        var dobDate = new Date(year, month, day);
+
+        // Check if the date is a valid date
+        if (isNaN(dobDate.getTime())) {
+            return false; // Invalid date
+        }
+
+        // Calculate the age based on the date of birth
+        var currentYear = new Date().getFullYear();
+        var birthYear = dobDate.getFullYear();
+        var age = currentYear - birthYear;
+
+        // Define age validation rules based on age group and gender
+        switch (ageGroup) {
+            case 'U19':
+                if ((isFemale && age >= 16 && age <= 19) || (!isFemale && age >= 16 && age <= 18)) {
+                    return true; // Valid age
+                }
+                break;
+            case 'U16':
+                if ((isFemale && age >= 13 && age <= 16) || (!isFemale && age >= 13 && age <= 15)) {
+                    return true; // Valid age
+                }
+                break;
+            case 'U13':
+                if ((isFemale && age >= 10 && age <= 13) || (!isFemale && age >= 10 && age <= 12)) {
+                    return true; // Valid age
+                }
+                break;
+            case 'U10':
+                if ((isFemale && age >= 9 && age <= 10) || (!isFemale && age >= 9)) {
+                    return true; // Valid age
+                }
+                break;
+            case 'Senior':
+                if (age >= 19) {
+                    return true; // Valid age
+                }
+                break;
+            case 'Senior Women':
+                if (age >= 16) {
+                    return true; // Valid age
+                }
+                break;
+            case 'Masters':
+                if (age >= 45) {
+                    return true; // Valid age
+                }
+                break;
+            case 'Women':
+                if (age >= 35) {
+                    return true; // Valid age
+                }
+                break;
+            default:
+                return false; // Invalid age group
+        }
+
+        return false; // Age does not meet the specified age group rules
     }
 
     function validateBenchForm() {
