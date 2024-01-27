@@ -346,7 +346,6 @@
     </div>
 </div>
 
-
 <script>
 
     var countries = @Html.Raw(Json.Serialize(@countries));
@@ -500,7 +499,6 @@
                 isValid = false;
                 currentRow.addClass('table-danger');
                 allErrors.push({
-                    row: index + 1,
                     name: playerName,
                     errors: rowErrors
                 });
@@ -508,14 +506,6 @@
 
             console.log(allErrors)
         });
-
-        // Display any errors
-        if (!isValid) {
-            var errorMessages = allErrors.map(function (error) {
-                return 'Row ' + error.row + ': ' + error.errors.join(', ');
-            }).join('<br>');
-            $('#submissionErrors').html(errorMessages).show();
-        }
 
         return isValid;
     }
@@ -572,7 +562,6 @@
                 isValid = false;
                 currentRow.addClass('table-danger');
                 allErrors.push({
-                    row: index + 1,
                     name: playerName,
                     errors: rowErrors
                 });
@@ -580,14 +569,6 @@
 
             console.log(allErrors)
         });
-
-        // Display any errors
-        if (!isValid) {
-            var errorMessages = allErrors.map(function (error) {
-                return 'Row ' + error.row + ': ' + error.errors.join(', ');
-            }).join('<br>');
-            $('#submissionErrors').html(errorMessages).show();
-        }
 
         return isValid;
     }
@@ -611,15 +592,25 @@
         var errorContainer = $('#submissionErrors');
         errorContainer.empty();
 
-        if (errors && errors.length > 0) {
+        if (errors) {
             errorContainer.show();
             var errorList = $('<ul></ul>');
 
-            for (var i = 0; i < errors.length; i++) {
-                if (errors[i]) {
-                    var errorText = errors[i].name + ': ' + errors[i].errors.join(', ');
-                    errorList.append($('<li></li>').text(errorText));
+            if (Array.isArray(errors)) {
+                // Handle errors as an array of objects
+                for (var i = 0; i < errors.length; i++) {
+                    if (errors[i]) {
+                        if (Array.isArray(errors[i].errors)) {
+                            var errorText = errors[i].name + ': ' + errors[i].errors.join(', ');
+                            errorList.append($('<li></li>').text(errorText));
+                        } else if (typeof errors[i].errors === 'string') {
+                            errorList.append($('<li></li>').text(errors[i].name + ': ' + errors[i].errors));
+                        }
+                    }
                 }
+            } else if (typeof errors === 'string') {
+                // Handle errors as a single string
+                errorList.append($('<li></li>').text(errors));
             }
 
             errorContainer.append(errorList);
@@ -635,10 +626,9 @@
         playersAndOfficials = []
         validateForm();
         validateBenchForm()
-
-        var licenseRoleMap = {}; // Define licenseRoleMap here
-        var duplicateLicenseNumbers = {};
-
+        // Call the function to check for duplicate license numbers
+        ////checkDuplicateLicenseNumbers()
+        checkDuplicatePlayerNameAndLicenseNumber()
         displayValidationErrors(allErrors);
     }
 
@@ -775,6 +765,98 @@
         $('#benchOfficials tbody').append(newRowHtml);
     }
 
+    // Create a function to check for duplicate license numbers
+    function checkDuplicateLicenseNumbers() {
+        var licenseNumberMap = {}; // Object to store encountered license numbers and associated player names
+
+        // Helper function to add player name to the license number entry
+        function addPlayerName(licenseNumber, playerName) {
+            if (licenseNumberMap[licenseNumber]) {
+                licenseNumberMap[licenseNumber].push(playerName);
+            } else {
+                licenseNumberMap[licenseNumber] = [playerName];
+            }
+        }
+
+        // Iterate through rows in the data table
+        $('#data-table tbody tr').each(function () {
+            var licenseNumber = $(this).find("td:eq(0) span span").text().trim();
+            var playerName = $(this).find("td:eq(2) span span").text().trim();
+
+            if (licenseNumber) {
+                addPlayerName(licenseNumber, playerName);
+            }
+        });
+
+        // Iterate through rows in the bench officials table
+        $('#benchOfficials tbody tr').each(function () {
+            var licenseNumber = $(this).find("td:eq(0) span span").text().trim();
+            var playerName = $(this).find("td:eq(2) span span").text().trim();
+
+            if (licenseNumber) {
+                addPlayerName(licenseNumber, playerName);
+            }
+        });
+
+        // Now, licenseNumberMap contains license numbers as keys and player names as values
+        // You can check for duplicate license numbers and associated player names here
+        for (var licenseNumber in licenseNumberMap) {
+            if (licenseNumberMap[licenseNumber].length > 1) {
+                allErrors.push({
+                    name: licenseNumberMap[licenseNumber].join(', '),
+                    errors: 'ITC listed Names with duplicate License Number in both Player and Bench Official tables with license number: ' + licenseNumber
+                });
+
+            }
+        }
+    }
+
+    function checkDuplicatePlayerNameAndLicenseNumber() {
+        var playerNameAndLicense = new Set();
+
+        // Iterate through rows in the data table
+        $('#data-table tbody tr').each(function () {
+            $(this).removeClass('table-danger');
+            var playerName = $(this).find("td:eq(2) span span").text().trim();
+            var licenseNumber = $(this).find("td:eq(0) span span").text().trim();
+            var combined = playerName + licenseNumber;
+
+            if (playerName && licenseNumber) {
+                if (playerNameAndLicense.has(combined)) {
+                    $(this).addClass('table-danger');
+
+                    allErrors.push({
+                        name: playerName,
+                        errors: 'A roster member cannot be listed as both a player and a bench official: ' + playerName + ' (' + licenseNumber + ')'
+                    });
+                } else {
+                    playerNameAndLicense.add(combined);
+                }
+            }
+        });
+
+        // Iterate through rows in the bench officials table
+        $('#benchOfficials tbody tr').each(function () {
+            $(this).removeClass('table-danger');
+
+            var playerName = $(this).find("td:eq(2) span span").text().trim();
+            var licenseNumber = $(this).find("td:eq(0) span span").text().trim();
+            var combined = playerName + licenseNumber;
+
+            if (playerName && licenseNumber) {
+                if (playerNameAndLicense.has(combined)) {
+                    $(this).addClass('table-danger');
+                    allErrors.push({
+                        name: playerName,
+                            errors: 'A roster member cannot be listed as both a player and a bench official: ' + playerName + ' (' + licenseNumber + ')'
+                    });
+                } else {
+                    playerNameAndLicense.add(combined);
+                }
+            }
+        });
+    }
+
     $(document).ready(function () {
 
         var currentRow = null;
@@ -818,7 +900,7 @@
             
             if (currentRow) {
                 if (currentMode === 'editPlayer') {
-                    updatePlayerRowFromModal(currentRow);
+                    updateRowFromModal(currentRow);
                 } else if (currentMode === 'editBenchOfficial') {
                     updateBenchOfficialRowFromModal(currentRow);
                 }
