@@ -213,10 +213,13 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
             var selectedEvent = cups.Where(x => x != null).ToList().Concat(championships.Where(x => x != null).ToList())
                 .FirstOrDefault(x => x.Id == id);
 
+
             if (selectedEvent == null)
             {
                 return PartialView("~/Views/Partials/Forms/ITC/EventInformation.cshtml", null);
             }
+
+            var teams = selectedEvent.Children.Where(x => x.ContentType.Alias == "team").ToList();
 
             var model = new ITCEventInformationViewModel
             {
@@ -230,6 +233,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
                 HostingCountry = selectedEvent.Value<string>("hostCountry"),
                 SanctionNumber = selectedEvent.Value<string>("sanctionNumber"),
                 IsChampionship = false,
+                Teams = teams.Select(x => x.Name).ToList()
             };
 
             return PartialView("~/Views/Partials/Forms/ITC/EventInformation.cshtml", model);

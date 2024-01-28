@@ -184,3 +184,52 @@
 
     ;
 }
+
+/* Ensure the input group has no additional internal spacing */
+.input-group.mb-3 {
+    flex-wrap: nowrap; /* Prevent wrapping of elements inside the input group */
+}
+
+/* Style the pickr container */
+.input-group .pickr {
+    display: flex; /* Use flexbox for alignment */
+    align-items: center; /* Center align vertically */
+    border: 1px solid #ced4da; /* Bootstrap-like border */
+    border-radius: .25rem 0 0 .25rem; /* Rounded corners on the left */
+    margin-right: -1px; /* Aligns the pickr flush with the input */
+    height: 38px; /* Adjust height to match your input */
+}
+
+    /* Style the color picker button */
+    .input-group .pickr .pcr-button {
+        border: none; /* Remove border from the button */
+        height: 100%; /* Full height of the container */
+        background-color: var(--pcr-color); /* Color from inline style */
+        border-radius: .25rem 0 0 .25rem; /* Rounded corners on the left */
+        margin: 0; /* Reset margin */
+        padding: 0; /* Reset padding */
+    }
+
+/* Style the input field to align with the color picker */
+.input-group .form-control {
+    border-radius: 0 .25rem .25rem 0 !important; /* Rounded corners on the right */
+    border-left: none !important; /* Remove the left border to blend with the pickr */
+    height: 38px; /* Ensure height matches the pickr */
+}
+
+/* Overriding styles to ensure visibility and alignment */
+.input-group .pcr-button {
+    box-shadow: none !important; /* Remove any box shadows */
+    outline: none !important; /* Remove outline */
+}
+
+/* Ensure the input group text doesn't wrap or hide overflow */
+.input-group-text {
+    white-space: nowrap; /* Prevent wrapping of content */
+    overflow: hidden; /* Hide overflow */
+}
+
+.pickr .pcr-button {
+    /*border: 1px solid #808080 !important;*/
+    border: var(--bs-border-width) solid var(--bs-border-color) !important;
+}

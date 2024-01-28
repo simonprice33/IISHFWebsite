@@ -49,7 +49,7 @@
             ISO3 = x.ThreeLetterISORegionName
         })
         .Where(x => !string.IsNullOrEmpty(x.ISO3))
-        .OrderBy(x => Array.IndexOf(priorityCountries, x.Country) == -1 ? int.MaxValue : Array.IndexOf(priorityCountries, x.Country))
+        .OrderBy(x => Array.IndexOf(priorityCountries, x.Country) == -1 ? int.MaxValue : Array.IndexOf(priorityCountries.OrderBy(x => x).ToArray(), x.Country))
         .ThenBy(x => x.Country);
 
     // Check if the user is logged in
@@ -120,30 +120,66 @@
             <div class="tab-content" id="v-pills-tabContent">
                 <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-team" role="tabpanel" aria-labelledby="v-pills-team-tab">
                     <div class="row form-group">
-                        <div class="col-12 col-md-10">
+                        <label for="teamName" class="col-12 col-md-4 col-form-label">Team Name:</label>
+                        <div class="col-12 col-md-8">
                             <input type="text" class="form-control" placeholder="Team Name" id="teamName" />
                         </div>
                     </div>
                     <div class="row form-group">
-                        <div class="col-12 col-md-10">
+                        <label for="teamSignatory" class="col-12 col-md-4 col-form-label">Team Signatory:</label>
+                        <div class="col-12 col-md-8">
                             <input type="text" class="form-control" placeholder="Team Signatory" id="teamSignatory" />
                         </div>
                     </div>
                     <div class="row form-group">
-                        <div class="col-12 col-md-10">
-                            <input type="text" class="form-control" placeholder="Issuing Country" id="issuingCountry" />
+                        <label for="issuingCountry" class="col-12 col-md-4 col-form-label">Issuing Country:</label>
+                        <div class="col-12 col-md-8">
+                            <select class="form-control" id="issuingCountry" name="issuingCountry">
+                                <option value="">Nationality</option>
+                                @{
+                                    bool addedSeparator = false; // Flag to check if separator has been added
+                                    // This will get the index of last priority country in the sorted list
+                                    var lastPriorityCountryIndex = countries.ToList().FindLastIndex(c => priorityCountries.Contains(c.Country));
+        
+                                    foreach (var country in countries)
+                                    {
+                                        <option value="@country.Country">@country.Country</option>
+                                        if (countries.ToList().IndexOf(country) == lastPriorityCountryIndex && !addedSeparator)
+                                        {
+                                            // Add the separator
+                                            <option disabled>──────────</option>
+                                            addedSeparator = true; // Ensure the separator is only added once
+                                        }
+                                    }
+                                }
+                              
+                            </select>
                         </div>
                     </div>
-                    <div class="row form-group">
+                    @* <div class="row form-group">
                         <label for="jerseyOneColour" class="col-12 col-md-2 col-form-label">First Jersey Colour:</label>
                         <div class="col-12 col-md-8">
                             <div id="colorPicker" class="color-picker-container"></div>
+                            <input type="text" class="form-control" placeholder="Team colour in hex" id="colourOne" />
+
+                        </div>
+                    </div>*@
+                    <div class="row form-group">
+                        <label for="colourOne" class="col-12 col-md-4 col-form-label">First Jersey Colour:</label>
+                        <div class="col-12 col-md-4">
+                            <div class="input-group mb-3">
+                                <div id="colorPicker" class="input-group-prepend color-picker-container"></div>
+                                <input type="text" class="form-control" placeholder="Team colour" id="colourOne" aria-label="Team colour in hex" aria-describedby="colorPickerAddon">
+                            </div>
                         </div>
                     </div>
                     <div class="row form-group">
-                        <label for="jerseyTwoColour" class="col-12 col-sm-4 col-md-2 col-form-label">Second Jersey Colour:</label>
-                        <div class="col-12 col-md-10">
-                            <div id="colorPicker2" class="color-picker-container"></div>
+                        <label for="jerseyTwoColour" class="col-12 col-sm-4 col-md-4 col-form-label">Second Jersey Colour:</label>
+                        <div class="col-12 col-md-4">
+                            <div class="input-group mb-3">
+                                <div id="colorPicker2" class="input-group-prepend color-picker-container"></div>
+                                <input type="text" class="form-control" placeholder="Team colour" id="colourTwo" aria-label="Team colour in hex" aria-describedby="colorPickerAddon">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -361,6 +397,8 @@
     var currentMode = 'add';
     var currentRow = null;
     var currentMode = 'player'; // Default mode
+    var pickerOneHexVal = "";
+    var pickerTwoHexVal = "";
 
     function deleteRow(button) {
         // Find the row containing the clicked button
@@ -410,10 +448,8 @@
         }
         var isFemale = gender !== "" && gender === "Female";
         var ageGroup = $("#ageGroup").text();
-        debugger;
         if (dateOfBirth !== "01.01.0001" && !validateAge(dateOfBirth, ageGroup, isFemale)) {
             errors.push('Player is outside of the designated age range for this event');
-
         }
 
         return errors;
@@ -455,6 +491,7 @@
         var isValid = true;
         var licenseNumbers = [];
         var jerseyNumbers = [];
+        var roles = [];
 
         // Clear any previous error indicators
         $('#formRows tr').removeClass('table-danger');
@@ -464,6 +501,9 @@
             var currentRow = $(this);
             var licenseNumber = currentRow.find("td:eq(0) span span").text().trim();
             var jerseyNumber = currentRow.find("td:eq(3) span span").text().trim();
+            var role = currentRow.find("td:eq(1) span span").text().trim();
+            var playerName = currentRow.find("td:eq(2) span span").text().trim();
+
 
             // Add numbers to arrays for duplicate checking
             if (licenseNumber) {
@@ -472,11 +512,63 @@
             if (jerseyNumber) {
                 jerseyNumbers.push({ number: jerseyNumber, row: index + 1 });
             }
+            if (role) {
+                roles.push({ role: role, row: index + 1 });
+            }
+
         });
+
+        var sanction = $("#sanction").text();
+        var classification = sanction.charAt(0).toUpperCase(); // Get the first character and convert to uppercase
+        var isTitleEvent = classification === "A";
 
         // Check for duplicates in license and jersey numbers
         var duplicateLicenseNumbers = findDuplicates(licenseNumbers);
         var duplicateJerseyNumbers = findDuplicates(jerseyNumbers);
+
+        var roleArray = roles.map(item => item.role);
+
+        var netminderCount = roleArray.filter(x => x === "Netminder");
+        var captainCount = roleArray.filter(x => x === "Captain");
+        var assitantCaptainCount = roleArray.filter(x => x === "Assistant Captain");
+
+        // create title event check here too
+        if (netminderCount.length < 2 && isTitleEvent) {
+            allErrors.push({
+                name: "Minimum netminder count not met",
+                errors: "For a IISHF Title Event each competing team must have a minimum of two netminders. Please refer to IISHF Regulations 18.18 "
+            });
+        }
+
+        if (!captainCount || captainCount.length > 1) {
+            allErrors.push({
+                name: "Too many players are listed as Captain",
+                errors: "A team can only have one named captain. You may change your captain per game at an event, however, your ITC may only have one listed person as captain"
+            });
+        }
+
+        if (!assitantCaptainCount || assitantCaptainCount.length > 1) {
+            allErrors.push({
+                name: "Too many players are listed as Assitant Captain",
+                errors: "A team can only have one named Assistant Captain. You may change your captain per game at an event, however, your ITC may only have one listed person as captain"
+            });
+        }
+
+        if (!captainCount || captainCount.length === 0) {
+            allErrors.push({
+                name: "Missing Captain",
+                errors: "A team must have one named captain"
+            });
+        }
+
+        if (!assitantCaptainCount || assitantCaptainCount.length === 0) {
+            allErrors.push({
+                name: "Missing Assitant Captain",
+                errors: "A team must have one named Assistant Captain."
+            });
+        }
+        debugger;
+
 
         // Validate each row
         $('#formRows tr').each(function (index) {
@@ -543,7 +635,7 @@
         // Define age validation rules based on age group and gender
         // Female check first
         // Male check second
-        // Female players can be one year older in teh age group. 
+        // Female players can be one year older in teh age group.
 
         var sanction = $("#sanction").text()
         var classification = sanction.substring(1)
@@ -589,7 +681,7 @@
                 }
                 break;
             case 'U10':
-                if (age <= 9)) {
+                if (age <= 9) {
                     return true; // Valid age
                 }
                 break;
@@ -734,6 +826,39 @@
         licenseNumbers = [];
         benchOfficialLicenseNumbers = []
         playersAndOfficials = []
+
+        var teamName = $('#teamName').val(); // Gets the value from the Team Name input field
+        var teamSignatory = $('#teamSignatory').val(); // Gets the value from the Team Signatory input field
+        var issuingCountry = $('#issuingCountry').val(); // Gets the selected value from the Issuing Country dropdown
+
+        if(teamName === ""){
+            allErrors.push({
+                name: "Team name not supplied",
+                errors: 'A team name must be provided'
+            });
+        }
+
+        if (teamSignatory === "") {
+            allErrors.push({
+                name: "Team signatory name not supplied",
+                errors: 'A team name must be provided'
+            });
+        }
+
+        if (teamSignatory === teamName) {
+            allErrors.push({
+                name: "Team signatory cannot be a team name",
+                errors: 'Team signatory is the named person responsible for the team whilst at the event. Team signatory should also be the same person submitting the ITC.'
+            });
+        }
+
+        if (issuingCountry === "") {
+            allErrors.push({
+                name: "Issuing Country not supplied",
+                errors: 'Please provide the issuing country details. This is the country of the team that this document is being issued on behalf of. '
+            });
+        }
+
         validateForm();
         validateBenchForm()
         // Call the function to check for duplicate license numbers
@@ -875,7 +1000,6 @@
         $('#benchOfficials tbody').append(newRowHtml);
     }
 
-    // Create a function to check for duplicate license numbers
     function checkDuplicateLicenseNumbers() {
         var licenseNumberMap = {}; // Object to store encountered license numbers and associated player names
 
@@ -914,7 +1038,7 @@
             if (licenseNumberMap[licenseNumber].length > 1) {
                 allErrors.push({
                     name: licenseNumberMap[licenseNumber].join(', '),
-                    errors: 'ITC listed Names with duplicate License Number in both Player and Bench Official tables with license number: ' + licenseNumber
+                    errors: 'ITC listed Names with duplicate License Number in both Player and Bench Official tables with license number: ' + licenseNumber + '. Please refer to IISHF Regulations 20.13'
                 });
 
             }
@@ -958,7 +1082,7 @@
                     $(this).addClass('table-danger');
                     allErrors.push({
                         name: playerName,
-                            errors: 'A roster member cannot be listed as both a player and a bench official: ' + playerName + ' (' + licenseNumber + ')'
+                        errors: 'A roster member cannot be listed as both a player and a bench official: ' + playerName + ' (' + licenseNumber + ')'
                     });
                 } else {
                     playerNameAndLicense.add(combined);
@@ -1007,7 +1131,7 @@
         });
 
         $("#saveChanges").on("click", function () {
-            
+
             if (currentRow) {
                 if (currentMode === 'editPlayer') {
                     updateRowFromModal(currentRow);
@@ -1077,7 +1201,6 @@
 
     });
 
-    // Create the Pickr instance
     const pickr = Pickr.create({
         el: '#colorPicker',
         theme: 'classic', // or 'monolith', or 'nano'
@@ -1097,13 +1220,7 @@
             // Input / output Options
             interaction: {
                 hex: true,
-                rgba: true,
-                hsla: false,
-                hsva: false,
-                cmyk: false,
                 input: true,
-                clear: true,
-                save: true
             }
         }
     });
@@ -1121,19 +1238,13 @@
         components: {
             // Main components
             preview: true,
-            opacity: false,
+            opacity: true,
             hue: true,
 
             // Input / output Options
             interaction: {
                 hex: true,
-                rgba: true,
-                hsla: false,
-                hsva: false,
-                cmyk: false,
                 input: true,
-                clear: true,
-                save: true
             }
         },
         strings: {
@@ -1142,10 +1253,28 @@
         }
     });
 
-    // Add event listener for color change
     pickr.on('change', (color, instance) => {
-        console.log('Selected color:', color.toRGBA().toString());
-        // Perform your action with the color value
+        $('.pcr-button').first().css('--pcr-color', color.toRGBA().toString());
+        pickerOneHexVal = color.toHEXA().toString()
+        $("#colourOne").val(pickerOneHexVal)
+
     });
 
+    pickr2.on('change', (color, instance) => {
+        $('.pcr-button').last().css('--pcr-color', color.toRGBA().toString());
+        pickerTwoHexVal = color.toHEXA().toString()
+        $("#colourTwo").val(pickerTwoHexVal)
+    });
+
+    $('#colourOne').on('blur', function () {
+
+        var newColor = $(this).val(); // Get the new color value from the textbox
+        pickr.setColor(newColor); // Update the color picker with the new color
+    });
+
+    // Event listener for the second textbox using jQuery
+    $('#colourTwo').on('blur', function () {
+        var newColor = $(this).val(); // Get the new color value from the textbox
+        pickr2.setColor(newColor); // Update the color picker with the new color
+    });
 </script>

@@ -34,6 +34,15 @@
     <link rel="stylesheet" href="/css/all.css">
 
     <!-- Bootstrap JavaScript (third) -->
+    
+    @*Colour Picker*@
+    @{
+        var pickrStyleSheetUrl = "https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css";
+        var pickrScriptUrl = "https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js";
+    }
+
+    <link rel="stylesheet" href="@pickrStyleSheetUrl" />
+    <script src="@pickrScriptUrl"></script>
 
     <link rel="stylesheet" type="text/css" href="/css/mainStyles.css">
     <link rel="stylesheet" type="text/css" href="/css/form-items.css">
@@ -51,16 +60,10 @@
     <link rel="stylesheet" type="text/css" href="/css/slick-theme.css" />
     <link rel="stylesheet" type="text/css" href="/css/cookiealert.css" />
     <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+    <link rel="stylesheet" type="text/css" href="/css/itc.css" />
     <link rel="stylesheet" href="/css/tables.css">
     
-    @*Colour Picker*@
-    @{
-        var pickrStyleSheetUrl = "https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css";
-        var pickrScriptUrl = "https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js";
-    }
 
-    <link rel="stylesheet" href="@pickrStyleSheetUrl" />
-    <script src="@pickrScriptUrl"></script>
 
     @RenderSection("head", false)
 

@@ -29,5 +29,7 @@ namespace IISHFTest.Core.Models
         public string HostingClub{ get; set; }
 
         public string ShortCode { get; set; }
+
+        public List<string> Teams { get; set; }
     }
 }
