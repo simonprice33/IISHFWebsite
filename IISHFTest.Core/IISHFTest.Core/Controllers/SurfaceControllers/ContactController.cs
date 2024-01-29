@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using IISHFTest.Core.Interfaces;
 using IISHFTest.Core.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -24,15 +25,18 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
     {
         private readonly IPublishedContentQuery _contentQuery;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IContactServices _contactServices;
 
         public ContactController(
             IUmbracoContextAccessor umbracoContextAccessor,
             IUmbracoDatabaseFactory databaseFactory,
-            ServiceContext services, AppCaches appCaches,
+            ServiceContext services, 
+            AppCaches appCaches,
             IProfilingLogger profilingLogger,
             IPublishedUrlProvider publishedUrlProvider,
             IPublishedContentQuery contentQuery,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IContactServices contactServices)
             : base(umbracoContextAccessor,
                 databaseFactory,
                 services,
@@ -42,6 +46,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
         {
             _contentQuery = contentQuery;
             _httpContextAccessor = httpContextAccessor;
+            _contactServices = contactServices;
         }
 
         [HttpPost]
@@ -55,23 +60,15 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
 
             }
 
-            // Programatically create new contact form for umbraco
-            var rootContent = _contentQuery.ContentAtRoot().ToList();
-            var contactItems = rootContent.FirstOrDefault(x => x.Name == "Data")!.Children.FirstOrDefault(x => x.Name == "Contact Items");
-            ////var myContentItem = rootContent?.DescendantsOrSelfOfType().FirstOrDefault();
+            var contactItem = _contactServices.CreateContactRecord(model);
 
-            if (contactItems != null)
+            if (contactItem == null)
             {
-                var newContact = Services.ContentService?.Create("Contact", contactItems.Id, "contactItem");
-                newContact.SetValue("sender", model.Name);
-                newContact.SetValue("senderEmail", model.Email);
-                newContact.SetValue("subject", model.Subject);
-                newContact.SetValue("message", model.Message);
-
-                Services.ContentService?.SaveAndPublish(newContact);
+                return CurrentUmbracoPage();
             }
+           
+            //ToDo Send email 
 
-            // Send email 
             TempData["Status"] = "Message Sent Ok";
             // confirmation to user
 

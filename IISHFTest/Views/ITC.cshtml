@@ -138,9 +138,9 @@
                                 <option value="">Nationality</option>
                                 @{
                                     bool addedSeparator = false; // Flag to check if separator has been added
-                                    // This will get the index of last priority country in the sorted list
+                                                                 // This will get the index of last priority country in the sorted list
                                     var lastPriorityCountryIndex = countries.ToList().FindLastIndex(c => priorityCountries.Contains(c.Country));
-        
+
                                     foreach (var country in countries)
                                     {
                                         <option value="@country.Country">@country.Country</option>
@@ -152,18 +152,10 @@
                                         }
                                     }
                                 }
-                              
+
                             </select>
                         </div>
                     </div>
-                    @* <div class="row form-group">
-                        <label for="jerseyOneColour" class="col-12 col-md-2 col-form-label">First Jersey Colour:</label>
-                        <div class="col-12 col-md-8">
-                            <div id="colorPicker" class="color-picker-container"></div>
-                            <input type="text" class="form-control" placeholder="Team colour in hex" id="colourOne" />
-
-                        </div>
-                    </div>*@
                     <div class="row form-group">
                         <label for="colourOne" class="col-12 col-md-4 col-form-label">First Jersey Colour:</label>
                         <div class="col-12 col-md-4">
@@ -191,7 +183,8 @@
                                 <tr>
                                     <th style="width: 150px">License</th>
                                     <th>Role</th>
-                                    <th>Player Name</th>
+                                    <th>First Name</th>
+                                    <th>Last Name</th>
                                     <th style="width: 50px">Jersey Number</th>
                                     <th>Date of Birth</th>
                                     <th>Nationality</th>
@@ -212,7 +205,11 @@
                                         </td>
                                         <td>
 
-                                            <span>@players[i].Value("playerName")</span>
+                                            <span>@players[i].Value("firstName")</span>
+                                        </td>
+                                        <td>
+
+                                            <span>@players[i].Value("lastName")</span>
                                         </td>
                                         <td>
                                             <span>@players[i].Value("jerseyNumber")</span>
@@ -252,7 +249,8 @@
                             <tr>
                                 <th style="width: 150px">License</th>
                                 <th>Role</th>
-                                <th>Official Name</th>
+                                <th>First Name</th>
+                                <th>Last Name</th>
                                 <th>Date of Birth</th>
                                 <th>Nationality</th>
                                 <th>Gender</th>
@@ -271,7 +269,12 @@
 
                                     </td>
                                     <td>
-                                        <span>@benchOfficials[i].Value("playerName")</span>
+
+                                        <span>@players[i].Value("firstName")</span>
+                                    </td>
+                                    <td>
+
+                                        <span>@players[i].Value("lastName")</span>
                                     </td>
                                     <td>
                                         @{
@@ -302,9 +305,9 @@
 
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-submit" role="tabpanel" aria-labelledby="v-pills-submit-tab">
-                    <button type="submit" onclick="validateForms()">Validate</button>
-                    <button onclick="saveAsDraft()">Save Draft</button>
-                    <button onclick="submit()">Submit</button>
+                    <button class="btn btn-warning" type="submit" onclick="validateForms()">Validate</button>
+                    <button class="btn btn-light" onclick="saveAsDraft()">Save Draft</button>
+                    <button class="btn btn-secondary" onclick="submit()">Submit</button>
                     <div id="submissionErrors" class="alert alert-danger mb-3" role="alert">
                     </div>
                 </div>
@@ -313,6 +316,7 @@
     </div>
 </div>
 
+@*Change name to first name and last name*@
 <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -340,8 +344,12 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="playerName">Name:</label>
-                        <input type="text" class="form-control" id="playerName" name="playerName">
+                        <label for="firstName">First Name:</label>
+                        <input type="text" class="form-control" id="firstName" name="firstName">
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name:</label>
+                        <input type="text" class="form-control" id="lastName" name="lastName">
                     </div>
                     <div id="jerseyNumberFormGroup" class="form-group">
                         <label for="jerseyNumber">Jersey Number:</label>
@@ -416,9 +424,8 @@
         }
     }
 
-    function validateRow(licenseNumber, jerseyNumber, playerName, role, dateOfBirth, nationality, gender, rowIndex) {
+    function validateRow(licenseNumber, jerseyNumber, firstName, lastName, role, dateOfBirth, nationality, gender, rowIndex) {
 
-        console.log("Row", rowIndex, "License:", licenseNumber, "Jersey:", jerseyNumber, "Name:", playerName);
         var errors = [];
         if (!licenseNumber || isNaN(parseInt(licenseNumber))) {
             errors.push('Invalid license number at row ' + (rowIndex + 1));
@@ -427,8 +434,11 @@
             errors.push('Invalid jersey number at row ' + (rowIndex + 1));
         }
 
-        if (!playerName || playerName === "") {
-            errors.push('Player name is required');
+        if (!firstName || firstName === "") {
+            errors.push('Player name first is required');
+        }
+        if (!lastName || lastName === "") {
+            errors.push('Player last name is required');
         }
 
         if (!dateOfBirth || dateOfBirth === "" || dateOfBirth === "01.01.0001") {
@@ -455,7 +465,7 @@
         return errors;
     }
 
-    function validateBenchRow(licenseNumber, playerName, role, dateOfBirth, nationality, gender, rowIndex) {
+    function validateBenchRow(licenseNumber, firstName, lastName, role, dateOfBirth, nationality, gender, rowIndex) {
 
         console.log("Row", rowIndex, "License:", licenseNumber, "Name:", playerName);
 
@@ -464,8 +474,12 @@
             errors.push('Invalid license number at row ' + (rowIndex + 1));
         }
 
-        if (!playerName || playerName === "") {
-            errors.push('Player name is required');
+        if (!firstName || firstName === "") {
+            errors.push('Official name first is required');
+        }
+
+        if (!lastName || lastName === "") {
+            errors.push('Official last name is required');
         }
 
         if (!dateOfBirth || dateOfBirth === "" || dateOfBirth === "01.01.0001") {
@@ -500,9 +514,9 @@
         $('#formRows tr').each(function (index) {
             var currentRow = $(this);
             var licenseNumber = currentRow.find("td:eq(0) span span").text().trim();
-            var jerseyNumber = currentRow.find("td:eq(3) span span").text().trim();
+            var jerseyNumber = currentRow.find("td:eq(4) span span").text().trim();
             var role = currentRow.find("td:eq(1) span span").text().trim();
-            var playerName = currentRow.find("td:eq(2) span span").text().trim();
+            var playerName = currentRow.find("td:eq(2) span span").text().trim() + ' ' + currentRow.find("td:eq(3) span span").text().trim();
 
 
             // Add numbers to arrays for duplicate checking
@@ -577,13 +591,14 @@
 
             var licenseNumber = currentRow.find("td:eq(0) span span").text().trim();
             var role = currentRow.find("td:eq(1) span span").text().trim();
-            var playerName = currentRow.find("td:eq(2) span span").text().trim();
-            var jerseyNumber = currentRow.find("td:eq(3) span span").text().trim();
-            var dateOfBirth = currentRow.find("td:eq(4) span span").text().trim();
-            var nationality = currentRow.find("td:eq(5) span span").text().trim();
-            var gender = currentRow.find("td:eq(6) span span").text().trim();
+            var firstName = currentRow.find("td:eq(2) span span").text().trim();
+            var lastName = currentRow.find("td:eq(3) span span").text().trim();
+            var jerseyNumber = currentRow.find("td:eq(4) span span").text().trim();
+            var dateOfBirth = currentRow.find("td:eq(5) span span").text().trim();
+            var nationality = currentRow.find("td:eq(6) span span").text().trim();
+            var gender = currentRow.find("td:eq(7) span span").text().trim();
 
-            var rowErrors = validateRow(licenseNumber, jerseyNumber, playerName, role, dateOfBirth, nationality, gender, index);
+            var rowErrors = validateRow(licenseNumber, jerseyNumber, firstName, lastName, role, dateOfBirth, nationality, gender, index);
 
             // Check if license or jersey number is in duplicate arrays
             if (duplicateLicenseNumbers.has(licenseNumber)) {
@@ -598,7 +613,7 @@
                 isValid = false;
                 currentRow.addClass('table-danger');
                 allErrors.push({
-                    name: playerName,
+                    name: firstName + ' ' + lastName,
                     errors: rowErrors
                 });
             }
@@ -746,13 +761,13 @@
 
             var licenseNumber = currentRow.find("td:eq(0) span span").text().trim();
             var role = currentRow.find("td:eq(1) span span").text().trim();
-            var playerName = currentRow.find("td:eq(2) span span").text().trim();
-            //var jerseyNumber = currentRow.find("td:eq(3) span span").text().trim();
-            var dateOfBirth = currentRow.find("td:eq(3) span span").text().trim();
-            var nationality = currentRow.find("td:eq(4) span span").text().trim();
-            var gender = currentRow.find("td:eq(5) span span").text().trim();
+            var firstName = currentRow.find("td:eq(2) span span").text().trim();
+            var lastName = currentRow.find("td:eq(3) span span").text().trim();
+            var dateOfBirth = currentRow.find("td:eq(4) span span").text().trim();
+            var nationality = currentRow.find("td:eq(5) span span").text().trim();
+            var gender = currentRow.find("td:eq(6) span span").text().trim();
 
-            var rowErrors = validateBenchRow(licenseNumber, playerName, role, dateOfBirth, nationality, gender, index);
+            var rowErrors = validateBenchRow(licenseNumber, firstName, lastName, role, dateOfBirth, nationality, gender, index);
 
             // Check if license or jersey number is in duplicate arrays
             if (duplicateLicenseNumbers.has(licenseNumber)) {
@@ -764,7 +779,7 @@
                 isValid = false;
                 currentRow.addClass('table-danger');
                 allErrors.push({
-                    name: playerName,
+                    name: firstName + ' ' + lastName,
                     errors: rowErrors
                 });
             }
@@ -831,7 +846,7 @@
         var teamSignatory = $('#teamSignatory').val(); // Gets the value from the Team Signatory input field
         var issuingCountry = $('#issuingCountry').val(); // Gets the selected value from the Issuing Country dropdown
 
-        if(teamName === ""){
+        if (teamName === "") {
             allErrors.push({
                 name: "Team name not supplied",
                 errors: 'A team name must be provided'
@@ -870,32 +885,60 @@
     function saveAsDraft() {
         var json = generateJson();
         console.log(JSON.stringify(json));
+
+        $.ajax({
+            type: "PUT",
+            url: "/api/events/itc",
+            data: JSON.stringify(json),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                console.log("My Result");
+                console.log(result)
+            },
+            error: function (result) {
+                console.log(result);
+            }
+        });
     }
 
     function generateJson() {
         var formData = {
             "EventYear": @eventYear, // Assuming you have an input for EventYear
-            "TitleEvent": document.getElementById('shortCode').value, // Assuming you have an input for TitleEvent
+            "TitleEvent": $('#shortCode').val(), // Assuming you have an input for TitleEvent
             "isChampionship": document.getElementById('isChampionship').checked, // Assuming you have a checkbox for IsChampionship
             "ItcRosterMembers": [],
-            "TeamName": document.getElementById('teamName').value // Assuming you have an input for TeamName
+            "TeamName": $('#teamName').val() // Assuming you have an input for TeamName
         };
+     
+        var processRow = function (currentRow, isBench) {
+            var license = currentRow.querySelector("td:nth-child(1) span span").textContent.trim();
+            var role = currentRow.querySelector("td:nth-child(2) span span").textContent.trim();
+            var firstName = currentRow.querySelector("td:nth-child(3) span span").textContent.trim();
+            var lastName = currentRow.querySelector("td:nth-child(4) span span").textContent.trim();
+            var jerseyNumber = currentRow.querySelector("td:nth-child(5) span span").textContent.trim();
+            var dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
+            var nationality = currentRow.querySelector("td:nth-child(7) span span").textContent.trim();
+            var gender = currentRow.querySelector("td:nth-child(8) span span").textContent.trim();
 
-        var processRow = function (row, isBench) {
-            var license = row.querySelector('[name="' + (isBench ? 'BenchLicense[]' : 'License[]') + '"]').value;
-            var role = row.querySelector('[name="' + (isBench ? 'BenchRole[]' : 'Role[]') + '"]').value;
-            var playerName = row.querySelector('[name="' + (isBench ? 'BenchOfficialName[]' : 'PlayerName[]') + '"]').value;
-            var dateOfBirth = row.querySelector('[name="' + (isBench ? 'BenchDateOfBirth[]' : 'DateOfBirth[]') + '"]').value;
-            var nationality = row.querySelector('[name="' + (isBench ? 'BenchNationality[]' : 'Nationality[]') + '"]').value;
-            var gender = row.querySelector('[name="' + (isBench ? 'BenchGender[]' : 'Gender[]') + '"]').value;
+
+            var dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
+
+            // Split the date into [day, month, year]
+            var parts = dateOfBirth.split(".");
+
+            // Rearrange the parts into yyyy-mm-dd format
+            // Note: parts index starts from 0, so parts[0] is day, parts[1] is month, parts[2] is year
+            var formattedDate = parts[2] + "-" + parts[1] + "-" + parts[0];
 
             if (license || playerName) {
                 formData.ItcRosterMembers.push({
                     "License": license,
-                    "PlayerName": playerName,
+                    "firstName": firstName,
+                    "lastName": lastName,
                     "Role": role,
                     "IsBenchOfficial": isBench,
-                    "DateOfBirth": dateOfBirth,
+                    "DateOfBirth": formattedDate,
                     "Nationality": nationality,
                     "Gender": gender
                 });
@@ -906,9 +949,11 @@
             processRow(row, false);
         });
 
-        document.querySelectorAll('#formRowsBench tr').forEach(function (row) {
-            processRow(row, true);
-        });
+        ////document.querySelectorAll('#formRowsBench tr').forEach(function (row) {
+        ////    processRow(row, true);
+        ////});
+
+        debugger;
 
         return formData;
     }
@@ -920,15 +965,17 @@
     function populateModalFromRow(currentRow) {
         var license = currentRow.find("td:eq(0) .tablesaw-cell-content span").text().trim();
         var role = currentRow.find("td:eq(1) .tablesaw-cell-content span").text().trim();
-        var playerName = currentRow.find("td:eq(2) .tablesaw-cell-content span").text().trim();
-        var jerseyNumber = currentRow.find("td:eq(3) .tablesaw-cell-content span").text().trim();
-        var dateOfBirth = currentRow.find("td:eq(4) .tablesaw-cell-content span").text().trim();
-        var nationality = currentRow.find("td:eq(5) .tablesaw-cell-content span").text().trim();
-        var gender = currentRow.find("td:eq(6) .tablesaw-cell-content span").text().trim();
+        var firstName = currentRow.find("td:eq(2) .tablesaw-cell-content span").text().trim();
+        var lastName = currentRow.find("td:eq(3) .tablesaw-cell-content span").text().trim();
+        var jerseyNumber = currentRow.find("td:eq(4) .tablesaw-cell-content span").text().trim();
+        var dateOfBirth = currentRow.find("td:eq(5) .tablesaw-cell-content span").text().trim();
+        var nationality = currentRow.find("td:eq(6) .tablesaw-cell-content span").text().trim();
+        var gender = currentRow.find("td:eq(7) .tablesaw-cell-content span").text().trim();
 
         $('#edit-form #license').val(license);
         $('#edit-form #role').val(role);
-        $('#edit-form #playerName').val(playerName);
+        $('#edit-form #firstName').val(firstName);
+        $('#edit-form #lastName').val(lastName);
         $('#edit-form #jerseyNumber').val(jerseyNumber);
         $('#edit-form #dateOfBirth').val(dateOfBirth);
         $('#edit-form #nationality').val(nationality);
@@ -938,33 +985,37 @@
     function updateRowFromModal(row) {
         row.find("td:eq(0) .tablesaw-cell-content span").text($('#edit-form #license').val());
         row.find("td:eq(1) .tablesaw-cell-content span").text($('#edit-form #role').val());
-        row.find("td:eq(2) .tablesaw-cell-content span").text($('#edit-form #playerName').val());
-        row.find("td:eq(3) .tablesaw-cell-content span").text($('#edit-form #jerseyNumber').val());
-        row.find("td:eq(4) .tablesaw-cell-content span").text($('#edit-form #dateOfBirth').val());
-        row.find("td:eq(5) .tablesaw-cell-content span").text($('#edit-form #nationality').val());
-        row.find("td:eq(6) .tablesaw-cell-content span").text($('#edit-form #gender').val());
+        row.find("td:eq(2) .tablesaw-cell-content span").text($('#edit-form #firstName').val());
+        row.find("td:eq(3) .tablesaw-cell-content span").text($('#edit-form #lastName').val());
+        row.find("td:eq(4) .tablesaw-cell-content span").text($('#edit-form #jerseyNumber').val());
+        row.find("td:eq(5) .tablesaw-cell-content span").text($('#edit-form #dateOfBirth').val());
+        row.find("td:eq(6) .tablesaw-cell-content span").text($('#edit-form #nationality').val());
+        row.find("td:eq(7) .tablesaw-cell-content span").text($('#edit-form #gender').val());
     }
 
     function updateBenchOfficialRowFromModal(row) {
         row.find("td:eq(0) .tablesaw-cell-content span").text($('#edit-form #license').val());
         row.find("td:eq(1) .tablesaw-cell-content span").text($('#edit-form #role').val());
-        row.find("td:eq(2) .tablesaw-cell-content span").text($('#edit-form #playerName').val());
-        row.find("td:eq(3) .tablesaw-cell-content span").text($('#edit-form #dateOfBirth').val());
-        row.find("td:eq(4) .tablesaw-cell-content span").text($('#edit-form #nationality').val());
-        row.find("td:eq(5) .tablesaw-cell-content span").text($('#edit-form #gender').val());
+        row.find("td:eq(2) .tablesaw-cell-content span").text($('#edit-form #firstName').val());
+        row.find("td:eq(3) .tablesaw-cell-content span").text($('#edit-form #lastName').val());
+        row.find("td:eq(4) .tablesaw-cell-content span").text($('#edit-form #dateOfBirth').val());
+        row.find("td:eq(5) .tablesaw-cell-content span").text($('#edit-form #nationality').val());
+        row.find("td:eq(6) .tablesaw-cell-content span").text($('#edit-form #gender').val());
     }
 
     function populateModalForBenchOfficial(currentRow) {
         var license = currentRow.find("td:eq(0) .tablesaw-cell-content span").text().trim();
         var role = currentRow.find("td:eq(1) .tablesaw-cell-content span").text().trim();
-        var officialName = currentRow.find("td:eq(2) .tablesaw-cell-content span").text().trim();
-        var dateOfBirth = currentRow.find("td:eq(3) .tablesaw-cell-content span").text().trim();
-        var nationality = currentRow.find("td:eq(4) .tablesaw-cell-content span").text().trim();
-        var gender = currentRow.find("td:eq(5) .tablesaw-cell-content span").text().trim();
+        var firstName = currentRow.find("td:eq(2) .tablesaw-cell-content span").text().trim();
+        var lastName = currentRow.find("td:eq(3) .tablesaw-cell-content span").text().trim();
+        var dateOfBirth = currentRow.find("td:eq(4) .tablesaw-cell-content span").text().trim();
+        var nationality = currentRow.find("td:eq(5) .tablesaw-cell-content span").text().trim();
+        var gender = currentRow.find("td:eq(6) .tablesaw-cell-content span").text().trim();
 
         $('#edit-form #license').val(license);
         $('#edit-form #role').val(role);
-        $('#edit-form #playerName').val(officialName);
+        $('#edit-form #firstName').val(firstName);
+        $('#edit-form #lastName').val(lastName);
         $('#edit-form #dateOfBirth').val(dateOfBirth);
         $('#edit-form #nationality').val(nationality);
         $('#edit-form #gender').val(gender);
@@ -977,7 +1028,8 @@
         var newRowHtml = '<tr>' +
             '<td><b class="tablesaw-cell-label">License</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #license').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Role</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #role').val() + '</span></span></td>' +
-            '<td><b class="tablesaw-cell-label">Player Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #playerName').val() + '</span></span></td>' +
+            '<td><b class="tablesaw-cell-label">First Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #firstName').val() + '</span></span></td>' +
+            '<td><b class="tablesaw-cell-label">Last Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #lastName').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Jersey Number</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #jerseyNumber').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Date of Birth</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #dateOfBirth').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Nationality</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #nationality').val() + '</span></span></td>' +
@@ -991,7 +1043,8 @@
         var newRowHtml = '<tr>' +
             '<td><b class="tablesaw-cell-label">License</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #license').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Role</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #role').val() + '</span></span></td>' +
-            '<td><b class="tablesaw-cell-label">Player Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #playerName').val() + '</span></span></td>' +
+            '<td><b class="tablesaw-cell-label">First Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #firstName').val() + '</span></span></td>' +
+            '<td><b class="tablesaw-cell-label">Last Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #lastName').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Date of Birth</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #dateOfBirth').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Nationality</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #nationality').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Gender</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #gender').val() + '</span></span></td>' +
@@ -1051,7 +1104,7 @@
         // Iterate through rows in the data table
         $('#data-table tbody tr').each(function () {
             $(this).removeClass('table-danger');
-            var playerName = $(this).find("td:eq(2) span span").text().trim();
+            var playerName = $(this).find("td:eq(2) span span").text().trim() + ' ' + $(this).find("td:eq(3) span span").text().trim();
             var licenseNumber = $(this).find("td:eq(0) span span").text().trim();
             var combined = playerName + licenseNumber;
 
@@ -1073,7 +1126,7 @@
         $('#benchOfficials tbody tr').each(function () {
             $(this).removeClass('table-danger');
 
-            var playerName = $(this).find("td:eq(2) span span").text().trim();
+            var playerName = $(this).find("td:eq(2) span span").text().trim() + ' ' + $(this).find("td:eq(3) span span").text().trim();
             var licenseNumber = $(this).find("td:eq(0) span span").text().trim();
             var combined = playerName + licenseNumber;
 
@@ -1266,15 +1319,17 @@
         $("#colourTwo").val(pickerTwoHexVal)
     });
 
-    $('#colourOne').on('blur', function () {
+    $('#colourOne').on('blur change', function () {
 
         var newColor = $(this).val(); // Get the new color value from the textbox
         pickr.setColor(newColor); // Update the color picker with the new color
     });
 
     // Event listener for the second textbox using jQuery
-    $('#colourTwo').on('blur', function () {
+    $('#colourTwo').on('blur change', function () {
         var newColor = $(this).val(); // Get the new color value from the textbox
         pickr2.setColor(newColor); // Update the color picker with the new color
     });
+
+
 </script>

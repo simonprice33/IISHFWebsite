@@ -13,7 +13,7 @@ namespace IISHFTest.Core.Models
             ItcRosterMembers = new List<RosterMember>();
         }
 
-        public string TeamName { get; set; }
+        public string? TeamName { get; set; }
 
         public IEnumerable<RosterMember> ItcRosterMembers { get; set; }
     }

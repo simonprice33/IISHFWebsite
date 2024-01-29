@@ -66,9 +66,14 @@
             if (teams.length > 0) {
                 var selectHtml = '<select class="form-control" id="teamName">';
                 selectHtml += '<option value="">Select a Team</option>';
+                ////$.each(teams, function (index, team) {
+                ////    selectHtml += '<option value="' + team + '">' + team + '</option>';
+                ////});
+
                 $.each(teams, function (index, team) {
-                    selectHtml += '<option value="' + team + '">' + team + '</option>';
+                    selectHtml += `<option value="${team}">${team}</option>`;
                 });
+
                 selectHtml += '</select>';
                 $('#teamName').replaceWith(selectHtml);
             } else {

@@ -70,31 +70,41 @@
 </head>
 <body>
 
-    @await Html.PartialAsync("Navigation/NavBar")
+@await Html.PartialAsync("Navigation/NavBar")
 
-    <main>
-        @RenderBody()
-    </main>
+<main>
+    @RenderBody()
+</main>
 
-    @await Html.PartialAsync("Footer/Footer")
+@await Html.PartialAsync("Footer/Footer")
 
-    <div id="cookieConsentBanner" class="orange fixed-bottom p-3 bg-secondary text-white" style="display: none;">
-        <div class="container container-custom mt-1">
-            <div class="d-flex justify-content-between">
-                <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                    <div>
-                        We use cookies to improve your experience on our website. By browsing this website, you agree to our use of cookies. Read more about our Privacy Policy.
-                    </div>
-
+<div id="cookieConsentBanner" class="orange fixed-bottom p-3 bg-secondary text-white" style="display: none;">
+    <div class="container container-custom mt-1">
+        <div class="d-flex justify-content-between">
+            <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                <div>
+                    We use cookies to improve your experience on our website. By browsing this website, you agree to our use of cookies. Read more about our Privacy Policy.
                 </div>
-                <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                    <div>
-                        <button id="cookieConsentAccept" class="btn btn-light">Got it!</button>
-                    </div>
+
+            </div>
+            <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                <div>
+                    <button id="cookieConsentAccept" class="btn btn-light">Got it!</button>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
 </body>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-VZWM559GP8"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-VZWM559GP8');
+</script>
+
 </html> 

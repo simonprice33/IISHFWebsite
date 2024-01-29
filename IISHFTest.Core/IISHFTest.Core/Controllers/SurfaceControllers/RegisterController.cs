@@ -8,6 +8,8 @@ using IISHFTest.Core.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Actions;
 using Umbraco.Cms.Core.Cache;
@@ -18,6 +20,7 @@ using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Web;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Web.Website.Controllers;
+using IUserService = IISHFTest.Core.Interfaces.IUserService;
 
 namespace IISHFTest.Core.Controllers.SurfaceControllers
 {
@@ -27,6 +30,8 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IMemberManager _memberManager;
         private readonly IEmailService _emailService;
+        private readonly IUserService _userService;
+        private readonly ILogger<RegisterController> _logger;
 
         public RegisterController(
             IUmbracoContextAccessor umbracoContextAccessor,
@@ -37,7 +42,9 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
             IPublishedContentQuery contentQuery,
             IHttpContextAccessor httpContextAccessor,
             IMemberManager memberManager,
-            IEmailService emailService)
+            IEmailService emailService,
+            IUserService userService,
+            ILogger<RegisterController> logger)
             : base(umbracoContextAccessor,
                 databaseFactory,
                 services,
@@ -49,6 +56,8 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
             _httpContextAccessor = httpContextAccessor;
             _memberManager = memberManager;
             _emailService = emailService;
+            _userService = userService;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -61,33 +70,31 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
         [HttpGet("verify")]
         public async Task<IActionResult> RenderEmailVerification(VerificationViewModel model, [FromQuery] Guid token)
         {
-            var member = Services.MemberService.GetMembersByPropertyValue("emailVerificationToken", token.ToString()).SingleOrDefault();
+            var member = _userService.GetMembersByPropertyValue(token.ToString(), "emailVerificationToken");
 
             if (member != null)
             {
-                var verified = member.GetValue<bool>("emailVerified");
-                if (verified)
+                try
+                {
+                    var key = _userService.GetVerificationKey(member, token);
+                    TempData["status"] = "OK";
+                    return RedirectToUmbracoPage(key);
+                }
+                catch (MemberAccessException mEx)
                 {
                     ModelState.AddModelError("Verification Error", "Verification code has already been validated.");
                     return CurrentUmbracoPage();
                 }
-
-                member.SetValue("emailVerified", true);
-                member.SetValue("emailVerificationDate", DateTime.UtcNow);
-                Services.MemberService.Save(member);
-
-                var rootContent = _contentQuery.ContentAtRoot().ToList();
-
-                var loginContent = rootContent
-                    .FirstOrDefault(x => x.Name == "Home")!.Children()?
-                    .FirstOrDefault(x => x.Name == "Login");
-
-                TempData["status"] = "OK";
-                return RedirectToUmbracoPage(loginContent.Key);
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unable to verify user");
+                    throw;
+                }
             }
 
             // need to return user to home page and open a modal saying that didnt work. 
-            ModelState.AddModelError("Verification Error", "We have been unable to validate your email address");
+            _logger.LogWarning("Unable to find user with token {token}", token);
+            ModelState.AddModelError("Verification Error", "We have been unable to validate your account");
             TempData["status"] = "Failed";
             return CurrentUmbracoPage();
         }
@@ -95,13 +102,6 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
         [HttpPost]
         public async Task<IActionResult> HandleRegister(RegisterViewModel model)
         {
-            if (!ModelState.IsValid)
-            {
-                ModelState.AddModelError("Error", "Not enough information has been provided to submit your message");
-                return CurrentUmbracoPage();
-
-            }
-
             var existingMember = Services.MemberService.GetByEmail(model.EmailAddress);
 
             if (existingMember != null)
@@ -110,30 +110,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
                 return CurrentUmbracoPage();
             }
 
-            var identityUser =
-                MemberIdentityUser.CreateNew(model.EmailAddress, model.EmailAddress, "Member", true, $"{model.FirstName} {model.LastName}");
-            var identityResult = await _memberManager.CreateAsync(
-                identityUser,
-                model.Password);
-
-            var newMember = Services.MemberService.GetById(int.Parse(identityUser.Id));
-
-            Services.MemberService.AssignRole(newMember.Id, "Standard User");
-
-            var token = Guid.NewGuid();
-            newMember.SetValue("emailVerificationToken", token);
-            Services.MemberService.Save(newMember);
-
-            await _emailService.SendRegistrationConfirmation(new Member()
-            {
-                Name = $"{model.FirstName} {model.LastName}",
-                EmailAddress = model.EmailAddress,
-                Token = token,
-                TokenUrl = new Uri($"{_httpContextAccessor.HttpContext.Request.Scheme}://{_httpContextAccessor.HttpContext.Request.Host}/verify?token={token}")
-            }, "MemberRegistration.html", "IISHF Membership registration");
-
-            newMember.SetValue("verificationEmailSentDate", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
-            Services.MemberService.Save(newMember);
+            await _userService.RegisterUser(model);
 
             TempData["status"] = "Member Registered Ok";
 

@@ -1,12 +1,18 @@
 ﻿using System.Text.Json;
+using IISHFTest.Core.Interfaces;
 using IISHFTest.Core.Models;
 using Lucene.Net.Index;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models.PublishedContent;
+using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Controllers;
+using Umbraco.Cms.Web.Common.Filters;
+using Umbraco.Cms.Web.Common.Security;
 using Umbraco.Extensions;
+using IMediaService = IISHFTest.Core.Interfaces.IMediaService;
 
 namespace IISHFTest.Core.Controllers.ApiControllers
 {
@@ -16,76 +22,75 @@ namespace IISHFTest.Core.Controllers.ApiControllers
     {
         private readonly IPublishedContentQuery _contentQuery;
         private readonly IContentService _contentService;
+        private readonly IMemberService _memberService;
+        private readonly IMemberManager _memberManager;
+        private readonly ITournamentService _tournamentService;
+        private readonly IRosterService _rosterService;
+        private readonly IEventResultsService _eventResultsService;
+        private readonly IMediaService _mediaService;
+        private readonly ILogger<EventsController> _logger;
 
-        public EventsController(IPublishedContentQuery contentQuery, IContentService contentService)
+        public EventsController(
+            IPublishedContentQuery contentQuery,
+            IContentService contentService,
+            IMemberService memberService,
+            IMemberManager memberManager,
+            ITournamentService tournamentService,
+            IRosterService rosterService,
+            IEventResultsService eventResultsService,
+            IMediaService mediaService,
+            ILogger<EventsController> logger)
         {
             _contentQuery = contentQuery;
             _contentService = contentService;
+            _memberService = memberService;
+            _memberManager = memberManager;
+            _tournamentService = tournamentService;
+            _rosterService = rosterService;
+            _eventResultsService = eventResultsService;
+            _mediaService = mediaService;
+            _logger = logger;
         }
 
         [HttpPost("Team")]
         public IActionResult PostTeam([FromBody] Team model)
         {
-            var content = GetTournament(
+            var tournament = _tournamentService.GetTournament(
                 model.IsChampionships,
                 model.TitleEvent,
                 model.EventYear.ToString());
 
-            var team = _contentService.Create(model.TeamName, content.Id, "team");
-            team?.SetValue("eventTeam", model.TeamName);
-            team?.SetValue("countryIso3", model.CountryIso3);
-            team?.SetValue("group", model.Group);
-
-            // Assuming you have a URL and a name for the link
-            if (model.TeamUrl != null)
+            if (tournament == null)
             {
-                var linkObject = new
-                {
-                    name = $"{model.TeamName} Website",
-                    url = model.TeamUrl,
-                    target = "_blank",
-                };
-
-                var linkArray = new[] { linkObject };
-                var jsonLinkArray = JsonSerializer.Serialize(linkArray);
-
-                team.SetValue("teamWebsite", jsonLinkArray);
+                return NotFound();
             }
 
-            _contentService.SaveAndPublish(team);
-            return Ok();
+            var teamId = _tournamentService.CreateEventTeam(model, tournament);
+
+            return Created(new Uri(teamId.Id.ToString(), UriKind.RelativeOrAbsolute), teamId.Id.ToString());
         }
 
         [HttpPost("Roster")]
         public IActionResult PostRosterMember([FromBody] RosterMembers model)
         {
-            var content = GetTournament(
+            var tournament = _tournamentService.GetTournament(
                 model.IsChampionships,
                 model.TitleEvent,
                 model.EventYear.ToString());
 
-            var team = content.Children().FirstOrDefault(x => x.Name == model.TeamName);
+            if (tournament == null)
+            {
+                return NotFound();
+            }
+
+            var team = _tournamentService.GetTournamentTeam(model.TeamName, tournament);
 
             if (team == null)
             {
                 return NotFound();
             }
 
-            foreach (var rosterMember in model.ItcRosterMembers)
-            {
-                var rosteredMember = _contentService.Create(rosterMember.PlayerName, team.Id, "roster");
-                rosteredMember?.SetValue("playerName", rosterMember.PlayerName);
-                rosteredMember?.SetValue("licenseNumber", rosterMember.License);
-                rosteredMember?.SetValue("isBenchOfficial", rosterMember.IsBenchOfficial);
-                rosteredMember?.SetValue("role", rosterMember.Role);
-                rosteredMember?.SetValue("jerseyNumber", rosterMember.JerseyNumber);
-                rosteredMember?.SetValue("dateOfBirth", rosterMember.DateOfBirth.ToString("yyyy-MM-dd"));
-                rosteredMember?.SetValue("nmaCheck", rosterMember.NmaCheck);
-                rosteredMember?.SetValue("iishfCheck", rosterMember.IISHFCheck);
-                rosteredMember?.SetValue("comments", rosterMember.Comments);
-
-                _contentService.SaveAndPublish(rosteredMember);
-            }
+            _rosterService.SetRosterForTeamInformation(model, team);
 
             return Ok();
         }
@@ -93,7 +98,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
         [HttpPut("Statistics")]
         public IActionResult PutStatistics([FromBody] UpdatePlayerStatistics model)
         {
-            var tournament = GetTournament(
+            var tournament = _tournamentService.GetTournament(
                 model.IsChampionships,
                 model.TitleEvent,
                 string.Format(model.EventYear.ToString()));
@@ -103,30 +108,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
                 return NotFound();
             }
 
-            foreach (var player in model.PlayerStatistics)
-            {
-                var selectedTeam = tournament.Children.FirstOrDefault(x => x.Name == player.TeamName && x.ContentType.Alias == "team");
-                if (selectedTeam == null)
-                {
-                    continue;
-                }
-
-                var rosterMember = selectedTeam.Children()
-                    .FirstOrDefault(x => x.Value<string>("licenseNumber") == player.License);
-
-                if (rosterMember == null)
-                {
-                    continue;
-                }
-
-                var rosteredMember = _contentService.GetById(rosterMember.Id);
-                rosteredMember?.SetValue("goals", player.Goals);
-                rosteredMember?.SetValue("assists", player.Assists);
-                rosteredMember?.SetValue("penalties", player.Penalties);
-                rosteredMember?.SetValue("gamesPlayed", player.GamesPlayed);
-                _contentService.SaveAndPublish(rosteredMember);
-
-            }
+            _eventResultsService.UpdatePlayerStatistics(model, tournament);
 
             return NoContent();
         }
@@ -135,7 +117,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
         //[ApiKeyAuthorize]
         public IActionResult PutRanking([FromBody] Rankings model)
         {
-            var tournament = GetTournament(
+            var tournament = _tournamentService.GetTournament(
                 model.IsChampionships,
                 model.TitleEvent,
                 string.Format(model.EventYear.ToString()));
@@ -145,33 +127,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
                 return NotFound();
             }
 
-            foreach (var team in model.Ranking)
-            {
-                var selectedTeam = tournament.Children.FirstOrDefault(x => x.Name == team.TeamName && x.ContentType.Alias == "team");
-                if (selectedTeam == null)
-                {
-                    continue;
-                }
-
-                var teamToUpdate = _contentService.GetById(selectedTeam.Id);
-
-                teamToUpdate?.SetValue("games", team.Games);
-                teamToUpdate?.SetValue("groupPlacement", team.Place);
-                teamToUpdate?.SetValue("wins", team.Won);
-                teamToUpdate?.SetValue("tie", team.Tied);
-                teamToUpdate?.SetValue("losses", team.Lost);
-                teamToUpdate?.SetValue("goalsFor", team.GoalsFor);
-                teamToUpdate?.SetValue("goalsAgainst", team.GoalsAgainst);
-                teamToUpdate?.SetValue("difference", team.Diff);
-
-                if (team.TieWeight != null)
-                {
-                    teamToUpdate?.SetValue("tiedWeight", team.TieWeight);
-                }
-
-                teamToUpdate?.SetValue("points", team.Points);
-                _contentService.SaveAndPublish(teamToUpdate);
-            }
+            _eventResultsService.UpdateGroupRanking(model, tournament);
 
             return NoContent();
         }
@@ -180,7 +136,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
         //[ApiKeyAuthorize]
         public IActionResult PutPlacement([FromBody] TeamPlacements model)
         {
-            var tournament = GetTournament(
+            var tournament = _tournamentService.GetTournament(
                 model.IsChampionships,
                 model.TitleEvent,
                 string.Format(model.EventYear.ToString()));
@@ -190,19 +146,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
                 return NotFound();
             }
 
-            foreach (var placement in model.Placements)
-            {
-                var selectedTeam = tournament.Children.FirstOrDefault(x => x.Name == placement.TeamName && x.ContentType.Alias == "team");
-                if (selectedTeam == null)
-                {
-                    return NotFound();
-                }
-
-                var teamToUpdate = _contentService.GetById(selectedTeam.Id);
-
-                teamToUpdate?.SetValue("finalRanking", placement.Placement);
-                _contentService.SaveAndPublish(teamToUpdate);
-            }
+            _eventResultsService.UpdateFinalPlacement(model, tournament);
 
             return NoContent();
         }
@@ -211,28 +155,27 @@ namespace IISHFTest.Core.Controllers.ApiControllers
         //[ApiKeyAuthorize]
         public IActionResult PutScheduleGame([FromBody] UpdateTeamScores model)
         {
-            var tournament = GetTournament(
+            var tournament = _tournamentService.GetTournament(
                 model.IsChampionships,
                 model.TitleEvent,
                 string.Format(model.EventYear.ToString()));
             if (tournament == null)
             {
-                return NotFound();
+                return NotFound("Tournament not found");
             }
 
-            foreach (var finalScore in model.Scores)
+            try
             {
-                var selectedTeam = tournament.Children.FirstOrDefault(x => x.Name == finalScore.GameNumber.ToString() && x.ContentType.Alias == "game");
-                if (selectedTeam == null)
-                {
-                    return NotFound();
-                }
-
-                var gameToUpdate = _contentService.GetById(selectedTeam.Id);
-
-                gameToUpdate?.SetValue("homeScore", finalScore.HomeScore);
-                gameToUpdate?.SetValue("awayScore", finalScore.AwayScore);
-                _contentService.SaveAndPublish(gameToUpdate);
+                _tournamentService.UpdateGameWithResults(model, tournament);
+            }
+            catch (NullReferenceException nEx)
+            {
+                return NotFound(nEx.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unhandled exception has been thrown");
+                throw;
             }
 
             return NoContent();
@@ -242,7 +185,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
         //[ApiKeyAuthorize]
         public IActionResult PostScheduleGame([FromBody] CreateScheduleGames model)
         {
-            var tournament = GetTournament(
+            var tournament = _tournamentService.GetTournament(
                 model.IsChampionships,
                 model.TitleEvent,
                 string.Format(model.EventYear.ToString()));
@@ -254,17 +197,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
 
             if (tournament != null)
             {
-                foreach (var scheduledGame in model.Games)
-                {
-                    var game = _contentService.Create(scheduledGame.GameNumber.ToString(), tournament.Id, "game");
-                    game?.SetValue("homeTeam", scheduledGame.HomeTeam);
-                    game?.SetValue("awayTeam", scheduledGame.AwayTeam);
-                    game?.SetValue("gameNumber", scheduledGame.GameNumber);
-                    game?.SetValue("scheduleDateTime", scheduledGame.GameDateTime);
-                    game?.SetValue("group", scheduledGame.Group);
-                    game?.SetValue("remarks", scheduledGame.Remarks);
-                    _contentService.SaveAndPublish(game);
-                }
+                _tournamentService.CreateEventGame(model, tournament);
             }
 
             return NoContent();
@@ -273,97 +206,38 @@ namespace IISHFTest.Core.Controllers.ApiControllers
         [HttpPut("VideoFeed")]
         public IActionResult PutVideoFeeed([FromBody] VideoFeeds model)
         {
-            var tournament = GetTournament(
+            var tournament = _tournamentService.GetTournament(
                 model.IsChampionships,
                 model.TitleEvent,
                 string.Format(model.EventYear.ToString()));
 
-            foreach (var feed in model.Feeds)
+            if (tournament == null)
             {
-                var eventVideoFeed = _contentService.Create(feed.Title, tournament.Id, "liveFeeds");
-
-                var linkObject = new
-                    {
-                        name = $"{feed.Title}",
-                        url = feed.FeedUri,
-                        target = "_blank",
-                    };
-
-                    var linkArray = new[] { linkObject };
-                    var jsonLinkArray = JsonSerializer.Serialize(linkArray);
-
-                    eventVideoFeed.SetValue("liveFeedUrl", jsonLinkArray);
-                    eventVideoFeed.SetValue("feedOrder", feed.FeedOrder);
-                    eventVideoFeed.SetValue("liveFeedDateTime", feed.LIveFeedDateTimeUtc);
-                    eventVideoFeed.SetValue("showInSite", true);
-                
-                _contentService.SaveAndPublish(eventVideoFeed);
+                return NotFound();
             }
 
-
+            _mediaService.SetVideoFeed(model, tournament);
+            
             return NoContent();
         }
 
         [HttpPost("SanctionedEvent")]
         public IActionResult PostTournament([FromBody] TournamentModel model)
         {
-            var rootContent = _contentQuery.ContentAtRoot().ToList();
-            var tournament = rootContent
-                .FirstOrDefault(x => x.Name == "Home")!.Children()?
-                .FirstOrDefault(x => x.Name == "Tournaments")!.Children()?
-                .FirstOrDefault(x => x.Name.ToLower().Contains(model.IsChampionships ? "championships" : "cup"))!
-                .Children()
-                .FirstOrDefault(x => x.Value<string>("EventShotCode") == model.TitleEvent);
+            var iishfEventId = _tournamentService.CreateEvent(model);
 
-            if (tournament != null)
-            {
-                var linkObject = new
-                {
-                    name = $"{model.HostClub} Website",
-                    url = model.HostWebsite,
-                    target = "_blank",
-                };
-
-                var linkArray = new[] { linkObject };
-                var jsonLinkArray = JsonSerializer.Serialize(linkArray);
-
-                var iishfEvent = _contentService.Create(model.EventYear.ToString(), tournament.Id, "event");
-                iishfEvent?.SetValue("eventStartDate", model.EventStartDate);
-                iishfEvent?.SetValue("eventEndDate", model.EventEndDate);
-                iishfEvent?.SetValue("hostClub", model.HostClub);
-                iishfEvent?.SetValue("hostContact", model.HostContact);
-                iishfEvent?.SetValue("hostPhoneNumber", model.HostPhoneNumber);
-                iishfEvent?.SetValue("hostEmail", model.HostEmail);
-                iishfEvent?.SetValue("hostWebSite", jsonLinkArray);
-                iishfEvent?.SetValue("venueName", model.VenueName);
-                iishfEvent?.SetValue("venueAddress", model.VenueAddress);
-                iishfEvent?.SetValue("rinkSizeLength", model.RinkLength);
-                iishfEvent?.SetValue("rinkSizeWidth", model.RinkWidth);
-                iishfEvent?.SetValue("rinkFloor", model.RinkFloor);
-
-                _contentService.SaveAndPublish(iishfEvent);
-
-                return Created(new Uri(iishfEvent.Id.ToString(), UriKind.RelativeOrAbsolute), iishfEvent.Id.ToString());
-            }
-
-            return NotFound();
+            return iishfEventId == null
+                ? NotFound()
+                : Created(new Uri(iishfEventId.ToString(), UriKind.RelativeOrAbsolute), iishfEventId.ToString());
         }
 
-
-
-
-        private IPublishedContent? GetTournament(bool isChampionships, string titleEvent, string eventYear)
+        [HttpPut("itc")]
+        [UmbracoMemberAuthorize]
+        public async Task<IActionResult> PutItcRoster([FromBody] RosterMembers model)
         {
-            var rootContent = _contentQuery.ContentAtRoot().ToList();
-            var tournaments = rootContent
-                .FirstOrDefault(x => x.Name == "Home")!.Children()?
-                .FirstOrDefault(x => x.Name == "Tournaments")!.Children()?
-                .FirstOrDefault(x => x.Name.ToLower().Contains(isChampionships ? "championships" : "cup"))!.Children();
+            var member = await _memberManager.GetCurrentMemberAsync();
 
-            return tournaments == null || !tournaments.Any()
-                ? null
-                : tournaments.FirstOrDefault(x => x.Value<string>("EventShotCode") == titleEvent).Children()
-                    .FirstOrDefault(x => x.Name == eventYear) ?? null;
+            return NoContent();
         }
     }
 }

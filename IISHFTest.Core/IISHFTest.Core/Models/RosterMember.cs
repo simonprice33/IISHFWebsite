@@ -10,7 +10,11 @@ namespace IISHFTest.Core.Models
     {
         public string License { get; set; } = string.Empty;
 
-        public string PlayerName { get; set; } = string.Empty;
+        public string FirstName { get; set; }
+
+        public string LastName { get; set; }
+
+        public string PlayerName => $"{FirstName} {LastName}";
 
         public string Role { get; set; } = string.Empty;
 
@@ -18,7 +22,7 @@ namespace IISHFTest.Core.Models
 
         public int JerseyNumber { get; set; }
 
-        public DateOnly DateOfBirth { get; set; }
+        public DateOnly DateOfBirth { get; set; } = default;
         
         public bool NmaCheck { get; set; }
 
