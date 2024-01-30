@@ -25,11 +25,15 @@ namespace IISHFTest.Core.Models
         public int JerseyNumber { get; set; }
 
         public DateOnly DateOfBirth { get; set; } = default;
-        
+
+        public string Gender { get; set; }
+
         public bool NmaCheck { get; set; }
 
         public bool IISHFCheck { get; set; }
         
         public string Comments { get; set; } = string.Empty;
+
+        public string Nationality { get; set; }
     }
 }

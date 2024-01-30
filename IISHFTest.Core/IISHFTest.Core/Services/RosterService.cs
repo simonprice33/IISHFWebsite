@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -64,8 +65,13 @@ namespace IISHFTest.Core.Services
         private int SetRosterMemberValues(IPublishedContent team, RosterMember rosterMember, IContent umbracoRosteredMember)
         {
             umbracoRosteredMember?.SetValue("playerName", rosterMember.PlayerName);
+            umbracoRosteredMember?.SetValue("firstName", rosterMember.FirstName);
+            umbracoRosteredMember?.SetValue("lastName", rosterMember.LastName);
+            umbracoRosteredMember?.SetValue("gender", rosterMember.Gender);
             umbracoRosteredMember?.SetValue("licenseNumber", rosterMember.License);
             umbracoRosteredMember?.SetValue("isBenchOfficial", rosterMember.IsBenchOfficial);
+            umbracoRosteredMember?.SetValue("nationality", rosterMember.Nationality);
+            umbracoRosteredMember?.SetValue("iso3", GetCountryIso3Code(rosterMember.Nationality));
             umbracoRosteredMember?.SetValue("role", rosterMember.Role);
             umbracoRosteredMember?.SetValue("jerseyNumber", rosterMember.JerseyNumber);
             umbracoRosteredMember?.SetValue("dateOfBirth", rosterMember.DateOfBirth.ToString("yyyy-MM-dd"));
@@ -75,6 +81,20 @@ namespace IISHFTest.Core.Services
 
             _contentService.SaveAndPublish(umbracoRosteredMember);
             return umbracoRosteredMember.Id;
+        }
+
+        private string GetCountryIso3Code(string countryName)
+        {
+            foreach (CultureInfo ci in CultureInfo.GetCultures(CultureTypes.SpecificCultures))
+            {
+                RegionInfo region = new RegionInfo(ci.Name);
+                if (region.EnglishName.Equals(countryName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return region.ThreeLetterISORegionName;
+                }
+            }
+
+            return null;
         }
     }
 }

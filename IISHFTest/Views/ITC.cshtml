@@ -6,7 +6,8 @@
 @{
     Layout = "Main.cshtml";
     var id = Model.Id;
-    var rosterMembers = Umbraco.Content(id).Children().Where(x => x.ContentType.Alias == "roster").ToList();
+    var team = Umbraco.Content(9136);
+    var rosterMembers = team.Children().Where(x => x.ContentType.Alias == "roster").ToList();
     var players = rosterMembers.Where(x => !x.Value<bool>("isBenchOfficial")).ToList();
     var benchOfficials = rosterMembers.Where(x => x.Value<bool>("isBenchOfficial")).ToList();
     var heroImageObj = Model.Value<IPublishedContent>("heroImage");
@@ -1006,13 +1007,14 @@
             // Rearrange the parts into yyyy-mm-dd format
             // Note: parts index starts from 0, so parts[0] is day, parts[1] is month, parts[2] is year
             var formattedDate = parts[2] + "-" + parts[1] + "-" + parts[0];
-
+            debugger
             if (license || playerName) {
                 formData.ItcRosterMembers.push({
                     "Id": rosterId,
                     "License": license,
                     "firstName": firstName,
                     "lastName": lastName,
+                    "JerseyNumber": jerseyNumber,
                     "Role": role,
                     "IsBenchOfficial": isBench,
                     "DateOfBirth": formattedDate,
