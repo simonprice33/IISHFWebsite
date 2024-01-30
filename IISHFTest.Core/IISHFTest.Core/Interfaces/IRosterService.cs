@@ -10,9 +10,7 @@ namespace IISHFTest.Core.Interfaces
 {
     public interface IRosterService
     {
-        public RosterMembers SetRosterForTeamInformation(RosterMembers roster, IPublishedContent team);
-
-        public RosterMembers UpdateRosterWithItcValues(RosterMembers roster, IPublishedContent team);
+        public RosterMembers UpsertRosterMembers(RosterMembers roster, IPublishedContent team);
 
         public void DeleteRosteredPlayer(int playerId);
 

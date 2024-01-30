@@ -930,8 +930,7 @@
             contentType: "application/json; charset=utf-8",
             dataType: "json",
             success: function (result) {
-                console.log("My Result");
-                console.log(result)
+                console.log("Sending results to update row ids");
                 updateRowIds(result);
             },
             error: function (result) {
@@ -941,12 +940,15 @@
     }
 
     function updateRowIds(updatedRoster) {
+        console.log("updating row ids")
         updatedRoster.ItcRosterMembers.forEach(function (member) {
             if (member.Id !== 0) {
                 // Construct the jQuery selector to find the row with matching license number and last name
                 $("#data-table tbody tr").each(function () {
-                    var license = $(this).find('td:nth-child(1) span').text().trim();
-                    var lastName = $(this).find('td:nth-child(4) span').text().trim();
+                    var license = $(this).find('td:nth-child(1) span span').text().trim();
+                    var lastName = $(this).find('td:nth-child(4) span span').text().trim();
+                    debugger
+
                     if (license === member.License && lastName === member.LastName) {
                         $(this).attr('data-id', member.Id);
                     }

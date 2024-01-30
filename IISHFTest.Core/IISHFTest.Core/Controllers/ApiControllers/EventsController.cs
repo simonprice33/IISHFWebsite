@@ -91,7 +91,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
                 return NotFound();
             }
 
-            _rosterService.SetRosterForTeamInformation(model, team);
+            _rosterService.UpsertRosterMembers(model, team);
 
             return Ok();
         }
