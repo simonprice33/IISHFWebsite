@@ -17,7 +17,7 @@ namespace IISHFTest.Core.Interfaces
 
         IPublishedContent? GetTournament(bool isChampionships, string titleEvent, string eventYear);
 
-        IPublishedContent? GetTournamentTeam(string teamName, IPublishedContent tournament);
+        IPublishedContent? GetTournamentTeamByName(string teamName, IPublishedContent tournament);
 
         Task UpdateGameWithResults(UpdateTeamScores model, IPublishedContent tournament);
 

@@ -32,7 +32,7 @@
             <div class="row">
                 <div class="col-12 col-sm-12 col-md-12 col-lg-12">
                     <strong>Start and End Date</strong>
-                    <p class="">@Model.EventStartDate.ToString("dd.MM.yyyy") - @Model.EventEndDate.ToString("dd.MM.yyyy")</p>
+                    <p class=""><span id="startDate">@Model.EventStartDate.ToString("dd.MM.yyyy")</span> - <span id="endDate">@Model.EventEndDate.ToString("dd.MM.yyyy")</span></p>
                 </div>
             </div>
             <div class="row">
@@ -66,9 +66,6 @@
             if (teams.length > 0) {
                 var selectHtml = '<select class="form-control" id="teamName">';
                 selectHtml += '<option value="">Select a Team</option>';
-                ////$.each(teams, function (index, team) {
-                ////    selectHtml += '<option value="' + team + '">' + team + '</option>';
-                ////});
 
                 $.each(teams, function (index, team) {
                     selectHtml += `<option value="${team}">${team}</option>`;

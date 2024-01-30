@@ -90,7 +90,7 @@ namespace IISHFTest.Core.Services
                     .FirstOrDefault(x => x.Name == eventYear) ?? null;
         }
 
-        public IPublishedContent? GetTournamentTeam(string teamName, IPublishedContent tournament)
+        public IPublishedContent? GetTournamentTeamByName(string teamName, IPublishedContent tournament)
         {
             var team = tournament.Children().FirstOrDefault(x => x.Name == teamName);
             return team;
@@ -159,6 +159,38 @@ namespace IISHFTest.Core.Services
             }
 
             _contentService.SaveAndPublish(team);
+
+            return team;
+        }
+
+        private List<IPublishedContent> GetEventTeams(int year, int tournamentId, int teamId)
+        {
+            var rootContent = _contentQuery.ContentAtRoot().ToList();
+            var tournaments = rootContent
+                .FirstOrDefault(x => x.Name == "Home")!.Children()?
+                .FirstOrDefault(x => x.Name == "Tournaments")!.Children().ToList();
+
+            var cups = tournaments
+                .FirstOrDefault(x => x.Name == "European Cups")
+                .Children()
+                .Select(x => x.Children.FirstOrDefault(x => x.Name == year.ToString()))
+                .ToList();
+
+            var championships = tournaments
+                .FirstOrDefault(x => x.Name == "European Championships")
+                .Children()
+                .Select(x => x.Children.FirstOrDefault(x => x.Name == year.ToString()))
+                .ToList();
+
+            var selectedEvent = cups.Where(x => x != null).ToList().Concat(championships.Where(x => x != null).ToList())
+                .FirstOrDefault(x => x.Id == tournamentId);
+
+            if (selectedEvent == null)
+            {
+                return new List<IPublishedContent>();
+            }
+
+            var team = selectedEvent.Children.Where(x => x.ContentType.Alias == "team").ToList();
 
             return team;
         }

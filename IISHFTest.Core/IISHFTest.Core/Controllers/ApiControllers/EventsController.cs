@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Web;
 using IISHFTest.Core.Interfaces;
 using IISHFTest.Core.Models;
 using Lucene.Net.Index;
@@ -83,7 +84,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
                 return NotFound();
             }
 
-            var team = _tournamentService.GetTournamentTeam(model.TeamName, tournament);
+            var team = _tournamentService.GetTournamentTeamByName(model.TeamName, tournament);
 
             if (team == null)
             {
@@ -233,11 +234,67 @@ namespace IISHFTest.Core.Controllers.ApiControllers
 
         [HttpPut("itc")]
         [UmbracoMemberAuthorize]
-        public async Task<IActionResult> PutItcRoster([FromBody] RosterMembers model)
+        public IActionResult PutItcRoster([FromBody] RosterMembers model)
         {
-            var member = await _memberManager.GetCurrentMemberAsync();
+            var tournament = _tournamentService.GetTournament(
+                model.IsChampionships,
+                model.TitleEvent,
+                model.EventYear.ToString());
 
-            return NoContent();
+            if (tournament == null)
+            {
+                return NotFound();
+            }
+
+            var team = _tournamentService.GetTournamentTeamByName(model.TeamName, tournament);
+
+            if (team == null)
+            {
+                return NotFound();
+            }
+
+            var result = _rosterService.UpsertRosterMembers(model, team);
+            var json = JsonSerializer.Serialize(result);
+            return Ok(json);
+        }
+
+        [HttpDelete]
+        [Route("itc/team/titel-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/roster-member/{rosterId}/")]
+        [Route("team-submission/team/titel-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/roster-member/{rosterId}/")]
+        public async Task<IActionResult> DeleteFromRoster(string titleEvent, bool isChampionship, int eventYear, string teamName, int rosterId)
+        {
+            // Check we have the tournament
+            var tournament = _tournamentService.GetTournament(
+                isChampionship,
+                titleEvent,
+                eventYear.ToString());
+
+            if (tournament == null)
+            {
+                return NotFound();
+            }
+
+            teamName = HttpUtility.UrlDecode(teamName);
+
+            // Check team is in that tournament
+            var team = _tournamentService.GetTournamentTeamByName(teamName, tournament);
+
+            if (team == null)
+            {
+                return NotFound();
+            }
+
+            // Check roster member belongs to this team
+            var rosterMember = _rosterService.FindRosterMemberById(rosterId, team);
+
+            if (rosterMember == null)
+            {
+                return NotFound();
+            }
+
+            // delete roster member
+            _rosterService.DeleteRosteredPlayer(rosterMember.Id);
+                return NoContent();
         }
     }
 }

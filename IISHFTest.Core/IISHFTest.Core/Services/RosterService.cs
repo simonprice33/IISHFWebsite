@@ -7,8 +7,10 @@ using IISHFTest.Core.Interfaces;
 using IISHFTest.Core.Models;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Extensions;
 
 namespace IISHFTest.Core.Services
 {
@@ -26,31 +28,53 @@ namespace IISHFTest.Core.Services
             _contentService = contentService;
             _logger = logger;
         }
-
-        public Task SetRosterForTeamInformation(RosterMembers roster, IPublishedContent team)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task UpdateRosterWithItcValues(RosterMembers model, IPublishedContent team)
+        
+        public RosterMembers UpsertRosterMembers(RosterMembers model, IPublishedContent team)
         {
             foreach (var rosterMember in model.ItcRosterMembers)
             {
-                var rosteredMember = _contentService.Create(rosterMember.PlayerName, team.Id, "roster");
-                rosteredMember?.SetValue("playerName", rosterMember.PlayerName);
-                rosteredMember?.SetValue("licenseNumber", rosterMember.License);
-                rosteredMember?.SetValue("isBenchOfficial", rosterMember.IsBenchOfficial);
-                rosteredMember?.SetValue("role", rosterMember.Role);
-                rosteredMember?.SetValue("jerseyNumber", rosterMember.JerseyNumber);
-                rosteredMember?.SetValue("dateOfBirth", rosterMember.DateOfBirth.ToString("yyyy-MM-dd"));
-                rosteredMember?.SetValue("nmaCheck", rosterMember.NmaCheck);
-                rosteredMember?.SetValue("iishfCheck", rosterMember.IISHFCheck);
-                rosteredMember?.SetValue("comments", rosterMember.Comments);
-
-                _contentService.SaveAndPublish(rosteredMember);
+                if (rosterMember.Id == 0)
+                {
+                    var newRosterMember = _contentService.Create(rosterMember.PlayerName, team.Id, "roster");
+                    rosterMember.Id = SetRosterMemberValues(team, rosterMember, newRosterMember);
+                }
+                else
+                {
+                    var umbracoRosteredMember = _contentService.GetById(rosterMember.Id);
+                    SetRosterMemberValues(team, rosterMember, umbracoRosteredMember);
+                }
             }
 
-            return Task.CompletedTask;
+            return model;
+        }
+
+        public IPublishedContent FindRosterMemberById(int playerId, IPublishedContent team)
+        {
+            var roster = team.Children().Where(x => x.ContentType.Alias == "roster").ToList();
+            var rosterMember = roster.FirstOrDefault(x => x.Id == playerId);
+            return rosterMember;
+        }
+
+        public void DeleteRosteredPlayer(int playerId)
+        {
+            var umbracoRosteredMember = _contentService.GetById(playerId);
+            _contentService.Delete(umbracoRosteredMember);
+        }
+
+        private int SetRosterMemberValues(IPublishedContent team, RosterMember rosterMember, IContent umbracoRosteredMember)
+        {
+            umbracoRosteredMember?.SetValue("playerName", rosterMember.PlayerName);
+            umbracoRosteredMember?.SetValue("licenseNumber", rosterMember.License);
+            umbracoRosteredMember?.SetValue("isBenchOfficial", rosterMember.IsBenchOfficial);
+            umbracoRosteredMember?.SetValue("role", rosterMember.Role);
+            umbracoRosteredMember?.SetValue("jerseyNumber", rosterMember.JerseyNumber);
+            umbracoRosteredMember?.SetValue("dateOfBirth", rosterMember.DateOfBirth.ToString("yyyy-MM-dd"));
+            umbracoRosteredMember?.SetValue("nmaCheck", rosterMember.NmaCheck);
+            umbracoRosteredMember?.SetValue("iishfCheck", rosterMember.IISHFCheck);
+            umbracoRosteredMember?.SetValue("comments", rosterMember.Comments);
+
+            _contentService.SaveAndPublish(umbracoRosteredMember);
+            return umbracoRosteredMember.Id;
         }
     }
 }

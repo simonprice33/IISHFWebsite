@@ -12,7 +12,7 @@
     var heroImageObj = Model.Value<IPublishedContent>("heroImage");
     var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
 
-    var eventYear = DateTime.Now.Year.ToString();
+    var eventYear = DateTime.UtcNow.Year.ToString();
 
     var rootContent = Umbraco.ContentAtRoot().ToList();
     var tournaments = rootContent
@@ -195,7 +195,7 @@
                             <tbody id="formRows">
                                 @for (int i = 0; i < players.Count(); i++)
                                 {
-                                    <tr>
+                                    <tr data-id="@players[i].Id">
                                         <td>
                                             <span>@players[i].Value("licenseNumber")</span>
                                         </td>
@@ -260,7 +260,7 @@
                         <tbody id="formRowsBench">
                             @for (int i = 0; i < benchOfficials.Count(); i++)
                             {
-                                <tr>
+                                <tr data-id="@benchOfficials[i].Id">
                                     <td>
                                         <span>@benchOfficials[i].Value("licenseNumber")</span>
                                     </td>
@@ -415,13 +415,46 @@
         // Extract the license number from the span
         var licenseNumber = row.find("td:eq(0) span span").text().trim();
 
-        // Remove the row from the table
-        row.remove();
-
         // Add the license number to the array (if it's not empty)
         if (licenseNumber) {
             deletedLicenseNumbers.push(licenseNumber);
         }
+        var titleEvent = $('#shortCode').val()
+        var rosterId = row.data('id')
+        var eventSelectValue = $("#eventSelect").val();
+        var isChampionship = eventSelectValue.toLowerCase().includes("championship");
+
+        var startDateText = $("#startDate").text();
+        var eventYear = ''
+
+        if (startDateText) {
+            var parts = startDateText.split('.');
+
+            if (parts.length >= 3) {
+                eventYear = parts[2];
+            } else {
+                console.log("The date format is not as expected.");
+            }
+        } else {
+            console.log("No text found for #startDate.");
+        }
+
+        var teamName = $("#teamName").val()
+
+        var url = `/api/events/itc/team/titel-event/${titleEvent}/championship/${isChampionship}/year/${eventYear}/team/${teamName}/roster-member/${rosterId}`
+        var encodedUrl = encodeURI(url);
+        $.ajax({
+            url: encodedUrl,
+            type: 'DELETE',
+            success: function (data) {
+                // Remove the row from the table
+                row.remove();
+            },
+            error: function (xhr, status, error) {
+                console.error("Error: " + error);
+                // Show alert that something went wrong
+            }
+        });
     }
 
     function validateRow(licenseNumber, jerseyNumber, firstName, lastName, role, dateOfBirth, nationality, gender, rowIndex) {
@@ -466,8 +499,6 @@
     }
 
     function validateBenchRow(licenseNumber, firstName, lastName, role, dateOfBirth, nationality, gender, rowIndex) {
-
-        console.log("Row", rowIndex, "License:", licenseNumber, "Name:", playerName);
 
         var errors = [];
         if (!licenseNumber || isNaN(parseInt(licenseNumber))) {
@@ -581,8 +612,6 @@
                 errors: "A team must have one named Assistant Captain."
             });
         }
-        debugger;
-
 
         // Validate each row
         $('#formRows tr').each(function (index) {
@@ -818,7 +847,15 @@
                 for (var i = 0; i < errors.length; i++) {
                     if (errors[i]) {
                         if (Array.isArray(errors[i].errors)) {
-                            var errorText = errors[i].name + ': ' + errors[i].errors.join(', ');
+
+                            var errorText = ""
+                            if(errors[i].name === ""){
+                                errors[i].errors.join(', ');
+
+                            }else{
+                                errorText = errors[i].name + ': ' + errors[i].errors.join(', ');
+                            }
+
                             errorList.append($('<li></li>').text(errorText));
                         } else if (typeof errors[i].errors === 'string') {
                             errorList.append($('<li></li>').text(errors[i].name + ': ' + errors[i].errors));
@@ -895,6 +932,7 @@
             success: function (result) {
                 console.log("My Result");
                 console.log(result)
+                updateRowIds(result);
             },
             error: function (result) {
                 console.log(result);
@@ -902,9 +940,44 @@
         });
     }
 
+    function updateRowIds(updatedRoster) {
+        updatedRoster.ItcRosterMembers.forEach(function (member) {
+            if (member.Id !== 0) {
+                // Construct the jQuery selector to find the row with matching license number and last name
+                $("#data-table tbody tr").each(function () {
+                    var license = $(this).find('td:nth-child(1) span').text().trim();
+                    var lastName = $(this).find('td:nth-child(4) span').text().trim();
+                    if (license === member.License && lastName === member.LastName) {
+                        $(this).attr('data-id', member.Id);
+                    }
+                });
+            }
+        });
+    }
+
+
     function generateJson() {
+
+        // Retrieve the value of the element with ID 'startDate'
+        var startDate = $("#startDate").text();
+        var year = "";
+        // Check if startDate is not undefined or null
+        if (startDate) {
+            // Split the value by the dot
+            var parts = startDate.split('.');
+
+            // Check if the array has at least three parts (to avoid errors)
+            if (parts.length >= 3) {
+                year = parts[2]; // This will be the third part of the split string
+            } else {
+                console.log("The date format is not as expected.");
+            }
+        } else {
+            console.log("No value found for #startDate.");
+        }
+
         var formData = {
-            "EventYear": @eventYear, // Assuming you have an input for EventYear
+            "EventYear": year, // Assuming you have an input for EventYear
             "TitleEvent": $('#shortCode').val(), // Assuming you have an input for TitleEvent
             "isChampionship": document.getElementById('isChampionship').checked, // Assuming you have a checkbox for IsChampionship
             "ItcRosterMembers": [],
@@ -912,6 +985,8 @@
         };
      
         var processRow = function (currentRow, isBench) {
+            var $currentRow = $(currentRow); // Convert to jQuery object
+            var rosterId = $currentRow.data('id');
             var license = currentRow.querySelector("td:nth-child(1) span span").textContent.trim();
             var role = currentRow.querySelector("td:nth-child(2) span span").textContent.trim();
             var firstName = currentRow.querySelector("td:nth-child(3) span span").textContent.trim();
@@ -920,6 +995,7 @@
             var dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
             var nationality = currentRow.querySelector("td:nth-child(7) span span").textContent.trim();
             var gender = currentRow.querySelector("td:nth-child(8) span span").textContent.trim();
+            debugger;
 
 
             var dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
@@ -933,6 +1009,7 @@
 
             if (license || playerName) {
                 formData.ItcRosterMembers.push({
+                    "Id": rosterId,
                     "License": license,
                     "firstName": firstName,
                     "lastName": lastName,
@@ -952,8 +1029,6 @@
         ////document.querySelectorAll('#formRowsBench tr').forEach(function (row) {
         ////    processRow(row, true);
         ////});
-
-        debugger;
 
         return formData;
     }
@@ -1025,7 +1100,7 @@
     }
 
     function addNewRowFromModal() {
-        var newRowHtml = '<tr>' +
+        var newRowHtml = '<tr data-id="0">' +
             '<td><b class="tablesaw-cell-label">License</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #license').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Role</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #role').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">First Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #firstName').val() + '</span></span></td>' +
@@ -1040,7 +1115,7 @@
     }
 
     function addBenchOfficialRowFromModal() {
-        var newRowHtml = '<tr>' +
+            var newRowHtml = '<tr data-id="0">' +
             '<td><b class="tablesaw-cell-label">License</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #license').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Role</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #role').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">First Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #firstName').val() + '</span></span></td>' +

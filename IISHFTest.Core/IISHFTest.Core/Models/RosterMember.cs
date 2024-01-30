@@ -8,13 +8,15 @@ namespace IISHFTest.Core.Models
 {
     public class RosterMember
     {
+        public int Id { get; set; }
+
         public string License { get; set; } = string.Empty;
 
         public string FirstName { get; set; }
 
         public string LastName { get; set; }
 
-        public string PlayerName => $"{FirstName} {LastName}";
+        public string PlayerName => $"{FirstName.Trim()} {LastName.Trim()}";
 
         public string Role { get; set; } = string.Empty;
 
