@@ -947,7 +947,7 @@
                 $("#data-table tbody tr").each(function () {
                     var license = $(this).find('td:nth-child(1) span span').text().trim();
                     var lastName = $(this).find('td:nth-child(4) span span').text().trim();
-                    debugger
+                    
 
                     if (license === member.License && lastName === member.LastName) {
                         $(this).attr('data-id', member.Id);
@@ -997,8 +997,6 @@
             var dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
             var nationality = currentRow.querySelector("td:nth-child(7) span span").textContent.trim();
             var gender = currentRow.querySelector("td:nth-child(8) span span").textContent.trim();
-            debugger;
-
 
             var dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
 
