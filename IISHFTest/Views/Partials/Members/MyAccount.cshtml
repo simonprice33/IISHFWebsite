@@ -1,0 +1,103 @@
+﻿@inherits UmbracoViewPage<IISHFTest.Core.Models.AccountViewModel>
+@using IISHFTest.Core.Controllers.SurfaceControllers
+@model IISHFTest.Core.Models.AccountViewModel
+
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div id="myDetails" class="col-12 col-sm-12 col-md-5 col-lg-5">
+            <div class="col-12">
+                <h2>My Details</h2>
+                <div id="successResult"></div>
+                <div class="form-group row mb-2">
+                    @Html.LabelFor(m => m.Name, new { @class = "col-form-label col-md-4", placeholder = "Full Name" })
+                    <div class="col-md-8">
+                        @Html.TextBoxFor(m => m.Name, new { @class = "form-control", placeholder = "Full Name" })
+                    </div>
+                </div>
+                <div class="form-group row mb-2">
+                    @Html.LabelFor(m => m.Email, new { @class = "col-form-label col-md-4", placeholder = "Email Address" })
+                    <div class="col-md-8">
+                        @Html.TextBoxFor(m => m.Email, new { @class = "form-control", placeholder = "Email Address", type = "email" })
+                    </div>
+                </div>
+                <div class="form-group row mb-2">
+                    @Html.LabelFor(m => m.Password, new { @class = "col-form-label col-md-4", placeholder = "New Password" })
+                    <div class="col-md-8">
+                        @Html.TextBoxFor(m => m.Password, new { @class = "form-control", placeholder = "New Password", type = "password" })
+                    </div>
+                </div>
+                <div class="form-group row mb-2">
+                    @Html.LabelFor(m => m.ConfirmPassword, new { @class = "col-form-label col-md-4", placeholder = "New Password" })
+                    <div class="col-md-8">
+                        @Html.TextBoxFor(m => m.ConfirmPassword, new { @class = "form-control", placeholder = "New Password", type = "password" })
+                    </div>
+                </div>
+                <span class="btn btn-secondary" id="update" value="">Update details</span>
+
+            </div>
+        </div>
+
+
+        <!-- Vertical Line for md and lg screens -->
+        <div class="vertical-line-md-lg d-none d-md-block col-md-2 col-lg-2"></div>
+
+
+
+        <div id="myInvitations" class="col-12 col-sm-12 col-md-5 col-lg-5">
+            <div class="col-12">
+                <h2>My Teams Invitations</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    $(document).ready(function () {
+
+        $("#update").on("click", function () {
+           
+            // Create an object with the form data
+            var formData = {
+                Name: $("#Name").val(),
+                Email: $("#Email").val(),
+                Username: $("#Email").val(), // Assuming you want to duplicate the Email value
+                Password: $("#Password").val() === "" ? null : $("#Password").val(),
+                ConfirmPassword: $("#ConfirmPassword").val() === "" ? null : $("#ConfirmPassword").val()
+            };
+
+            $.ajax({
+                type: "PUT",
+                url: "/api/account/update-details",
+                data: JSON.stringify(formData),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (result) {
+                    console.log("Updated successfully");
+                    var html = "<div class=\"alert alert-success\" role=\"alert\">Your details have been updated</div>"
+                    $("#successResult").html(html);
+                    // Slide down the div
+                    $("#successResult").slideDown(500);
+
+                    // Set a timeout to slide up the div after 5 seconds
+                    setTimeout(function () {
+                        $("#successResult").slideUp(500);
+                    }, 5000);
+                    
+                },
+                error: function (result) {
+                    console.log(result);
+                }
+            });
+
+        })
+    })
+
+</script>

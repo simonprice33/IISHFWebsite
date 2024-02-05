@@ -2,5 +2,159 @@
 @inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.Event>
 @using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
 @{
-Layout = "Main.cshtml";
+    Layout = "Main.cshtml";
+    var id = Model.Id;
+
+    var parent = Umbraco.Content(id).Parent;
+
+    var selectedEvent = Model;
+
+    var heroImageObj = parent.Value<IPublishedContent>("heroImage");
+    var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
 }
+
+<div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
+    <div class="overlay"></div>
+    <div class="inner">
+        <div class="container custom-container">
+            <h1 class="display-4">@Model.Name</h1>
+            <p class="lead">@Model.Value("heroSubtitle")</p>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-5 mb-5">
+    <div class="row">
+        <div class="col-md-3">
+            <!-- Tabs nav -->
+            <div class="nav flex-column nav-pills nav-pills-custom" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+
+                @if (selectedEvent == null)
+                {
+                    <a class="nav-link mb-3 p-3 shadow active" id="v-pills-info-tab" data-bs-toggle="pill" href="#v-pills-no-info" role="tab" aria-controls="v-pills-info" aria-selected="true">
+                        <span class="font-weight-bold small text-uppercase">Tournament information</span>
+                    </a>
+                }
+
+                @if (selectedEvent != null)
+                {
+                    <a class="nav-link mb-3 p-3 shadow active" id="v-pills-info-tab" data-bs-toggle="pill" href="#v-pills-info" role="tab" aria-controls="v-pills-info" aria-selected="true">
+                        <span class="font-weight-bold small text-uppercase">Tournament information</span>
+                    </a>
+                   @* <a class="nav-link mb-3 p-3 shadow" id="v-pills-teams-tab" data-bs-toggle="pill" href="#v-pills-teams" role="tab" aria-controls="v-pills-info" aria-selected="true">
+                        <span class="font-weight-bold small text-uppercase">Teams</span>
+                    </a>
+                    <a class="nav-link mb-3 p-3 shadow" id="v-pills-standings-tab" data-bs-toggle="pill" href="#v-pills-standings" role="tab" aria-controls="v-pills-standings" aria-selected="false">
+                        <span class="font-weight-bold small text-uppercase">Group Standings</span>
+                    </a>
+
+                    <a class="nav-link mb-3 p-3 shadow" id="v-pills-schedule-tab" data-bs-toggle="pill" href="#v-pills-schedule" role="tab" aria-controls="v-pills-schedule" aria-selected="false">
+                        <span class="font-weight-bold small text-uppercase">Schedule and Results</span>
+                    </a>
+                    <a class="nav-link mb-3 p-3 shadow" id="v-pills-placements-tab" data-bs-toggle="pill" href="#v-pills-placements" role="tab" aria-controls="v-pills-placements" aria-selected="false">
+                        <span class="font-weight-bold small text-uppercase">Final Placements</span>
+                    </a>
+                    <a class="nav-link mb-3 p-3 shadow" id="v-pills-player-stats-tab" data-bs-toggle="pill" href="#v-pills-player-stats" role="tab" aria-controls="v-pills-standings" aria-selected="false">
+                        <span class="font-weight-bold small text-uppercase">Player Statistics</span>
+                    </a>
+
+                    if (selectedEvent.Children.Count(x => x.ContentType.Alias == "liveFeeds") > 0)
+                    {
+                        <a class="nav-link mb-3 p-3 shadow" id="v-pills-media-tab" data-bs-toggle="pill" href="#v-pills-media" role="tab" aria-controls="v-pills-media" aria-selected="false">
+                            <span class="font-weight-bold small text-uppercase">Media</span>
+                        </a>
+                    }
+
+                    if (selectedEvent.Children.Count(x => x.ContentType.Alias == "document") > 0)
+                    {
+                        <a class="nav-link mb-3 p-3 shadow" id="v-pills-documents-tab" data-bs-toggle="pill" href="#v-pills-documents" role="tab" aria-controls="v-pills-documents" aria-selected="false">
+                            <span class="font-weight-bold small text-uppercase">Documents</span>
+                        </a>
+                    }
+*@
+                    @* <a class="nav-link mb-3 p-3 shadow" id="v-pills-news-tab" data-bs-toggle="pill" href="#v-pills-news" role="tab" aria-controls="v-pills-news" aria-selected="false">
+                <span class="font-weight-bold small text-uppercase">Related News</span>
+                </a>*@
+                }
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <!-- Tabs content -->
+            <div class="tab-content" id="v-pills-tabContent">
+                @{
+                    if (selectedEvent != null)
+                    {
+                        <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-info" role="tabpanel" aria-labelledby="v-pills-info-tab">
+                            @await Html.PartialAsync("~/Views/Partials/None Title Events/EventInformation.cshtml")
+                        </div>
+                        ////<div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-teams" role="tabpanel" aria-labelledby="v-pills-info-tab">
+                        ////    @await Html.PartialAsync("~/Views/Partials/None Title Events/Teams.cshtml")
+                        ////</div>
+                        ////<div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-standings" role="tabpanel" aria-labelledby="v-pills-standings-tab">
+                        ////    <div id="groupRankingsContainer"></div>
+                        ////</div>
+                        ////<div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-schedule" role="tabpanel" aria-labelledby="v-pills-schedule-tab">
+                        ////    <div id="scheduleResultsContainer"></div>
+                        ////</div>
+                        ////<div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-placements" role="tabpanel" aria-labelledby="v-pills-placements-tab">
+                        ////    <div id="eventPlacements"></div>
+
+                        ////</div>
+                        ////<div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-player-stats" role="tabpanel" aria-labelledby="v-pills-placements-tab">
+                        ////    <div id="playerStats"></div>
+
+                        ////</div>
+                        ////<div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-media" role="tabpanel" aria-labelledby="v-pills-settings-tab">
+                        ////    @await Html.PartialAsync("~/Views/Partials/None Title Events/EvenMedia.cshtml")
+
+                        ////</div>
+                        ////<div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-documents" role="tabpanel" aria-labelledby="v-pills-settings-tab">
+                        ////    @await Html.PartialAsync("~/Views/Partials/None Title Events/EventDocuments.cshtml")
+
+                        ////</div>
+                        ////<div class="tab-pane fade shadow rounded bg-white p-5" id="v-pills-news" role="tabpanel" aria-labelledby="v-pills-settings-tab">
+                        ////    @await Html.PartialAsync("~/Views/Partials/Events/EventNews.cshtml")
+
+                        ////</div>
+                    }
+                }
+
+                @if (selectedEvent == null)
+                {
+                    <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-no-info" role="tabpanel" aria-labelledby="v-pills-standings-tab">
+                        <div id="noEventInformation">
+                            <h2 class="text-center">There is currently no data available or this event</h2>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@*@{
+    if (!string.IsNullOrWhiteSpace(@eventShortCode))
+    {
+        <script>
+            $(document).ready(function () {
+                $.get('/umbraco/surface/events/GetGroupRankings', { year: '@selectedCalendarYear', titleEvent: '@eventShortCode' }, function (data) {
+                    $('#groupRankingsContainer').html(data);
+                });
+
+                $.get('/umbraco/surface/events/getsheduleandresults', { year: '@selectedCalendarYear', titleEvent: '@eventShortCode' }, function (data) {
+                    $('#scheduleResultsContainer').html(data);
+                });
+
+                $.get('/umbraco/surface/events/GetPlacements', { year: '@selectedCalendarYear', titleEvent: '@eventShortCode' }, function (data) {
+                    $('#eventPlacements').html(data);
+                });
+
+                $.get('/umbraco/surface/events/GetPlayerStats', { year: '@selectedCalendarYear', titleEvent: '@eventShortCode' }, function (data) {
+                    $('#playerStats').html(data);
+                });
+            });
+        </script>
+    }
+}*@

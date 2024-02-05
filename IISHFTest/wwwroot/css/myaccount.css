@@ -1,0 +1,22 @@
+﻿/* Custom CSS for the flex container */
+.flex-row-md-lg {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+/* Custom CSS for the vertical line */
+.vertical-line-md-lg {
+    border-left: 1px solid #ddd;
+    height: auto; /* Adjusts to the height of the flex container */
+}
+
+/* Hide the vertical line on small screens */
+@media (max-width: 767px) {
+    .vertical-line-md-lg {
+        display: none;
+    }
+}
+
+#successResult {
+    display: none;
+}

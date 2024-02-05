@@ -53,7 +53,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
                 return PartialView("~/Views/Partials/Events/EventStandings.cshtml", new GroupRankingsViewModel());
             }
 
-            var teamPlacements = eventTeams.Select(placementItem => new RankingViewModel()
+            var teamPlacements = eventTeams.Where(x =>  !string.IsNullOrWhiteSpace(x.Value<string>("group"))).Select(placementItem => new RankingViewModel()
             {
                 TeamName = placementItem.Value<string>("eventTeam"),
                 Group = placementItem.Value<string>("group"),

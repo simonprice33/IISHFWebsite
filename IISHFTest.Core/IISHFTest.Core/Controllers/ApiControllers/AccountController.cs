@@ -1,0 +1,86 @@
+﻿using IISHFTest.Core.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using IISHFTest.Core.Models;
+using Umbraco.Cms.Core.Security;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core;
+using IISHFTest.Core.Services;
+using Umbraco.Cms.Core.Actions;
+using Umbraco.Cms.Web.Common.Filters;
+using IUserService = IISHFTest.Core.Interfaces.IUserService;
+
+namespace IISHFTest.Core.Controllers.ApiControllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class AccountController : ControllerBase
+    {
+        private readonly IPublishedContentQuery _contentQuery;
+        private readonly IContentService _contentService;
+        private readonly IMemberService _memberService;
+        private readonly IMemberManager _memberManager;
+        private readonly ITournamentService _tournamentService;
+        private readonly IRosterService _rosterService;
+        private readonly IEventResultsService _eventResultsService;
+        private readonly IUserService _userService;
+        private readonly ILogger<EventsController> _logger;
+
+        public AccountController(
+            IPublishedContentQuery contentQuery,
+            IContentService contentService,
+            IMemberService memberService,
+            IMemberManager memberManager,
+            ITournamentService tournamentService,
+            IRosterService rosterService,
+            IEventResultsService eventResultsService,
+            IUserService userService,
+            ILogger<EventsController> logger)
+        {
+            _contentQuery = contentQuery;
+            _contentService = contentService;
+            _memberService = memberService;
+            _memberManager = memberManager;
+            _tournamentService = tournamentService;
+            _rosterService = rosterService;
+            _eventResultsService = eventResultsService;
+            _userService = userService;
+            _logger = logger;
+        }
+
+        [HttpPut]
+        [Route("update-details")]
+        [UmbracoMemberAuthorize]
+        public async Task<IActionResult> UpdateDetails(AccountViewModel model)
+        {
+            var member = await _memberManager.GetCurrentMemberAsync();
+
+            if (member == null)
+            {
+                return Unauthorized();
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.Password) 
+                && !string.IsNullOrWhiteSpace(model.ConfirmPassword)
+                && model.Password.Equals(model.ConfirmPassword))
+            {
+                var result = _userService.UpdatePassword(member.Email, model.Password);
+            }
+
+            if (member.Name != model.Name)
+            {
+            }
+
+            if (member.Email != model.Email)
+            {
+            }
+
+            return NoContent();
+        }
+    }
+}

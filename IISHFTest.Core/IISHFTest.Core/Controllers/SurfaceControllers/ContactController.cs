@@ -74,14 +74,5 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
 
             return RedirectToCurrentUmbracoPage();
         }
-
-        [HttpGet]
-        public ActionResult RenderContactForm()
-        {
-            var model = new ContactFormViewModel();
-            model.Email = "sprice@iishf.com";
-            return PartialView("~/Views/Partials/Contact/ContactForm.cshtml", model);
-        }
-
     }
 }

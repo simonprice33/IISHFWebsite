@@ -1,0 +1,109 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.Event>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+
+@{
+    var id = Model.Id;
+    var events = Umbraco.Content(id).Children();
+
+    var selectedCalendarYear = DateTime.Now.Year;
+
+    if (!string.IsNullOrWhiteSpace(Context.Request.Query["year"].ToString()))
+    {
+        int.TryParse(Context.Request.Query["year"].ToString(), out selectedCalendarYear);
+    }
+
+    //var selectedEvent = events.FirstOrDefault(x => x.Name == selectedCalendarYear.ToString());
+    var selectedEvent = Model;
+}
+
+@{
+    if (selectedEvent == null)
+    {
+        <div class="container ">
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="text-center  mb-2 mb-sm-5">Tournament Information</h1>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@{
+    if (selectedEvent != null)
+    {
+        <div class="container ">
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="text-center  mb-2 mb-sm-5">Tournament Information</h1>
+                </div>
+                <div>
+                    @{
+                        var startDate = DateTime.Parse(@selectedEvent.Value("EventStartDate").ToString());
+                        var endDate = DateTime.Parse(@selectedEvent.Value("EventEndDate").ToString());
+                        <h2 class="mb-5">@startDate.DayOfWeek @startDate.Day - @endDate.DayOfWeek @endDate.ToString("dd MMMM yyyy")</h2>
+                    }
+                </div>
+                <div class="col-12 col-sm-12 col-md-4 col-lg-4 text-center text-md-left ">
+                    <h2 class="h2-desktop h2-mobile">Host</h2>
+
+
+                    @{
+                        // Assuming 'Model' is your event IPublishedContent item.
+                        IPublishedContent hostImage = selectedEvent.Value<IPublishedContent>("HostImage");
+
+                        if (hostImage != null)
+                        {
+                            string imageUrl = hostImage.Url(); // This should get you the URL of the image.
+                            <img src="@imageUrl" class="img img-fluid mb-2" alt="Host Image" />
+                        }
+                    }
+
+                    <h5><strong>@selectedEvent.Value("HostClub").ToString()</strong></h5>
+                    <h6><strong>@selectedEvent.Value("HostContact").ToString()</strong></h6>
+                    @{
+                        var link = selectedEvent.Value<Umbraco.Cms.Core.Models.Link>("HostWebSite");
+                        if (link != null)
+                        {
+                            
+                            <a href="@link.Url" target="@link.Target"><i class="fa-duotone fa-globe-pointer text-black fa-lg m-2"></i></a>
+                        }
+
+
+                        if (!string.IsNullOrWhiteSpace(@selectedEvent.Value("HostPhoneNumber").ToString()))
+                        {
+                            var telephone = $"tel:{@selectedEvent.Value("HostPhoneNumber").ToString().Replace(" ", string.Empty).Trim()}";
+                            var whatsAppUrl = $"https://wa.me/{@selectedEvent.Value("HostPhoneNumber").ToString().Replace("+", string.Empty).Replace(" ", string.Empty).Trim()}";
+                            <a href="@telephone" ><i class="fa-thin fa-mobile-button text-black fa-lg m-2"></i></a>
+                            <a href="@whatsAppUrl" target="_blank"><i class="fa-brands fa-square-whatsapp text-black fa-lg m-2"></i></a>
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(@selectedEvent.Value("HostEmail").ToString()))
+                        {
+                            <a href="mailto:@selectedEvent.Value("HostEmail")"><i class="fa-regular fa-at text-black fa-lg m-2"></i></a>
+                        }
+                    }
+
+                </div>
+                <div class="col-12 col-sm-12 col-md-4 col-lg-4 text-center text-md-left ">
+                    <h2 class="h2-desktop h2-mobile">Venue</h2>
+                    <h5><strong>@selectedEvent.Value("VenueName").ToString()</strong></h5>
+                    <h6><strong>@Html.Raw(selectedEvent.Value<string>("VenueAddress").Replace("\n", "<br>"))</strong></h6>
+                </div>
+                <div class="col-12 col-sm-12 col-md-4 col-lg-4 text-center text-md-left ">
+                    <h2 class="h2-desktop h2-mobile">Rink Features</h2>
+                    <h5>Dimensions</h5>
+                    <h6>@selectedEvent.Value("RinkSizeLength") X @selectedEvent.Value("RinkSizeWidth")</h6>
+                    @{
+                        if (!string.IsNullOrWhiteSpace(@selectedEvent.Value("RinkFloor").ToString()))
+                        {
+                            <h5>Flooring</h5>
+                            <h6>@selectedEvent.Value("RinkFloor")</h6>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    }
+}

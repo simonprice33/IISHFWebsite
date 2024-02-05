@@ -6,10 +6,21 @@
 @{
     Layout = "Main.cshtml";
     var id = Model.Id;
-    var team = Umbraco.Content(9136);
-    var rosterMembers = team.Children().Where(x => x.ContentType.Alias == "roster").ToList();
+    IPublishedContent? team = null;
+    IPublishedContent? selectedTournament = null;
+
+    Guid.TryParse(Context.Request.Query["team"].ToString(), out var teamInformationKey);
+    if (teamInformationKey != Guid.Empty)
+    {
+        // build itc information from team information for event
+        team = Umbraco.Content(teamInformationKey);
+        selectedTournament = Umbraco.Content(team.Parent.Id);
+    }
+
+    var rosterMembers = team?.Children().Where(x => x.ContentType.Alias == "roster").ToList() ?? new List<IPublishedContent>();
     var players = rosterMembers.Where(x => !x.Value<bool>("isBenchOfficial")).ToList();
     var benchOfficials = rosterMembers.Where(x => x.Value<bool>("isBenchOfficial")).ToList();
+
     var heroImageObj = Model.Value<IPublishedContent>("heroImage");
     var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
 
@@ -19,6 +30,7 @@
     var tournaments = rootContent
         .FirstOrDefault(x => x.Name == "Home")!.Children()?
         .FirstOrDefault(x => x.Name == "Tournaments")!.Children().ToList();
+    ;
 
     var cups = tournaments
         .FirstOrDefault(x => x.Name == "European Cups")
@@ -63,11 +75,7 @@
         user = await MemberManager.GetCurrentMemberAsync();
     }
 
-    Guid.TryParse(Context.Request.Query["team"].ToString(), out var teamInformation);
-    if (teamInformation == Guid.Empty)
-    {
-        // build itc information from team information for event
-    }
+
 }
 
 <div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
@@ -123,13 +131,20 @@
                     <div class="row form-group">
                         <label for="teamName" class="col-12 col-md-4 col-form-label">Team Name:</label>
                         <div class="col-12 col-md-8">
-                            <input type="text" class="form-control" placeholder="Team Name" id="teamName" />
+                            @{
+                                var teamName = @team?.Name ?? string.Empty;
+                            }
+                            <input type="text" class="form-control" placeholder="Team Name" id="teamName" value="@teamName" />
+
                         </div>
                     </div>
                     <div class="row form-group">
                         <label for="teamSignatory" class="col-12 col-md-4 col-form-label">Team Signatory:</label>
                         <div class="col-12 col-md-8">
-                            <input type="text" class="form-control" placeholder="Team Signatory" id="teamSignatory" />
+                            @{
+                                var teamSignatory = team?.Value<string>("teamSignatory") ?? string.Empty;
+                            }
+                            <input type="text" class="form-control" placeholder="Team Signatory" id="teamSignatory" value="@teamSignatory" />
                         </div>
                     </div>
                     <div class="row form-group">
@@ -144,7 +159,14 @@
 
                                     foreach (var country in countries)
                                     {
-                                        <option value="@country.Country">@country.Country</option>
+                                        if (country.ISO3 == team?.Value<string>("countryIso3"))
+                                        {
+                                            <option selected="true" value="@country.ISO3">@country.Country</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@country.ISO3">@country.Country</option>
+                                        }
                                         if (countries.ToList().IndexOf(country) == lastPriorityCountryIndex && !addedSeparator)
                                         {
                                             // Add the separator
@@ -850,10 +872,10 @@
                         if (Array.isArray(errors[i].errors)) {
 
                             var errorText = ""
-                            if(errors[i].name === ""){
+                            if (errors[i].name === "") {
                                 errors[i].errors.join(', ');
 
-                            }else{
+                            } else {
                                 errorText = errors[i].name + ': ' + errors[i].errors.join(', ');
                             }
 
@@ -948,7 +970,7 @@
                 $("#data-table tbody tr").each(function () {
                     var license = $(this).find('td:nth-child(1) span span').text().trim();
                     var lastName = $(this).find('td:nth-child(4) span span').text().trim();
-                    
+
 
                     if (license === member.License && lastName === member.LastName) {
                         $(this).attr('data-id', member.Id);
@@ -986,7 +1008,7 @@
             "ItcRosterMembers": [],
             "TeamName": $('#teamName').val() // Assuming you have an input for TeamName
         };
-     
+
         var processRow = function (currentRow, isBench) {
             var $currentRow = $(currentRow); // Convert to jQuery object
             var rosterId = $currentRow.data('id');
@@ -1117,7 +1139,7 @@
     }
 
     function addBenchOfficialRowFromModal() {
-            var newRowHtml = '<tr data-id="0">' +
+        var newRowHtml = '<tr data-id="0">' +
             '<td><b class="tablesaw-cell-label">License</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #license').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Role</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #role').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">First Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #firstName').val() + '</span></span></td>' +
@@ -1329,6 +1351,41 @@
             });
         });
 
+    @{
+        if (selectedTournament != null && @selectedTournament.Id > 0)
+        {
+            <text>
+                            var selectedValue = @selectedTournament.Id;
+            $('#eventSelect').val(selectedValue).change();
+            $('#eventSelect').prop('disabled', true);
+
+        </text>            
+        }
+
+        if (!string.IsNullOrWhiteSpace(team?.Value<string>("countryIso3")))
+        {
+            <text>
+                    $('#issuingCountry').prop('disabled', true);
+            </text>
+
+        }
+
+        if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyOneColour")))
+        {
+            <text>
+                    $('#colourOne').val('@(team?.Value<string>("jerseyOneColour"))').change();
+            </text>
+
+        }
+        if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyTwoColour")))
+        {
+            <text>
+                    $('#colourTwo').val('@(team?.Value<string>("jerseyTwoColour"))').change();
+
+            </text>
+
+        }
+    }
     });
 
     const pickr = Pickr.create({

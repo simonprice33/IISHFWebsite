@@ -46,6 +46,7 @@ namespace IISHFTest
             services.AddScoped<IMediaService, MediaService>();
             services.AddScoped<IRosterService, RosterService>();
             services.AddScoped<IContactServices, ContactServices>();
+            services.AddScoped<IUserService, UserService>();
 
             services.Configure<SendGridConfiguration>
                 (_config.GetSection("SendGridConfiguration"));

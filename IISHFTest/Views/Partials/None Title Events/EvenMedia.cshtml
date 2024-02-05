@@ -1,0 +1,61 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.Event>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+
+@{
+    var id = Model.Id;
+    var events = Umbraco.Content(id).Children();
+    var selectedCalendarYear = DateTime.Now.Year;
+
+    if (!string.IsNullOrWhiteSpace(Context.Request.Query["year"].ToString()))
+    {
+        int.TryParse(Context.Request.Query["year"].ToString(), out selectedCalendarYear);
+    }
+
+    var selectedEvent = events.FirstOrDefault(x => x.Name == selectedCalendarYear.ToString());
+    if (selectedEvent == null)
+    {
+        selectedEvent = events.FirstOrDefault();
+    }
+
+    var videoFeeds = selectedEvent.Children().Where(x => x.ContentType.Alias == "liveFeeds").ToList();
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-5">Media</h1>
+        </div>
+        @{
+
+            if (!videoFeeds.Any(x => x.Value<bool>("ShowInSite")))
+            {
+                <h3 class="text-center">No video feeds are currently available for this event</h3>
+            }
+
+            if (videoFeeds.Any())
+            {
+                @foreach (var feed in videoFeeds.Where(x => x.Value<bool>("ShowInSite")) )
+                {
+
+                    var link = feed.Value<Umbraco.Cms.Core.Models.Link>("liveFeedUrl");
+                    var b = true;
+                    <h3>@feed.Name</h3>
+                    if (link.Url.ToLower().Contains("youtube"))
+                    {
+                        var src = $"https://www.youtube.com/embed/{@link.Url.Split('/').Last()}";
+                        <div class="row mb-5">
+                            <iframe width="640" height="420" src="@src" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                        </div>
+                    }
+
+                    if (link.Url.ToLower().Contains("sportdeutschland"))
+                    {
+                        <iframe src="@link.Url" width=640 height="420" frameborder=0 allowfullscreen></iframe>
+                    }
+                }
+            }
+        }
+    </div>
+</div>

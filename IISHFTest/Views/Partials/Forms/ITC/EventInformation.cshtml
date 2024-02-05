@@ -61,7 +61,13 @@
     $(document).ready(function () {
         @if (Model != null && Model.Teams != null)
         {
+
+            
             <text>
+
+            var selectedTeamName = $("#teamName").val();
+            console.log("Selected Team Name : " + selectedTeamName)
+
             var teams = @Html.Raw(Json.Serialize(Model.Teams));
             if (teams.length > 0) {
                 var selectHtml = '<select class="form-control" id="teamName">';
@@ -73,10 +79,17 @@
 
                 selectHtml += '</select>';
                 $('#teamName').replaceWith(selectHtml);
+
+                
+
             } else {
                 var textboxHtml = '<input type="text" class="form-control" placeholder="Team Name" id="teamName" />';
                 $('#teamName').replaceWith(textboxHtml);
             }
+
+            $('#teamName').val(selectedTeamName).change();
+            $('#teamName').prop('disabled', true);
+
             </text>
         }
         else

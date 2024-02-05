@@ -22,6 +22,7 @@ using Umbraco.Cms.Web.Common.Filters;
 using Umbraco.Cms.Web.Common.Models;
 using Umbraco.Cms.Web.Common.Security;
 using Umbraco.Cms.Web.Website.Controllers;
+using IUserService = IISHFTest.Core.Interfaces.IUserService;
 
 namespace IISHFTest.Core.Controllers.SurfaceControllers
 {
@@ -31,6 +32,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
         private readonly IMemberSignInManager _signInManager;
         private readonly IMemberManager _memberManager;
         private readonly IMemberService _memberService;
+        private readonly IUserService _userService;
         private readonly ITwoFactorLoginService _twoFactorLoginService;
         private readonly IEmailService _emailService;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -46,7 +48,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
             IMemberSignInManager signInManager,
             IMemberManager memberManager,
             IMemberService memberService,
-
+            IUserService userService,
             ITwoFactorLoginService twoFactorLoginService,
             IEmailService emailService,
             IHttpContextAccessor httpContextAccessor)
@@ -56,6 +58,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
             _signInManager = signInManager;
             _memberManager = memberManager;
             _memberService = memberService;
+            _userService = userService;
             _twoFactorLoginService = twoFactorLoginService;
             _emailService = emailService;
             _httpContextAccessor = httpContextAccessor;
@@ -120,9 +123,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
                 return CurrentUmbracoPage();
             }
 
-            var memberIdentity = await _memberManager.FindByEmailAsync(member.Email);
-            var resetToken = await _memberManager.GeneratePasswordResetTokenAsync(memberIdentity);
-            var result = await _memberManager.ResetPasswordAsync(memberIdentity, resetToken, model.Password);
+            var result = await _userService.UpdatePassword(member.Email, model.Password);
 
             if (result.Succeeded)
             {
@@ -192,7 +193,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
                 // This is different from the current 'page' because when using Public Access the current page
                 // will be the login page, but the URL will be on the requested page so that's where we need
                 // to redirect too.
-                return RedirectToCurrentUmbracoUrl();
+                return Redirect("/my-account");
             }
 
             if (result.RequiresTwoFactor)

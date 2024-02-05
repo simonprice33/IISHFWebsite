@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using IISHFTest.Core.Interfaces;
 using IISHFTest.Core.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Logging;
@@ -117,6 +118,15 @@ namespace IISHFTest.Core.Services
         public IMember GetMembersByPropertyValue(string token, string property)
         {
             return _services.MemberService.GetMembersByPropertyValue(property, token).SingleOrDefault();
+        }
+
+        public async Task<IdentityResult> UpdatePassword(string email, string password)
+        {
+            var memberIdentity = await _memberManager.FindByEmailAsync(email);
+            var resetToken = await _memberManager.GeneratePasswordResetTokenAsync(memberIdentity);
+            var result = await _memberManager.ResetPasswordAsync(memberIdentity, resetToken,password);
+
+            return result;
         }
     }
 }

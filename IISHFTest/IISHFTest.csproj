@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="wwwroot\media\02odylio\stock-city-oilers.png" />
     <Content Include="wwwroot\media\0a0aqjby\bishaindia.png" />
     <Content Include="wwwroot\media\0grjdodz\iishf_men_european_cup.png" />
     <Content Include="wwwroot\media\0hwnnhad\shc-la-baroche.png" />
@@ -13,6 +14,7 @@
     <Content Include="wwwroot\media\0kdeawav\duisburg-ducks.png" />
     <Content Include="wwwroot\media\0ojjhfiq\bissendorfer-panther.png" />
     <Content Include="wwwroot\media\0ugb3r2i\claes-frder__451x600jpgpagespeedceezoes4kkxf.jpg" />
+    <Content Include="wwwroot\media\0wna1a23\deggendorf-pflanz.png" />
     <Content Include="wwwroot\media\12rkoop2\adobestock_621914333.jpeg" />
     <Content Include="wwwroot\media\14hj55tb\blank-profile.png" />
     <Content Include="wwwroot\media\1nlgy5hm\mch.png" />
@@ -37,6 +39,7 @@
     <Content Include="wwwroot\media\3xxhtqof\img_9233.jpeg" />
     <Content Include="wwwroot\media\3zihvrdj\rossmaison_logo.png" />
     <Content Include="wwwroot\media\4qbfitl1\crefelder-sc.png" />
+    <Content Include="wwwroot\media\4qkesyks\adobestock_616601496.jpeg" />
     <Content Include="wwwroot\media\4rbjf5ys\blank-profile.png" />
     <Content Include="wwwroot\media\4scffy0e\adobestock_109668233.jpeg" />
     <Content Include="wwwroot\media\4wbljkou\u19champions.png" />
@@ -46,12 +49,15 @@
     <Content Include="wwwroot\media\5r5h1njs\swinging-monkeys-stockerau.png" />
     <Content Include="wwwroot\media\5sga0uix\shc-bienne-seelanders.png" />
     <Content Include="wwwroot\media\a0glcubz\iishf-men-european-cup.png" />
+    <Content Include="wwwroot\media\a3clxnpk\adobestock_422616020-1.jpeg" />
+    <Content Include="wwwroot\media\aaejqqqp\shc-wollerau.png" />
     <Content Include="wwwroot\media\ahsek2ue\blank-profile.png" />
     <Content Include="wwwroot\media\ahsek2ue\will-osborne.jpg" />
     <Content Include="wwwroot\media\aqzppuel\blank-profile.png" />
     <Content Include="wwwroot\media\b2wn1qyj\carsten-arndt__450x600jpgpagespeedcerbniyutfmk.jpg" />
     <Content Include="wwwroot\media\b32prarq\blank-profile.png" />
     <Content Include="wwwroot\media\b3ynhagp\red-dragons-altenberg.png" />
+    <Content Include="wwwroot\media\bgamdvgj\adobestock_631709286_mirror.jpg" />
     <Content Include="wwwroot\media\bhxntoi5\erik_sommer__450x600.jpg" />
     <Content Include="wwwroot\media\bndkqzsg\gerhard_sporer__450x600.jpg" />
     <Content Include="wwwroot\media\boylrj0s\blank-profile.png" />
@@ -61,6 +67,7 @@
     <Content Include="wwwroot\media\bw4n32vl\committee.jpg" />
     <Content Include="wwwroot\media\bwdbpsh4\carsten-lykkegard__450x600.jpg" />
     <Content Include="wwwroot\media\c3sdixho\styrian-panthers.png" />
+    <Content Include="wwwroot\media\cgmluhoi\berlin-buffaloes.png" />
     <Content Include="wwwroot\media\ckikwntz\sport-union-amstetten.png" />
     <Content Include="wwwroot\media\csvlssrb\odense-ishockey.png" />
     <Content Include="wwwroot\media\cvpbk2rt\denmark.png" />
@@ -100,9 +107,12 @@
     <Content Include="wwwroot\media\gsfj2iof\iishf-men-european-cup.png" />
     <Content Include="wwwroot\media\guqmy50f\blank-profile.png" />
     <Content Include="wwwroot\media\hrqdmbb0\blank-profile.png" />
+    <Content Include="wwwroot\media\hskfcvqf\adobestock_556965406.jpeg" />
+    <Content Include="wwwroot\media\hton5n1m\shc-bassecourt-eagles.png" />
     <Content Include="wwwroot\media\hxanqtdc\isrishf.png" />
     <Content Include="wwwroot\media\i01kesdd\switzerland.png" />
     <Content Include="wwwroot\media\icfpbroh\fight-pigs-gersau.png" />
+    <Content Include="wwwroot\media\icun1cf0\ihc-la-tour.png" />
     <Content Include="wwwroot\media\inebzxvj\blank-profile.png" />
     <Content Include="wwwroot\media\iyues2ix\pulheim-vipers.png" />
     <Content Include="wwwroot\media\jdxhre4t\blank-profile.png" />
@@ -126,6 +136,7 @@
     <Content Include="wwwroot\media\mlqdjx4p\carsten-lykkegard__450x600.jpg" />
     <Content Include="wwwroot\media\mqvovf3f\blank-profile.png" />
     <Content Include="wwwroot\media\mztmwv2z\ihc-rothrist.png" />
+    <Content Include="wwwroot\media\nemk4m1w\adobestock_621199640.jpeg" />
     <Content Include="wwwroot\media\ngsdfjxy\img_4210.png" />
     <Content Include="wwwroot\media\nhahaw0a\iva-rhein-main-patriots.png" />
     <Content Include="wwwroot\media\nsobzw1e\gentofte-rungsted-rage.png" />
@@ -134,6 +145,7 @@
     <Content Include="wwwroot\media\ohhlutrg\ihc-wolfurt-walkers.png" />
     <Content Include="wwwroot\media\ohxfrobr\shc-buix.png" />
     <Content Include="wwwroot\media\p1obw0yj\ingo_goerkejpgpagespeedceb5zwxmfgwh.jpg" />
+    <Content Include="wwwroot\media\p2tbjoz4\awiting-logo.png" />
     <Content Include="wwwroot\media\p3ljgcx3\pexels-pixabay-60504.jpg" />
     <Content Include="wwwroot\media\pdym2dvw\isha.png" />
     <Content Include="wwwroot\media\pesint0j\switzerland.png" />
@@ -238,6 +250,8 @@
     <None Include="wwwroot\media\e3wpuvkx\iishf-communication_2023-25.pdf" />
     <None Include="wwwroot\media\fj4h5acm\iishf_live_streaming__media_-_technical_requirements.pdf" />
     <None Include="wwwroot\media\fsja40ez\iishf-annual-nma-reporting-2023.xlsx" />
+    <None Include="wwwroot\media\hpphuyol\iishf-communication_2024-01-updated-version.pdf" />
+    <None Include="wwwroot\media\itdgcbto\itc-support-document-2024.pdf" />
     <None Include="wwwroot\media\jiwlfwzh\regulations.pdf" />
     <None Include="wwwroot\media\jyzbalqe\2023_03_19_tournament_rules_menec_kaarst.pdf" />
     <None Include="wwwroot\media\li3egf0f\2023_03_19_tournament_rules_u13ec_givisiez.pdf" />
@@ -247,6 +261,7 @@
     <None Include="wwwroot\media\p5yodibn\title_event_checklist.doc" />
     <None Include="wwwroot\media\pxuf1coz\2023_10_26_tournament_rules_mench_givisiez.pdf" />
     <None Include="wwwroot\media\qold5ugi\img_9233.heic" />
+    <None Include="wwwroot\media\r4gfejqq\iishf-title-events-2024-european-cups-updated.pdf" />
     <None Include="wwwroot\media\skmbq4m2\2023_03_19_tournament_rules_u16ec_rossemaison.pdf" />
     <None Include="wwwroot\media\twkjg5vs\2023_10_26_tournament_rules_mench_givisiez.pdf" />
     <None Include="wwwroot\media\twops4c5\information-sheet-realsport-arena-givisez-eurochamps-2023.pdf" />
