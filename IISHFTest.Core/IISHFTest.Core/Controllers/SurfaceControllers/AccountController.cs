@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using IISHFTest.Core.Interfaces;
 using IISHFTest.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core.Actions;
@@ -20,6 +21,7 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
 {
     public class AccountController : SurfaceController
     {
+        private readonly IInvitationService _invitationService;
         private readonly IMemberManager _memberManager;
 
         public AccountController(
@@ -29,9 +31,11 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
             AppCaches appCaches,
             IProfilingLogger profilingLogger,
             IPublishedUrlProvider publishedUrlProvider,
+            IInvitationService invitationService,
             IMemberManager memberManager)
             : base(umbracoContextAccessor, databaseFactory, services, appCaches, profilingLogger, publishedUrlProvider)
         {
+            _invitationService = invitationService;
             _memberManager = memberManager;
         }
 
@@ -46,11 +50,14 @@ namespace IISHFTest.Core.Controllers.SurfaceControllers
                 return Unauthorized();
             }
 
+            var invitations = _invitationService.GetInvitation(member.Email);
+
             var model = new AccountViewModel
             {
                 Email = member.Email,
                 Name = member.Name,
-                Username = member.Email
+                Username = member.Email,
+                Invitations = invitations
             };
 
             return PartialView("~/Views/Partials/Members/MyAccount.cshtml", model);

@@ -1,0 +1,17 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace IISHFTest.Core.Models
+{
+    public class EventInvitation
+    {
+        public Guid EventTeamId { get; set; }
+
+        public Guid EventId { get; set; } 
+        
+        public string EventName { get; set; }
+    }
+}

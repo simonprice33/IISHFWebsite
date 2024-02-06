@@ -23,5 +23,7 @@ namespace IISHFTest.Core.Models
 
         [DisplayName("Confirm Password")]
         public string? ConfirmPassword { get; set; } = string.Empty;
+
+        public List<EventInvitation> Invitations { get; set; }
     }
 }
