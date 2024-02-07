@@ -54,7 +54,9 @@ namespace IISHFTest.Core.Services
                         {
                             EventId = evt.Key,
                             EventTeamId = team.Key,
-                            EventName = evt.Parent.Name
+                            EventName = evt.Parent.Name,
+                            ITCStatus = "Not Delivered",
+                            TeamInformationSubmitted = team.Value<bool>("teamInformationSubmitted")
                         };
 
                         invitations.Add(invitation);

@@ -3,6 +3,7 @@ using System.Web;
 using IISHFTest.Core.Interfaces;
 using IISHFTest.Core.Models;
 using Lucene.Net.Index;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
@@ -257,6 +258,14 @@ namespace IISHFTest.Core.Controllers.ApiControllers
             var json = JsonSerializer.Serialize(result);
             return Ok(json);
         }
+
+        [HttpPut("team-information-submission")]
+        [UmbracoMemberAuthorize]
+        public IActionResult PutTeamInformationSubmission(IFormFile file, string json)
+        {
+            return NoContent();
+        }
+
 
         [HttpDelete]
         [Route("itc/team/titel-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/roster-member/{rosterId}/")]

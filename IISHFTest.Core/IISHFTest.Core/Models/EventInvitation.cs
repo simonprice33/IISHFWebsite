@@ -13,5 +13,9 @@ namespace IISHFTest.Core.Models
         public Guid EventId { get; set; } 
         
         public string EventName { get; set; }
+
+        public string ITCStatus { get; set; }
+
+        public bool TeamInformationSubmitted { get; set; }
     }
 }

@@ -1,0 +1,1028 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.TeamInformationSubmission>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@using System.Globalization
+@{
+	Layout = "Main.cshtml";
+    var heroImageObj = Model.Value<IPublishedContent>("heroImage");
+    var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
+
+    IPublishedContent? team = null;
+    IPublishedContent? selectedTournament = null;
+
+    Guid.TryParse(Context.Request.Query["team"].ToString(), out var teamInformationKey);
+    if (teamInformationKey != Guid.Empty)
+    {
+        // build itc information from team information for event
+        team = Umbraco.Content(teamInformationKey);
+        selectedTournament = Umbraco.Content(team.Parent.Id);
+    }
+
+    var rosterMembers = team?.Children().Where(x => x.ContentType.Alias == "roster").ToList() ?? new List<IPublishedContent>();
+    var players = rosterMembers.Where(x => !x.Value<bool>("isBenchOfficial")).ToList();
+    var benchOfficials = rosterMembers.Where(x => x.Value<bool>("isBenchOfficial")).ToList();
+
+
+    var eventYear = DateTime.UtcNow.Year.ToString();
+
+    var rootContent = Umbraco.ContentAtRoot().ToList();
+    var tournaments = rootContent
+        .FirstOrDefault(x => x.Name == "Home")!.Children()?
+        .FirstOrDefault(x => x.Name == "Tournaments")!.Children().ToList();
+    ;
+
+    var cups = tournaments
+        .FirstOrDefault(x => x.Name == "European Cups")
+        .Children()
+        .Select(x => x.Children.FirstOrDefault(x => x.Name == eventYear))
+        .ToList();
+
+    var championships = tournaments
+        .FirstOrDefault(x => x.Name == "European Championships")
+        .Children()
+        .Select(x => x.Children.FirstOrDefault(x => x.Name == eventYear))
+        .ToList();
+
+    var allEvents = cups.Where(x => x != null).ToList().Concat(championships.Where(x => x != null).ToList()).ToList().Select(x => new
+    {
+        EventName = x.Parent.Name,
+        Id = x.Id
+    });
+
+    string[] priorityCountries = { "United Kingdom", "Germany", "Switzerland", "Austria", "Denmark", "Ukraine" };
+
+    // Get all countries and ISO codes
+    var countries = CultureInfo.GetCultures(CultureTypes.SpecificCultures)
+        .Select(c => new RegionInfo(c.Name))
+        .Distinct()
+        .Select(x => new
+        {
+            Country = x.EnglishName,
+            ISO3 = x.ThreeLetterISORegionName
+        })
+        .Where(x => !string.IsNullOrEmpty(x.ISO3))
+        .OrderBy(x => Array.IndexOf(priorityCountries, x.Country) == -1 ? int.MaxValue : Array.IndexOf(priorityCountries.OrderBy(x => x).ToArray(), x.Country))
+        .ThenBy(x => x.Country);
+}
+
+<div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
+    <div class="overlay"></div>
+    <div class="inner">
+        <div class="container custom-container">
+            <h1 class="display-4">@Model.Value("heroTitle")</h1>
+            <p class="lead">@Model.Value("heroSubtitle")</p>
+        </div>
+    </div>
+</div>
+
+<div class="container custom-container mt-5 mb-5">
+    <div class="row">
+
+        <div class="col-md-3">
+            <!-- Tabs nav -->
+            <div class="nav flex-column nav-pills nav-pills-custom" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+
+                <span class="nav-link mb-3 p-3 shadow" id="v-pills-players-tab">
+                    <select id="eventSelect" class="form-control">
+                        @{
+                            <option value="">Select Event for @DateTime.Now.Year.ToString()</option>
+
+                            foreach (var iishfEvent in allEvents)
+                            {
+                                <option value="@iishfEvent.Id">@iishfEvent.EventName</option>
+                            }
+                        }
+                    </select>
+
+                    <div id="eventInformation"></div>
+                </span>
+                <a class="nav-link mb-3 p-3 shadow active" id="v-pills-team-tab" data-bs-toggle="pill" href="#v-pills-team" role="tab" aria-controls="v-players-team" aria-selected="true">
+                    <span class="font-weight-bold small text-uppercase">Team Information</span>
+                </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-players-tab" data-bs-toggle="pill" href="#v-pills-players" role="tab" aria-controls="v-players-players" aria-selected="true">
+                    <span class="font-weight-bold small text-uppercase">Players</span>
+                </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-bench-tab" data-bs-toggle="pill" href="#v-pills-bench" role="tab" aria-controls="v-bench-bench" aria-selected="true">
+                    <span class="font-weight-bold small text-uppercase">Bench Officials</span>
+                </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-teamphoto-tab" data-bs-toggle="pill" href="#v-pills-teamphoto" role="tab" aria-controls="v-players-teamphoto" aria-selected="true">
+                    <span class="font-weight-bold small text-uppercase">Team Photo</span>
+                </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-logo-tab" data-bs-toggle="pill" href="#v-pills-logo" role="tab" aria-controls="v-players-logo" aria-selected="true">
+                    <span class="font-weight-bold small text-uppercase">Club Logo</span>
+                </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-submit-tab" data-bs-toggle="pill" href="#v-pills-submit" role="tab" aria-controls="v-submit-submit" aria-selected="true">
+                    <span class="font-weight-bold small text-uppercase">Submit</span>
+                </a>
+            </div>
+
+        </div>
+        <div class="col-md-9">
+            <!-- Tabs content -->
+            <div class="tab-content" id="v-pills-tabContent">
+                <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-team" role="tabpanel" aria-labelledby="v-pills-team-tab">
+                    <div class="row form-group">
+                        <label for="teamName" class="col-12 col-md-4 col-form-label">Team Name:</label>
+                        <div class="col-12 col-md-8">
+                            @{
+                                var teamName = @team?.Name ?? string.Empty;
+                            }
+                            <input type="text" class="form-control" placeholder="Team Name" id="teamName" value="@teamName" />
+
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <label for="issuingCountry" class="col-12 col-md-4 col-form-label">Issuing Country:</label>
+                        <div class="col-12 col-md-8">
+                            <select class="form-control" id="issuingCountry" name="issuingCountry">
+                                <option value="">Nationality</option>
+                                @{
+                                    bool addedSeparator = false; // Flag to check if separator has been added
+                                                                 // This will get the index of last priority country in the sorted list
+                                    var lastPriorityCountryIndex = countries.ToList().FindLastIndex(c => priorityCountries.Contains(c.Country));
+
+                                    foreach (var country in countries)
+                                    {
+                                        if (country.ISO3 == team?.Value<string>("countryIso3"))
+                                        {
+                                            <option selected="true" value="@country.ISO3">@country.Country</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@country.ISO3">@country.Country</option>
+                                        }
+                                        if (countries.ToList().IndexOf(country) == lastPriorityCountryIndex && !addedSeparator)
+                                        {
+                                            // Add the separator
+                                            <option disabled>──────────</option>
+                                            addedSeparator = true; // Ensure the separator is only added once
+                                        }
+                                    }
+                                }
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <label for="colourOne" class="col-12 col-md-4 col-form-label">First Jersey Colour:</label>
+                        <div class="col-12 col-md-4">
+                            <div class="input-group mb-3">
+                                <div id="colorPicker" class="input-group-prepend color-picker-container"></div>
+                                <input type="text" class="form-control" placeholder="Team colour" id="colourOne" aria-label="Team colour in hex" aria-describedby="colorPickerAddon">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <label for="jerseyTwoColour" class="col-12 col-sm-4 col-md-4 col-form-label">Second Jersey Colour:</label>
+                        <div class="col-12 col-md-4">
+                            <div class="input-group mb-3">
+                                <div id="colorPicker2" class="input-group-prepend color-picker-container"></div>
+                                <input type="text" class="form-control" placeholder="Team colour" id="colourTwo" aria-label="Team colour in hex" aria-describedby="colorPickerAddon">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-players" role="tabpanel" aria-labelledby="v-pills-players-tab">
+                    <div class="table-responsive">
+                        <table id="data-table" class="table table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
+                            <thead>
+                                <tr>
+                                    <th style="width: 150px">License</th>
+                                    <th>Role</th>
+                                    <th>First Name</th>
+                                    <th>Last Name</th>
+                                    <th style="width: 50px">Jersey Number</th>
+                                    <th>Date of Birth</th>
+                                    <th>Nationality</th>
+                                    <th>Gender</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="formRows">
+                                @for (int i = 0; i < players.Count(); i++)
+                                {
+                                    <tr data-id="@players[i].Id">
+                                        <td>
+                                            <span>@players[i].Value("licenseNumber")</span>
+                                        </td>
+                                        <td>
+
+                                            <span>@players[i].Value("role")</span>
+                                        </td>
+                                        <td>
+
+                                            <span>@players[i].Value("firstName")</span>
+                                        </td>
+                                        <td>
+
+                                            <span>@players[i].Value("lastName")</span>
+                                        </td>
+                                        <td>
+                                            <span>@players[i].Value("jerseyNumber")</span>
+                                        </td>
+                                        <td>
+                                            @{
+                                                var dob = players[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
+                                            }
+                                            <span>@dob</span>
+                                        </td>
+                                        <td>
+                                            <span>@players[i].Value("nationality")</span>
+                                        </td>
+                                        <td>
+
+                                            <span>@players[i].Value("gender")</span>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-danger delete-btn" onclick="event.stopPropagation(); deleteRow(this);">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <button id="addRowButton" type="button">Add Row</button>
+                    <button type="submit" onclick="validateForms()">Validate</button>
+
+                </div>
+
+                <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-bench" role="tabpanel" aria-labelledby="v-pills-bench-tab">
+                    <table id="benchOfficials" class="table table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
+                        <thead>
+                        <tr>
+                            <th style="width: 150px">License</th>
+                            <th>Role</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Date of Birth</th>
+                            <th>Nationality</th>
+                            <th>Gender</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody id="formRowsBench">
+                        @for (int i = 0; i < benchOfficials.Count(); i++)
+                        {
+                            <tr data-id="@benchOfficials[i].Id">
+                                <td>
+                                    <span>@benchOfficials[i].Value("licenseNumber")</span>
+                                </td>
+                                <td>
+                                    <span>@benchOfficials[i].Value("role")</span>
+
+                                </td>
+                                <td>
+
+                                    <span>@players[i].Value("firstName")</span>
+                                </td>
+                                <td>
+
+                                    <span>@players[i].Value("lastName")</span>
+                                </td>
+                                <td>
+                                    @{
+                                        var dob = benchOfficials[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
+                                    }
+                                    <span>@dob</span>
+                                </td>
+                                <td>
+                                    <span>@benchOfficials[i].Value("nationality")</span>
+                                </td>
+                                <td>
+                                    <span>@benchOfficials[i].Value("gender")</span>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-danger" onclick="deleteRow(this)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+
+                    <div id="addBenchOfficialButtonErrors" class="alert alert-danger" role="alert">
+                        <h3>Cannot add more than 8 bench officials</h3>
+                    </div>
+                    <button id="addBenchOfficialButton" type="button">Add Row</button>
+
+                </div>
+                <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-teamphoto" role="tabpanel" aria-labelledby="v-pills-teamphoto-tab">
+                    <div>
+                        <div class="drop-zone" id="dropZonePhoto">Drag and drop a team photo here or click</div>
+                        <div id="removeImageTextPhoto" class="remove-image-text">Remove Image</div>
+                        <div id="filePreviewPhoto" class="file-preview"></div>
+                        <input type="file" id="fileInputPhoto" style="display: none;" accept="image/*" />
+
+
+                    </div>
+                </div>
+                <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-logo" role="tabpanel" aria-labelledby="v-pills-teamlogophoto-tab">
+                    <div>
+                        <div class="drop-zone" id="dropZoneLogo">Drag and drop a team logo here or click</div>
+                        <div id="removeImageTextLogo" class="remove-image-text">Remove Image</div>
+                        <div id="filePreviewLogo" class="file-preview"></div>
+                        <input type="file" id="fileInputLogo" style="display: none;" accept="image/*" />
+
+                    </div>
+                </div>
+                <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-submit" role="tabpanel" aria-labelledby="v-pills-submit-tab">
+                    <button class="btn btn-light" onclick="saveAsDraft()">Save Draft</button>
+                    <button class="btn btn-secondary" onclick="submit()">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@*Change name to first name and last name*@
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">Edit Data</h5>
+                <button type="button" class="close close-edit" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- The form inside the modal -->
+                <form id="edit-form">
+                    <div class="form-group">
+                        <label for="license">License:</label>
+                        <input type="text" class="form-control" id="license" name="license">
+                    </div>
+                    <div class="form-group">
+                        <label for="role">Role:</label>
+                        <select class="form-control" id="role" name="role">
+                            <option value="">Select Role</option>
+                            <option value="Captain">Captain</option>
+                            <option value="Assistant Captain">Assistant Captain</option>
+                            <option value="Netminder">Netminder</option>
+                            <!-- Add other role options here -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="firstName">Club Logo</label>
+                        <!-- Add club logo here-->
+                    </div>
+                    <div class="form-group">
+                        <label for="firstName">First Name:</label>
+                        <input type="text" class="form-control" id="firstName" name="firstName">
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name:</label>
+                        <input type="text" class="form-control" id="lastName" name="lastName">
+                    </div>
+                    <div id="jerseyNumberFormGroup" class="form-group">
+                        <label for="jerseyNumber">Jersey Number:</label>
+                        <input type="text" class="form-control" id="jerseyNumber" name="jerseyNumber">
+                    </div>
+                    <div class="form-group">
+                        <label for="dateOfBirth">Date of Birth:</label>
+                        <input type="text" class="form-control" id="dateOfBirth" name="dateOfBirth">
+                    </div>
+                    <div class="form-group">
+                        <label for="nationality">Nationality:</label>
+                        <select class="form-control" id="nationality" name="nationality">
+                            <option value="">Nationality</option>
+                            @foreach (var country in countries)
+                            {
+                                <option value="@country.Country">@country.Country</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="gender">Gender:</label>
+                        <!-- Label and select for Gender -->
+                        <select class="form-control" id="gender" name="gender">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <!-- Add other gender options here -->
+                        </select>
+                    </div>
+
+                    <!-- Add more input fields as necessary -->
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary close-edit" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveChanges">Update table</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var countries = @Html.Raw(Json.Serialize(@countries));
+
+    $(document).ready(function () {
+        ////var dropZone = $('.drop-zone');
+        ////var fileInput = $('#fileInput');
+        ////var filePreview = $('#filePreview');
+        ////var removeImageText = $('#removeImageText');
+        ////var originalDropzoneText = "Drag and drop a file here or click"; // Save the original text
+
+        ////function resetDropZone() {
+        ////    filePreview.empty();
+        ////    removeImageText.hide();
+        ////    dropZone.show().text(originalDropzoneText); // Reset the dropzone text
+        ////    fileInput.val("");
+        ////}
+
+        ////removeImageText.on('click', function () {
+        ////    resetDropZone();
+        ////});
+
+        ////function updatePreview(file) {
+        ////    // First check if the file is an image
+        ////    if (!file.type.startsWith('image/')) {
+        ////        alert('Please select an image file.');
+        ////        return;
+        ////    }
+
+        ////    // Then use FileReader to read the file as an image
+        ////    var reader = new FileReader();
+        ////    reader.onload = function (e) {
+        ////        var img = new Image();
+
+        ////        img.onload = function () {
+        ////            if (img.width >= 1920 && img.height >= 1080) {
+        ////                dropZone.hide();
+        ////                removeImageText.show();
+        ////                filePreview.html('<img src="' + e.target.result + '" alt="File Preview">');
+        ////            } else {
+        ////                alert('The image size is too small. The minimum size is 1920 x 1080 pixels.');
+        ////                resetDropZone();
+        ////            }
+        ////        };
+
+        ////        img.onerror = function () {
+        ////            alert('There was an error processing your file.');
+        ////        };
+
+        ////        img.src = e.target.result;
+        ////    };
+
+        ////    reader.onerror = function () {
+        ////        // There was an error reading the file
+        ////        alert('There was an error reading your file.');
+        ////    };
+
+        ////    reader.readAsDataURL(file);
+        ////}
+
+        ////dropZone.on('click', function (e) {
+        ////    fileInput.click();
+        ////});
+
+        ////fileInput.on('change', function () {
+        ////    var files = fileInput[0].files;
+        ////    if (files.length > 0) {
+        ////        updatePreview(files[0]);
+        ////        dropZone.text(files[0].name);
+        ////    }
+        ////});
+
+        ////dropZone.on('dragover', function (e) {
+        ////    e.preventDefault();
+        ////    e.stopPropagation();
+        ////    $(this).addClass('drop-zone--over');
+        ////});
+
+        ////dropZone.on('dragleave', function (e) {
+        ////    e.preventDefault();
+        ////    e.stopPropagation();
+        ////    $(this).removeClass('drop-zone--over');
+        ////});
+
+        ////dropZone.on('drop', function (e) {
+        ////    e.preventDefault();
+        ////    e.stopPropagation();
+        ////    $(this).removeClass('drop-zone--over');
+
+        ////    var files = e.originalEvent.dataTransfer.files;
+        ////    if (files.length > 0) {
+        ////        updatePreview(files[0]);
+        ////        console.log(files)
+        ////        dropZone.text(files[0].name); // Update the text of the drop zone to show the file name
+        ////    }
+        ////});
+
+        // Elements for the team photo
+        var dropZonePhoto = $('#dropZonePhoto');
+        var fileInputPhoto = $('#fileInputPhoto');
+        var filePreviewPhoto = $('#filePreviewPhoto');
+        var removeImageTextPhoto = $('#removeImageTextPhoto');
+        var originalDropzoneTextPhoto = "Drag and drop a team photo here or click";
+
+        // Elements for the team logo
+        var dropZoneLogo = $('#dropZoneLogo');
+        var fileInputLogo = $('#fileInputLogo');
+        var filePreviewLogo = $('#filePreviewLogo');
+        var removeImageTextLogo = $('#removeImageTextLogo');
+        var originalDropzoneTextLogo = "Drag and drop a team logo here or click";
+
+        // Function to handle file selection and preview update
+        function handleFiles(fileInput, filePreview, removeImageText, originalDropzoneText, dropZone) {
+            var files = fileInput[0].files;
+            if (files.length > 0) {
+                var file = files[0];
+                if (!file.type.startsWith('image/')) {
+                    alert('Please select an image file.');
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var img = new Image();
+                    img.onload = function () {
+                        // Check for minimum size if needed
+                        filePreview.html('<img src="' + e.target.result + '" alt="File Preview">');
+                        dropZone.hide();
+                        removeImageText.show();
+                    };
+                    img.onerror = function () {
+                        alert('There was an error processing your file.');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.onerror = function () {
+                    alert('There was an error reading your file.');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Function to reset dropzone and preview
+        function resetDropzone(filePreview, removeImageText, dropZone, fileInput, originalDropzoneText) {
+            filePreview.empty();
+            removeImageText.hide();
+            dropZone.show().text(originalDropzoneText);
+            fileInput.val("");
+        }
+
+        // Event handlers for the team photo
+        dropZonePhoto.on('click', function () { fileInputPhoto.click(); });
+        fileInputPhoto.on('change', function () { handleFiles(fileInputPhoto, filePreviewPhoto, removeImageTextPhoto, originalDropzoneTextPhoto, dropZonePhoto); });
+        removeImageTextPhoto.on('click', function () { resetDropzone(filePreviewPhoto, removeImageTextPhoto, dropZonePhoto, fileInputPhoto, originalDropzoneTextPhoto); });
+
+        // Event handlers for the team logo
+        dropZoneLogo.on('click', function () { fileInputLogo.click(); });
+        fileInputLogo.on('change', function () { handleFiles(fileInputLogo, filePreviewLogo, removeImageTextLogo, originalDropzoneTextLogo, dropZoneLogo); });
+        removeImageTextLogo.on('click', function () { resetDropzone(filePreviewLogo, removeImageTextLogo, dropZoneLogo, fileInputLogo, originalDropzoneTextLogo); });
+
+
+        $('#submitButton').click(function (e) {
+            e.preventDefault();
+
+            var formData = new FormData();
+            var files = fileInput[0].files;
+
+            if (files.length > 0) {
+                formData.append("file", files[0]);
+            }
+
+            // Your function to generate the JSON data
+            var json = generateJson(); // Ensure you define this
+            formData.append("json", JSON.stringify(json));
+
+            ////// AJAX call to send data
+            ////$.ajax({
+            ////    type: "PUT",
+            ////    url: "/api/events/itc",
+            ////    data: formData,
+            ////    processData: false,
+            ////    contentType: false,
+            ////    success: function (result) {
+            ////        console.log("Success", result);
+            ////        // Handle success
+            ////    },
+            ////    error: function (error) {
+            ////        console.log("Error", error);
+            ////        // Handle error
+            ////    }
+            ////});
+        });
+
+        function generateJson() {
+
+            // Retrieve the value of the element with ID 'startDate'
+            var startDate = $("#startDate").text();
+            var year = "";
+            // Check if startDate is not undefined or null
+            if (startDate) {
+                // Split the value by the dot
+                var parts = startDate.split('.');
+
+                // Check if the array has at least three parts (to avoid errors)
+                if (parts.length >= 3) {
+                    year = parts[2]; // This will be the third part of the split string
+                } else {
+                    console.log("The date format is not as expected.");
+                }
+            } else {
+                console.log("No value found for #startDate.");
+            }
+
+            var formData = {
+                "EventYear": year, // Assuming you have an input for EventYear
+                "TitleEvent": $('#shortCode').val(), // Assuming you have an input for TitleEvent
+                "isChampionship": document.getElementById('isChampionship').checked, // Assuming you have a checkbox for IsChampionship
+                "ItcRosterMembers": [],
+                "TeamName": $('#teamName').val() // Assuming you have an input for TeamName
+            };
+
+            var processRow = function (currentRow, isBench) {
+                var $currentRow = $(currentRow); // Convert to jQuery object
+                var rosterId = $currentRow.data('id');
+                var license = currentRow.querySelector("td:nth-child(1) span span").textContent.trim();
+                var role = currentRow.querySelector("td:nth-child(2) span span").textContent.trim();
+                var firstName = currentRow.querySelector("td:nth-child(3) span span").textContent.trim();
+                var lastName = currentRow.querySelector("td:nth-child(4) span span").textContent.trim();
+                var jerseyNumber = currentRow.querySelector("td:nth-child(5) span span").textContent.trim();
+                var dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
+                var nationality = currentRow.querySelector("td:nth-child(7) span span").textContent.trim();
+                var gender = currentRow.querySelector("td:nth-child(8) span span").textContent.trim();
+
+                var dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
+
+                // Split the date into [day, month, year]
+                var parts = dateOfBirth.split(".");
+
+                // Rearrange the parts into yyyy-mm-dd format
+                // Note: parts index starts from 0, so parts[0] is day, parts[1] is month, parts[2] is year
+                var formattedDate = parts[2] + "-" + parts[1] + "-" + parts[0];
+                debugger
+                if (license || playerName) {
+                    formData.ItcRosterMembers.push({
+                        "Id": rosterId,
+                        "License": license,
+                        "firstName": firstName,
+                        "lastName": lastName,
+                        "JerseyNumber": jerseyNumber,
+                        "Role": role,
+                        "IsBenchOfficial": isBench,
+                        "DateOfBirth": formattedDate,
+                        "Nationality": nationality,
+                        "Gender": gender
+                    });
+                }
+            };
+
+            document.querySelectorAll('#formRows tr').forEach(function (row) {
+                processRow(row, false);
+            });
+
+            ////document.querySelectorAll('#formRowsBench tr').forEach(function (row) {
+            ////    processRow(row, true);
+            ////});
+
+            return formData;
+        }
+
+        function populateModalFromRow(currentRow) {
+            var license = currentRow.find("td:eq(0) .tablesaw-cell-content span").text().trim();
+            var role = currentRow.find("td:eq(1) .tablesaw-cell-content span").text().trim();
+            var firstName = currentRow.find("td:eq(2) .tablesaw-cell-content span").text().trim();
+            var lastName = currentRow.find("td:eq(3) .tablesaw-cell-content span").text().trim();
+            var jerseyNumber = currentRow.find("td:eq(4) .tablesaw-cell-content span").text().trim();
+            var dateOfBirth = currentRow.find("td:eq(5) .tablesaw-cell-content span").text().trim();
+            var nationality = currentRow.find("td:eq(6) .tablesaw-cell-content span").text().trim();
+            var gender = currentRow.find("td:eq(7) .tablesaw-cell-content span").text().trim();
+
+            $('#edit-form #license').val(license);
+            $('#edit-form #role').val(role);
+            $('#edit-form #firstName').val(firstName);
+            $('#edit-form #lastName').val(lastName);
+            $('#edit-form #jerseyNumber').val(jerseyNumber);
+            $('#edit-form #dateOfBirth').val(dateOfBirth);
+            $('#edit-form #nationality').val(nationality);
+            $('#edit-form #gender').val(gender);
+        }
+
+        function updateRowFromModal(row) {
+            row.find("td:eq(0) .tablesaw-cell-content span").text($('#edit-form #license').val());
+            row.find("td:eq(1) .tablesaw-cell-content span").text($('#edit-form #role').val());
+            row.find("td:eq(2) .tablesaw-cell-content span").text($('#edit-form #firstName').val());
+            row.find("td:eq(3) .tablesaw-cell-content span").text($('#edit-form #lastName').val());
+            row.find("td:eq(4) .tablesaw-cell-content span").text($('#edit-form #jerseyNumber').val());
+            row.find("td:eq(5) .tablesaw-cell-content span").text($('#edit-form #dateOfBirth').val());
+            row.find("td:eq(6) .tablesaw-cell-content span").text($('#edit-form #nationality').val());
+            row.find("td:eq(7) .tablesaw-cell-content span").text($('#edit-form #gender').val());
+        }
+
+        function updateBenchOfficialRowFromModal(row) {
+            row.find("td:eq(0) .tablesaw-cell-content span").text($('#edit-form #license').val());
+            row.find("td:eq(1) .tablesaw-cell-content span").text($('#edit-form #role').val());
+            row.find("td:eq(2) .tablesaw-cell-content span").text($('#edit-form #firstName').val());
+            row.find("td:eq(3) .tablesaw-cell-content span").text($('#edit-form #lastName').val());
+            row.find("td:eq(4) .tablesaw-cell-content span").text($('#edit-form #dateOfBirth').val());
+            row.find("td:eq(5) .tablesaw-cell-content span").text($('#edit-form #nationality').val());
+            row.find("td:eq(6) .tablesaw-cell-content span").text($('#edit-form #gender').val());
+        }
+
+        function populateModalForBenchOfficial(currentRow) {
+            var license = currentRow.find("td:eq(0) .tablesaw-cell-content span").text().trim();
+            var role = currentRow.find("td:eq(1) .tablesaw-cell-content span").text().trim();
+            var firstName = currentRow.find("td:eq(2) .tablesaw-cell-content span").text().trim();
+            var lastName = currentRow.find("td:eq(3) .tablesaw-cell-content span").text().trim();
+            var dateOfBirth = currentRow.find("td:eq(4) .tablesaw-cell-content span").text().trim();
+            var nationality = currentRow.find("td:eq(5) .tablesaw-cell-content span").text().trim();
+            var gender = currentRow.find("td:eq(6) .tablesaw-cell-content span").text().trim();
+
+            $('#edit-form #license').val(license);
+            $('#edit-form #role').val(role);
+            $('#edit-form #firstName').val(firstName);
+            $('#edit-form #lastName').val(lastName);
+            $('#edit-form #dateOfBirth').val(dateOfBirth);
+            $('#edit-form #nationality').val(nationality);
+            $('#edit-form #gender').val(gender);
+
+            // Hide the jersey number field for bench officials
+            $('#edit-form #jerseyNumber').closest('.form-group').hide();
+        }
+
+        function addNewRowFromModal() {
+            var newRowHtml = '<tr data-id="0">' +
+                '<td><b class="tablesaw-cell-label">License</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #license').val() + '</span></span></td>' +
+                '<td><b class="tablesaw-cell-label">Role</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #role').val() + '</span></span></td>' +
+                '<td><b class="tablesaw-cell-label">First Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #firstName').val() + '</span></span></td>' +
+                '<td><b class="tablesaw-cell-label">Last Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #lastName').val() + '</span></span></td>' +
+                '<td><b class="tablesaw-cell-label">Jersey Number</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #jerseyNumber').val() + '</span></span></td>' +
+                '<td><b class="tablesaw-cell-label">Date of Birth</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #dateOfBirth').val() + '</span></span></td>' +
+                '<td><b class="tablesaw-cell-label">Nationality</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #nationality').val() + '</span></span></td>' +
+                '<td><b class="tablesaw-cell-label">Gender</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #gender').val() + '</span></span></td>' +
+                '<td><button type="button" class="btn btn-danger delete-btn" onclick="event.stopPropagation(); deleteRow(this);"><i class="fas fa-trash"></i></button></td>' +
+                '</tr>';
+            $('#data-table tbody').append(newRowHtml);
+        }
+
+        function addBenchOfficialRowFromModal() {
+            var newRowHtml = '<tr data-id="0">' +
+                '<td><b class="tablesaw-cell-label">License</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #license').val() + '</span></span></td>' +
+                '<td><b class="tablesaw-cell-label">Role</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #role').val() + '</span></span></td>' +
+                '<td><b class="tablesaw-cell-label">First Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #firstName').val() + '</span></span></td>' +
+                '<td><b class="tablesaw-cell-label">Last Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #lastName').val() + '</span></span></td>' +
+                '<td><b class="tablesaw-cell-label">Date of Birth</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #dateOfBirth').val() + '</span></span></td>' +
+                '<td><b class="tablesaw-cell-label">Nationality</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #nationality').val() + '</span></span></td>' +
+                '<td><b class="tablesaw-cell-label">Gender</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #gender').val() + '</span></span></td>' +
+                '<td><button type="button" class="btn btn-danger delete-btn" onclick="event.stopPropagation(); deleteRow(this);"><i class="fas fa-trash"></i></button></td>' +
+                '</tr>';
+            $('#benchOfficials tbody').append(newRowHtml);
+        }
+
+        var currentRow = null;
+
+        $('#data-table').on('click', '.btn-danger', function (event) {
+            event.stopPropagation(); // Prevent click event from bubbling up to the row
+            deleteRow(this); // Call your deleteRow function
+        });
+
+        $("#benchOfficials tbody").on("click", "tr", function () {
+            currentMode = 'editBenchOfficial';
+            currentRow = $(this);
+            populateModalForBenchOfficial(currentRow);
+            $('#editModal').modal('show');
+        });
+
+        $('#addRowButton').on('click', function () {
+            currentMode = 'addPlayer';
+            $("#jerseyNumberFormGroup").show()
+            currentRow = null;
+            clearModalFields();
+            $('#editModal').modal('show');
+        });
+
+        $('#addBenchOfficialButton').on('click', function () {
+            currentMode = 'addbenchOfficial';
+            $("#jerseyNumberFormGroup").hide()
+            currentRow = null;
+            clearModalFields();
+            $('#editModal').modal('show');
+        });
+
+        $("#data-table tbody").on("click", "tr", function () {
+            currentMode = 'editPlayer';
+            currentRow = $(this);
+            populateModalFromRow(currentRow);
+            $('#editModal').modal('show');
+        });
+
+        function addRowToPlayer() {
+            // Clear the form fields in the modal
+            $('#edit-form').find('input[type="text"], select').val('');
+
+            // Open the modal
+            $('#editModal').modal('show');
+
+            // Clear the currentRow variable since this is for adding a new row
+            currentRow = null;
+        }
+
+        // Handle the save button click
+        $(".close-edit").on("click", function () {
+            // TODO: Add code to handle the form data, e.g., send an AJAX request
+            $('#editModal').modal('hide');
+        });
+
+        // When the user clicks anywhere outside of the modal, close it
+        $(window).on("click", function (event) {
+            var modal = $("#edit-modal");
+            if ($(event.target).is(modal)) {
+                modal.hide();
+            }
+        });
+
+        // Handle the form submission
+        $("#edit-form").on("submit", function (event) {
+            event.preventDefault();
+            // TODO: Add code to handle the form data, e.g., send an AJAX request
+
+            $("#edit-modal").hide();
+        });
+
+        var nationalityDropdown = $('select[name^="Nationality"]');
+        for (var i = 0; i < countries.length; i++) {
+            var option = $('<option></option>').attr('value', countries[i]).text(countries[i]);
+            nationalityDropdown.append(option);
+        }
+
+        $("#addBenchOfficialButtonErrors").hide()
+
+        $('#eventSelect').on('change', function () {
+            var selectedValue = $(this).val();
+            $.get('/umbraco/surface/events/GetEventInformation', { id: selectedValue }, function (data) {
+                $('#eventInformation').html(data);
+            });
+        });
+
+        const pickr = Pickr.create({
+            el: '#colorPicker',
+            theme: 'classic', // or 'monolith', or 'nano'
+
+            swatches: [
+                'rgba(244, 67, 54, 1)',
+                'rgba(233, 30, 99, 0.95)',
+                // ... more colors
+            ],
+
+            components: {
+                // Main components
+                preview: true,
+                opacity: true,
+                hue: true,
+
+                // Input / output Options
+                interaction: {
+                    hex: true,
+                    input: true,
+                }
+            }
+        });
+
+        const pickr2 = Pickr.create({
+            el: '#colorPicker2',
+            theme: 'classic', // or 'monolith', or 'nano'
+
+            swatches: [
+                'rgba(244, 67, 54, 1)',
+                'rgba(233, 30, 99, 0.95)',
+                // ... more colors
+            ],
+
+            components: {
+                // Main components
+                preview: true,
+                opacity: true,
+                hue: true,
+
+                // Input / output Options
+                interaction: {
+                    hex: true,
+                    input: true,
+                }
+            },
+            strings: {
+                save: 'Apply', // Change the text for the save button to 'Apply'
+                // ... other string customizations ...
+            }
+        });
+
+        pickr.on('change', (color, instance) => {
+            $('.pcr-button').first().css('--pcr-color', color.toRGBA().toString());
+            pickerOneHexVal = color.toHEXA().toString()
+            $("#colourOne").val(pickerOneHexVal)
+
+        });
+
+        pickr2.on('change', (color, instance) => {
+            $('.pcr-button').last().css('--pcr-color', color.toRGBA().toString());
+            pickerTwoHexVal = color.toHEXA().toString()
+            $("#colourTwo").val(pickerTwoHexVal)
+        });
+
+        $('#colourOne').on('blur change', function () {
+
+            var newColor = $(this).val(); // Get the new color value from the textbox
+            pickr.setColor(newColor); // Update the color picker with the new color
+        });
+
+        // Event listener for the second textbox using jQuery
+        $('#colourTwo').on('blur change', function () {
+            var newColor = $(this).val(); // Get the new color value from the textbox
+            pickr2.setColor(newColor); // Update the color picker with the new color
+        });
+
+        function deleteRow(button) {
+            // Find the row containing the clicked button
+            var row = $(button).closest('tr');
+
+            // Extract the license number from the span
+            var licenseNumber = row.find("td:eq(0) span span").text().trim();
+
+            // Add the license number to the array (if it's not empty)
+            if (licenseNumber) {
+                deletedLicenseNumbers.push(licenseNumber);
+            }
+            var titleEvent = $('#shortCode').val()
+            var rosterId = row.data('id')
+            var eventSelectValue = $("#eventSelect").val();
+            var isChampionship = eventSelectValue.toLowerCase().includes("championship");
+
+            var startDateText = $("#startDate").text();
+            var eventYear = ''
+
+            if (startDateText) {
+                var parts = startDateText.split('.');
+
+                if (parts.length >= 3) {
+                    eventYear = parts[2];
+                } else {
+                    console.log("The date format is not as expected.");
+                }
+            } else {
+                console.log("No text found for #startDate.");
+            }
+
+            var teamName = $("#teamName").val()
+
+            var url = `/api/events/team-information-submission/team/titel-event/${titleEvent}/championship/${isChampionship}/year/${eventYear}/team/${teamName}/roster-member/${rosterId}`
+            var encodedUrl = encodeURI(url);
+            $.ajax({
+                url: encodedUrl,
+                type: 'DELETE',
+                success: function (data) {
+                    // Remove the row from the table
+                    row.remove();
+                },
+                error: function (xhr, status, error) {
+                    console.error("Error: " + error);
+                    // Show alert that something went wrong
+                }
+            });
+        }
+
+
+    @{
+        if (selectedTournament != null && @selectedTournament.Id > 0)
+        {
+            <text>
+                                        var selectedValue = @selectedTournament.Id;
+                $('#eventSelect').val(selectedValue).change();
+                $('#eventSelect').prop('disabled', true);
+
+            </text>
+        }
+
+        if (!string.IsNullOrWhiteSpace(team?.Value<string>("countryIso3")))
+        {
+            <text>
+                    $('#issuingCountry').prop('disabled', true);
+            </text>
+
+        }
+
+        if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyOneColour")))
+        {
+            <text>
+                    $('#colourOne').val('@(team?.Value<string>("jerseyOneColour"))').change();
+            </text>
+
+        }
+        
+        if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyTwoColour")))
+        {
+            <text>
+                    $('#colourTwo').val('@(team?.Value<string>("jerseyTwoColour"))').change();
+
+            </text>
+
+        }
+    }
+
+    });
+</script>
