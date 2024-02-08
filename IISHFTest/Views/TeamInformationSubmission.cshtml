@@ -337,10 +337,11 @@
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-teamphoto" role="tabpanel" aria-labelledby="v-pills-teamphoto-tab">
                     <div>
-                        <div class="drop-zone" id="dropZonePhoto">Drag and drop a team photo here or click</div>
+                        @*<div class="drop-zone" id="dropZonePhoto">Drag and drop a team photo here or click</div>
                         <div id="removeImageTextPhoto" class="remove-image-text">Remove Image</div>
                         <div id="filePreviewPhoto" class="file-preview"></div>
-                        <input type="file" id="fileInputPhoto" style="display: none;" accept="image/*" />
+                        <input type="file" id="fileInputPhoto" style="display: none;" accept="image/*" />*@
+                        <form action="/upload-team-photo" class="dropzone" id="teamPhotoDropzone"></form>
                     </div>
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-logo" role="tabpanel" aria-labelledby="v-pills-teamlogophoto-tab">
@@ -349,27 +350,29 @@
                             <h3>Please ensure logos have either a white or transparrent background.</h3>
                             <p>This makes it easier for the host and production of event programs, and media campaigns</p>
                         </div>
-                        <div class="drop-zone" id="dropZoneLogo">Drag and drop a team logo here or click</div>
+                        @*<div class="drop-zone" id="dropZoneLogo">Drag and drop a team logo here or click</div>
                         <div id="removeImageTextLogo" class="remove-image-text">Remove Image</div>
                         <div id="filePreviewLogo" class="file-preview"></div>
-                        <input type="file" id="fileInputLogo" style="display: none;" accept="image/*"/>
+                        <input type="file" id="fileInputLogo" style="display: none;" accept="image/*"/>*@
+                        <form action="/upload-team-logo" class="dropzone" id="teamLogoDropzone"></form>
 
                     </div>
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-sponsors" role="tabpanel" aria-labelledby="v-pills-sponsors-tab">
                     <div>
-                        <div class="drop-zone" id="dropZoneMultiple">
+                        @*<div class="drop-zone" id="dropZoneMultiple">
                             Drag and drop multiple files here or click
                         </div>
                         <div id="removeImageTextMultiple" class="remove-image-text">Remove All Images</div>
 
                         <div id="filePreviewMultiple" class="file-preview"></div>
-                        <input type="file" id="fileInputMultiple" style="display: none;" accept="image/*" multiple />
+                        <input type="file" id="fileInputMultiple" style="display: none;" accept="image/*" multiple />*@
+                        <form action="/upload-multiple-files" class="dropzone" id="multipleFilesDropzone"></form>
 
                     </div>
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-submit" role="tabpanel" aria-labelledby="v-pills-submit-tab">
-                    <button class="btn btn-light" onclick="saveAsDraft()">Save Draft</button>
+                    <button id="submitDraftButton" class="btn btn-light">Save Draft</button>
                     <button class="btn btn-secondary" onclick="submit()">Submit</button>
                 </div>
             </div>
@@ -459,6 +462,7 @@
 
 <script>
     var countries = @Html.Raw(Json.Serialize(@countries));
+    Dropzone.autoDiscover = false; // Prevent auto initialization
 
     $(document).ready(function () {
 
@@ -476,173 +480,199 @@
             height: 300
         });
 
-        // Elements for the team photo
-        var dropZonePhoto = $('#dropZonePhoto');
-        var fileInputPhoto = $('#fileInputPhoto');
-        var filePreviewPhoto = $('#filePreviewPhoto');
-        var removeImageTextPhoto = $('#removeImageTextPhoto');
-        var originalDropzoneTextPhoto = "Drag and drop a team photo here or click";
 
-        // Elements for the team logo
-        var dropZoneLogo = $('#dropZoneLogo');
-        var fileInputLogo = $('#fileInputLogo');
-        var filePreviewLogo = $('#filePreviewLogo');
-        var removeImageTextLogo = $('#removeImageTextLogo');
-        var originalDropzoneTextLogo = "Drag and drop a team logo here or click";
-
-        var dropZoneMultiple = $('#dropZoneMultiple');
-        var fileInputMultiple = $('#fileInputMultiple');
-        var filePreviewMultiple = $('#filePreviewMultiple');
-        var removeImageTextMultiple = $('#removeImageTextMultiple');
-        dropZoneMultiple.on('click', function () { fileInputMultiple.click(); });
-        fileInputMultiple.on('change', function () { handleFilesMultiple(fileInputMultiple, filePreviewMultiple, removeImageTextMultiple, dropZoneMultiple); });
-        removeImageTextMultiple.on('click', function () {
-            filePreviewMultiple.empty(); // Clear previews
-            removeImageTextMultiple.hide(); // Hide remove all images text
-            dropZoneMultiple.css('border', '2px dashed #007bff'); // Restore border
-            fileInputMultiple.val(""); // Clear input value
-        });
-
-        function handleFilesMultiple(fileInput, filePreview, removeImageText, dropZone) {
-            var files = fileInput[0].files;
-            if (files.length > 0) {
-                for (var i = 0; i < files.length; i++) {
-                    var file = files[i];
-                    if (!file.type.startsWith('image/')) {
-                        alert('Please select only image files.');
-                        return;
-                    }
-                    var reader = new FileReader();
-                    reader.onload = (function (file) {
-                        return function (e) {
-                            var previewItem = $('<div class="file-preview-item"></div>');
-                            var previewImg = $('<img class="file-preview-img" src="' + e.target.result + '" alt="File Preview">');
-                            var removeText = $('<div class="remove-image-text">Remove Image</div>');
-                            removeText.click(function () {
-                                previewItem.remove(); // Remove the preview item when clicked
-                                if (filePreview.children().length === 0) {
-                                    removeImageText.hide(); // Hide remove all images text if no images left
-                                }
-                            });
-                            previewItem.append(previewImg).append(removeText);
-                            filePreview.append(previewItem);
-                            dropZone.css('border', 'none'); // Remove border on preview
-                            removeImageText.show(); // Show remove image text
-                        };
-                    })(file);
-                    reader.onerror = function () {
-                        alert('There was an error reading your file.');
-                    };
-                    reader.readAsDataURL(file);
-                }
-            }
-        }
-
-        // Function to handle file selection and preview update
-        function handleFiles(fileInput, filePreview, removeImageText, originalDropzoneText, dropZone) {
-            var files = fileInput[0].files;
-            if (files.length > 0) {
-                var file = files[0];
-                if (!file.type.startsWith('image/')) {
-                    alert('Please select an image file.');
-                    return;
-                }
-                var reader = new FileReader();
-                reader.onload = function (e) {
-                    var img = new Image();
-                    img.onload = function () {
-                        // Check for minimum size if needed
-                        filePreview.html('<img src="' + e.target.result + '" alt="File Preview">');
-                        dropZone.hide();
-                        removeImageText.show();
-                    };
-                    img.onerror = function () {
-                        alert('There was an error processing your file.');
-                    };
-                    img.src = e.target.result;
-                };
-                reader.onerror = function () {
-                    alert('There was an error reading your file.');
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function handleFilesMultiple(fileInput, filePreview, removeImageText, dropZone) {
-            var files = fileInput[0].files;
-            if (files.length > 0) {
-                filePreview.empty(); // Clear existing previews
-                for (var i = 0; i < files.length; i++) {
-                    var file = files[i];
-                    if (!file.type.startsWith('image/')) {
-                        alert('Please select only image files.');
-                        return;
-                    }
+        var teamPhotoDropzone = new Dropzone("#teamPhotoDropzone", {
+            url: "/upload-team-photo",
+            autoProcessQueue: false,
+            maxFiles: 1, 
+            addRemoveLinks: true,
+            dictDefaultMessage: "Drag and drop a team photo here or click",
+            acceptedFiles: "image/*,application/pdf", // Accept images and PDFs
+            accept: function (file, done) {
+                // Check if the file is an image for dimension validation
+                if (file.type.match(/image.*/)) {
+                    // Image dimension validation
+                    file.acceptDimensions = done;
+                    file.rejectDimensions = function () { done("The image must be at least 1920x1080 pixels."); };
+                    // Load the image to check its dimensions
                     var reader = new FileReader();
                     reader.onload = function (e) {
                         var img = new Image();
                         img.onload = function () {
-                            var preview = $('<div class="file-preview"></div>');
-                            preview.append('<img src="' + e.target.result + '" alt="File Preview">');
-                            filePreview.append(preview);
-                            dropZone.css('border', 'none'); // Remove border on preview
-                            removeImageText.show(); // Show remove image text
-                        };
-                        img.onerror = function () {
-                            alert('There was an error processing your file.');
+                            if (img.width >= 1920 && img.height >= 1080) {
+                                file.acceptDimensions();
+                            } else {
+                                file.rejectDimensions();
+                            }
                         };
                         img.src = e.target.result;
                     };
-                    reader.onerror = function () {
-                        alert('There was an error reading your file.');
+                    reader.readAsDataURL(file);
+                } else if (file.type === "application/pdf") {
+                    // Immediately accept PDF files without dimension checks
+                    done();
+                } else {
+                    // Reject files that are neither images nor PDFs
+                    done("File must be an image or a PDF.");
+                }
+            },
+            init: function () {
+                this.on("thumbnail", function (file) {
+                    // If an image doesn't meet the size criteria, reject it
+                    if (file.type.match(/image.*/) && (file.width < 1920 || file.height < 1080)) {
+                        file.rejectDimensions();
+                    }
+                });
+                this.on("addedfile", function (file) {
+                    if (file.accepted === false) {
+                        var errorMark = file.previewElement.querySelector('.dz-error-mark');
+                        errorMark.style.display = 'block';
+                        // Bind click event to the error mark to remove the file
+                        errorMark.addEventListener('click', function () {
+                            file.previewElement.remove();
+                            teamPhotoDropzone.removeFile(file);
+                        });
+                    }
+                });
+            }
+        });
+
+
+        var teamLogoDropzone = new Dropzone("#teamLogoDropzone", {
+            url: "/upload-team-photo",
+            autoProcessQueue: false,
+            maxFiles: 1,
+            addRemoveLinks: true,
+            dictDefaultMessage: "Drag and drop a team logo here or click",
+            acceptedFiles: "image/*,application/pdf", // Accept images and PDFs
+            accept: function (file, done) {
+                // Check if the file is an image for dimension validation
+                if (file.type.match(/image.*/)) {
+                    // Image dimension validation
+                    file.acceptDimensions = done;
+                    file.rejectDimensions = function () { done("The image must be at least 1920x1080 pixels."); };
+                    // Load the image to check its dimensions
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        var img = new Image();
+                        img.onload = function () {
+                            if (img.width >= 1920 && img.height >= 1080) {
+                                file.acceptDimensions();
+                            } else {
+                                file.rejectDimensions();
+                            }
+                        };
+                        img.src = e.target.result;
                     };
                     reader.readAsDataURL(file);
+                } else if (file.type === "application/pdf") {
+                    // Immediately accept PDF files without dimension checks
+                    done();
+                } else {
+                    // Reject files that are neither images nor PDFs
+                    done("File must be an image or a PDF.");
                 }
+            },
+            init: function () {
+                this.on("thumbnail", function (file) {
+                    // If an image doesn't meet the size criteria, reject it
+                    if (file.type.match(/image.*/) && (file.width < 1920 || file.height < 1080)) {
+                        file.rejectDimensions();
+                    }
+                });
+                this.on("addedfile", function (file) {
+                    if (file.accepted === false) {
+                        var errorMark = file.previewElement.querySelector('.dz-error-mark');
+                        errorMark.addEventListener('click', function () {
+                            teamLogoDropzone.removeFile(file);
+                        });
+                    }
+                });
+                
             }
-        }
+        });
 
-       
-
-        // Function to reset dropzone and preview
-        function resetDropzone(filePreview, removeImageText, dropZone, fileInput, originalDropzoneText) {
-            filePreview.empty();
-            removeImageText.hide();
-            dropZone.show().text(originalDropzoneText);
-            fileInput.val("");
-        }
-
-        // Event handlers for the team photo
-        dropZonePhoto.on('click', function () { fileInputPhoto.click(); });
-        fileInputPhoto.on('change', function () { handleFiles(fileInputPhoto, filePreviewPhoto, removeImageTextPhoto, originalDropzoneTextPhoto, dropZonePhoto); });
-        removeImageTextPhoto.on('click', function () { resetDropzone(filePreviewPhoto, removeImageTextPhoto, dropZonePhoto, fileInputPhoto, originalDropzoneTextPhoto); });
-
-        // Event handlers for the team logo
-        dropZoneLogo.on('click', function () { fileInputLogo.click(); });
-        fileInputLogo.on('change', function () { handleFiles(fileInputLogo, filePreviewLogo, removeImageTextLogo, originalDropzoneTextLogo, dropZoneLogo); });
-        removeImageTextLogo.on('click', function () { resetDropzone(filePreviewLogo, removeImageTextLogo, dropZoneLogo, fileInputLogo, originalDropzoneTextLogo); });
+        // Multiple Files Dropzone
+        var multipleFilesDropzone = new Dropzone("#multipleFilesDropzone", {
+            url: "/upload-multiple-files",
+            autoProcessQueue: false, // Disable auto processing
+            addRemoveLinks: true,
+            dictDefaultMessage: "Drag and drop multiple files here or click",
+        });
 
 
-        $('#submitButton').click(function (e) {
+        //$('#submitButton').click(function (e) {
+        //    e.preventDefault();
+
+        //    var formData = new FormData();
+        //    var files = fileInput[0].files;
+
+        //    if (files.length > 0) {
+        //        formData.append("file", files[0]);
+        //    }
+
+        //    // Your function to generate the JSON data
+        //    var json = generateJson(); // Ensure you define this
+        //    formData.append("json", JSON.stringify(json));
+
+        //    ////// AJAX call to send data
+        //    ////$.ajax({
+        //    ////    type: "PUT",
+        //    ////    url: "/api/events/itc",
+        //    ////    data: formData,
+        //    ////    processData: false,
+        //    ////    contentType: false,
+        //    ////    success: function (result) {
+        //    ////        console.log("Success", result);
+        //    ////        // Handle success
+        //    ////    },
+        //    ////    error: function (error) {
+        //    ////        console.log("Error", error);
+        //    ////        // Handle error
+        //    ////    }
+        //    ////});
+        //});
+
+
+        $('#submitDraftButton').click(function (e) {
             e.preventDefault();
 
+            // Create a FormData object
             var formData = new FormData();
-            var files = fileInput[0].files;
 
-            if (files.length > 0) {
-                formData.append("file", files[0]);
-            }
+            // Assuming you have multiple Dropzone instances like teamPhotoDropzone, teamLogoDropzone, and multipleFilesDropzone
+            var allDropzones = [teamPhotoDropzone, teamLogoDropzone, multipleFilesDropzone]; // Add all your Dropzone instances here
 
-            // Your function to generate the JSON data
-            var json = generateJson(); // Ensure you define this
+            allDropzones.forEach(function (dropzone) {
+                dropzone.files.forEach(function (file) {
+                    console.log("appending file: " + file.name)
+                    formData.append(dropzone.element.getAttribute("id"), file, file.name); // Use the Dropzone's element ID as the name
+                });
+            });
+            debugger
+            // Generate JSON payload
+            var json = generateJson(); // Ensure this function returns your structured JSON data
             formData.append("json", JSON.stringify(json));
 
-            ////// AJAX call to send data
+            console.log("FormData data:");
+            console.log(formData.get("data"));
+
+            console.log("FormData json:");
+            console.log(formData.get("json"));
+
+
+            console.log("FormData files:");
+            console.log(formData.get("teamLogoDropzone"));
+            console.log(formData.get("teamPhotoDropzone"));
+            console.log(formData.get("multipleFilesDropzone"));
+
+            // AJAX call to send data
             ////$.ajax({
             ////    type: "PUT",
             ////    url: "/api/events/itc",
             ////    data: formData,
-            ////    processData: false,
-            ////    contentType: false,
+            ////    processData: false, // Important: don't process files
+            ////    contentType: false, // Important: set content type to false
             ////    success: function (result) {
             ////        console.log("Success", result);
             ////        // Handle success
@@ -703,7 +733,6 @@
                 // Note: parts index starts from 0, so parts[0] is day, parts[1] is month, parts[2] is year
                 var formattedDate = parts[2] + "-" + parts[1] + "-" + parts[0];
                 debugger
-                if (license || playerName) {
                     formData.ItcRosterMembers.push({
                         "Id": rosterId,
                         "License": license,
@@ -716,7 +745,6 @@
                         "Nationality": nationality,
                         "Gender": gender
                     });
-                }
             };
 
             document.querySelectorAll('#formRows tr').forEach(function (row) {
