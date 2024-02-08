@@ -69,7 +69,20 @@
     <div class="overlay"></div>
     <div class="inner">
         <div class="container custom-container">
-            <h1 class="display-4">@Model.Value("heroTitle")</h1>
+            
+            @{
+                var headerTitle = string.Empty;
+                if (team != null)
+                {
+                    headerTitle = $"{@Model.Value<string>("heroTitle")} - {team.Name}";
+                }
+                else
+                {
+                    headerTitle = Model.Value<string>("heroTitle");
+                }
+            }
+
+            <h1 class="display-4">@headerTitle</h1>
             <p class="lead">@Model.Value("heroSubtitle")</p>
         </div>
     </div>
@@ -110,6 +123,9 @@
                 </a>
                 <a class="nav-link mb-3 p-3 shadow" id="v-pills-logo-tab" data-bs-toggle="pill" href="#v-pills-logo" role="tab" aria-controls="v-players-logo" aria-selected="true">
                     <span class="font-weight-bold small text-uppercase">Club Logo</span>
+                </a>
+                <a class="nav-link mb-3 p-3 shadow" id="v-pills-sponsors-tab" data-bs-toggle="pill" href="#v-pills-sponsors" role="tab" aria-controls="v-players-sponsors" aria-selected="true">
+                    <span class="font-weight-bold small text-uppercase">Sponsors</span>
                 </a>
                 <a class="nav-link mb-3 p-3 shadow" id="v-pills-submit-tab" data-bs-toggle="pill" href="#v-pills-submit" role="tab" aria-controls="v-submit-submit" aria-selected="true">
                     <span class="font-weight-bold small text-uppercase">Submit</span>
@@ -181,6 +197,15 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row form-group">
+                        <label for="jerseyTwoColour" class="col-12 col-sm-4 col-md-4 col-form-label">Team history:</label>
+                        <div class="col-12 col-md-8">
+                            <div class="input-group mb-3">
+                                <div id="summernote"></div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-players" role="tabpanel" aria-labelledby="v-pills-players-tab">
@@ -246,7 +271,6 @@
                         </table>
                     </div>
                     <button id="addRowButton" type="button">Add Row</button>
-                    <button type="submit" onclick="validateForms()">Validate</button>
 
                 </div>
 
@@ -317,16 +341,30 @@
                         <div id="removeImageTextPhoto" class="remove-image-text">Remove Image</div>
                         <div id="filePreviewPhoto" class="file-preview"></div>
                         <input type="file" id="fileInputPhoto" style="display: none;" accept="image/*" />
-
-
                     </div>
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-logo" role="tabpanel" aria-labelledby="v-pills-teamlogophoto-tab">
                     <div>
+                        <div id="logo warning" class="alert alert-warning" role="alert">
+                            <h3>Please ensure logos have either a white or transparrent background.</h3>
+                            <p>This makes it easier for the host and production of event programs, and media campaigns</p>
+                        </div>
                         <div class="drop-zone" id="dropZoneLogo">Drag and drop a team logo here or click</div>
                         <div id="removeImageTextLogo" class="remove-image-text">Remove Image</div>
                         <div id="filePreviewLogo" class="file-preview"></div>
-                        <input type="file" id="fileInputLogo" style="display: none;" accept="image/*" />
+                        <input type="file" id="fileInputLogo" style="display: none;" accept="image/*"/>
+
+                    </div>
+                </div>
+                <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-sponsors" role="tabpanel" aria-labelledby="v-pills-sponsors-tab">
+                    <div>
+                        <div class="drop-zone" id="dropZoneMultiple">
+                            Drag and drop multiple files here or click
+                        </div>
+                        <div id="removeImageTextMultiple" class="remove-image-text">Remove All Images</div>
+
+                        <div id="filePreviewMultiple" class="file-preview"></div>
+                        <input type="file" id="fileInputMultiple" style="display: none;" accept="image/*" multiple />
 
                     </div>
                 </div>
@@ -353,7 +391,7 @@
                 <!-- The form inside the modal -->
                 <form id="edit-form">
                     <div class="form-group">
-                        <label for="license">License:</label>
+                        <label for="license">License: <span>- optional</span></label>
                         <input type="text" class="form-control" id="license" name="license">
                     </div>
                     <div class="form-group">
@@ -366,10 +404,7 @@
                             <!-- Add other role options here -->
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="firstName">Club Logo</label>
-                        <!-- Add club logo here-->
-                    </div>
+                    
                     <div class="form-group">
                         <label for="firstName">First Name:</label>
                         <input type="text" class="form-control" id="firstName" name="firstName">
@@ -383,11 +418,11 @@
                         <input type="text" class="form-control" id="jerseyNumber" name="jerseyNumber">
                     </div>
                     <div class="form-group">
-                        <label for="dateOfBirth">Date of Birth:</label>
+                        <label for="dateOfBirth">Date of Birth: <span>- optional</span></label>
                         <input type="text" class="form-control" id="dateOfBirth" name="dateOfBirth">
                     </div>
                     <div class="form-group">
-                        <label for="nationality">Nationality:</label>
+                        <label for="nationality">Nationality: <span>- optional</span></label>
                         <select class="form-control" id="nationality" name="nationality">
                             <option value="">Nationality</option>
                             @foreach (var country in countries)
@@ -397,7 +432,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="gender">Gender:</label>
+                        <label for="gender">Gender: <span>- optional</span></label>
                         <!-- Label and select for Gender -->
                         <select class="form-control" id="gender" name="gender">
                             <option value="Male">Male</option>
@@ -417,101 +452,29 @@
     </div>
 </div>
 
+
+
+<!-- Summernote JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.18/summernote-bs4.min.js"></script>
+
 <script>
     var countries = @Html.Raw(Json.Serialize(@countries));
 
     $(document).ready(function () {
-        ////var dropZone = $('.drop-zone');
-        ////var fileInput = $('#fileInput');
-        ////var filePreview = $('#filePreview');
-        ////var removeImageText = $('#removeImageText');
-        ////var originalDropzoneText = "Drag and drop a file here or click"; // Save the original text
 
-        ////function resetDropZone() {
-        ////    filePreview.empty();
-        ////    removeImageText.hide();
-        ////    dropZone.show().text(originalDropzoneText); // Reset the dropzone text
-        ////    fileInput.val("");
-        ////}
-
-        ////removeImageText.on('click', function () {
-        ////    resetDropZone();
-        ////});
-
-        ////function updatePreview(file) {
-        ////    // First check if the file is an image
-        ////    if (!file.type.startsWith('image/')) {
-        ////        alert('Please select an image file.');
-        ////        return;
-        ////    }
-
-        ////    // Then use FileReader to read the file as an image
-        ////    var reader = new FileReader();
-        ////    reader.onload = function (e) {
-        ////        var img = new Image();
-
-        ////        img.onload = function () {
-        ////            if (img.width >= 1920 && img.height >= 1080) {
-        ////                dropZone.hide();
-        ////                removeImageText.show();
-        ////                filePreview.html('<img src="' + e.target.result + '" alt="File Preview">');
-        ////            } else {
-        ////                alert('The image size is too small. The minimum size is 1920 x 1080 pixels.');
-        ////                resetDropZone();
-        ////            }
-        ////        };
-
-        ////        img.onerror = function () {
-        ////            alert('There was an error processing your file.');
-        ////        };
-
-        ////        img.src = e.target.result;
-        ////    };
-
-        ////    reader.onerror = function () {
-        ////        // There was an error reading the file
-        ////        alert('There was an error reading your file.');
-        ////    };
-
-        ////    reader.readAsDataURL(file);
-        ////}
-
-        ////dropZone.on('click', function (e) {
-        ////    fileInput.click();
-        ////});
-
-        ////fileInput.on('change', function () {
-        ////    var files = fileInput[0].files;
-        ////    if (files.length > 0) {
-        ////        updatePreview(files[0]);
-        ////        dropZone.text(files[0].name);
-        ////    }
-        ////});
-
-        ////dropZone.on('dragover', function (e) {
-        ////    e.preventDefault();
-        ////    e.stopPropagation();
-        ////    $(this).addClass('drop-zone--over');
-        ////});
-
-        ////dropZone.on('dragleave', function (e) {
-        ////    e.preventDefault();
-        ////    e.stopPropagation();
-        ////    $(this).removeClass('drop-zone--over');
-        ////});
-
-        ////dropZone.on('drop', function (e) {
-        ////    e.preventDefault();
-        ////    e.stopPropagation();
-        ////    $(this).removeClass('drop-zone--over');
-
-        ////    var files = e.originalEvent.dataTransfer.files;
-        ////    if (files.length > 0) {
-        ////        updatePreview(files[0]);
-        ////        console.log(files)
-        ////        dropZone.text(files[0].name); // Update the text of the drop zone to show the file name
-        ////    }
-        ////});
+        $('#summernote').summernote({
+            toolbar: [
+                // Define the toolbar: text formatting, lists, paragraphs, height (line spacing)
+                ['style', ['bold', 'italic', 'underline', 'clear']],
+                ['font', ['strikethrough', 'superscript', 'subscript']],
+                ['fontsize', ['fontsize']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+            ],
+            placeholder: 'Start typing here...IISHF Title Wins, Participations, Domestic Wins',
+            tabsize: 2,
+            height: 300
+        });
 
         // Elements for the team photo
         var dropZonePhoto = $('#dropZonePhoto');
@@ -526,6 +489,54 @@
         var filePreviewLogo = $('#filePreviewLogo');
         var removeImageTextLogo = $('#removeImageTextLogo');
         var originalDropzoneTextLogo = "Drag and drop a team logo here or click";
+
+        var dropZoneMultiple = $('#dropZoneMultiple');
+        var fileInputMultiple = $('#fileInputMultiple');
+        var filePreviewMultiple = $('#filePreviewMultiple');
+        var removeImageTextMultiple = $('#removeImageTextMultiple');
+        dropZoneMultiple.on('click', function () { fileInputMultiple.click(); });
+        fileInputMultiple.on('change', function () { handleFilesMultiple(fileInputMultiple, filePreviewMultiple, removeImageTextMultiple, dropZoneMultiple); });
+        removeImageTextMultiple.on('click', function () {
+            filePreviewMultiple.empty(); // Clear previews
+            removeImageTextMultiple.hide(); // Hide remove all images text
+            dropZoneMultiple.css('border', '2px dashed #007bff'); // Restore border
+            fileInputMultiple.val(""); // Clear input value
+        });
+
+        function handleFilesMultiple(fileInput, filePreview, removeImageText, dropZone) {
+            var files = fileInput[0].files;
+            if (files.length > 0) {
+                for (var i = 0; i < files.length; i++) {
+                    var file = files[i];
+                    if (!file.type.startsWith('image/')) {
+                        alert('Please select only image files.');
+                        return;
+                    }
+                    var reader = new FileReader();
+                    reader.onload = (function (file) {
+                        return function (e) {
+                            var previewItem = $('<div class="file-preview-item"></div>');
+                            var previewImg = $('<img class="file-preview-img" src="' + e.target.result + '" alt="File Preview">');
+                            var removeText = $('<div class="remove-image-text">Remove Image</div>');
+                            removeText.click(function () {
+                                previewItem.remove(); // Remove the preview item when clicked
+                                if (filePreview.children().length === 0) {
+                                    removeImageText.hide(); // Hide remove all images text if no images left
+                                }
+                            });
+                            previewItem.append(previewImg).append(removeText);
+                            filePreview.append(previewItem);
+                            dropZone.css('border', 'none'); // Remove border on preview
+                            removeImageText.show(); // Show remove image text
+                        };
+                    })(file);
+                    reader.onerror = function () {
+                        alert('There was an error reading your file.');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        }
 
         // Function to handle file selection and preview update
         function handleFiles(fileInput, filePreview, removeImageText, originalDropzoneText, dropZone) {
@@ -556,6 +567,41 @@
                 reader.readAsDataURL(file);
             }
         }
+
+        function handleFilesMultiple(fileInput, filePreview, removeImageText, dropZone) {
+            var files = fileInput[0].files;
+            if (files.length > 0) {
+                filePreview.empty(); // Clear existing previews
+                for (var i = 0; i < files.length; i++) {
+                    var file = files[i];
+                    if (!file.type.startsWith('image/')) {
+                        alert('Please select only image files.');
+                        return;
+                    }
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        var img = new Image();
+                        img.onload = function () {
+                            var preview = $('<div class="file-preview"></div>');
+                            preview.append('<img src="' + e.target.result + '" alt="File Preview">');
+                            filePreview.append(preview);
+                            dropZone.css('border', 'none'); // Remove border on preview
+                            removeImageText.show(); // Show remove image text
+                        };
+                        img.onerror = function () {
+                            alert('There was an error processing your file.');
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.onerror = function () {
+                        alert('There was an error reading your file.');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        }
+
+       
 
         // Function to reset dropzone and preview
         function resetDropzone(filePreview, removeImageText, dropZone, fileInput, originalDropzoneText) {
@@ -705,6 +751,12 @@
         }
 
         function updateRowFromModal(row) {
+            var gender = $('#edit-form #gender').val()
+            if(gender === null){
+                gender = "";
+            
+            }
+
             row.find("td:eq(0) .tablesaw-cell-content span").text($('#edit-form #license').val());
             row.find("td:eq(1) .tablesaw-cell-content span").text($('#edit-form #role').val());
             row.find("td:eq(2) .tablesaw-cell-content span").text($('#edit-form #firstName').val());
@@ -712,17 +764,22 @@
             row.find("td:eq(4) .tablesaw-cell-content span").text($('#edit-form #jerseyNumber').val());
             row.find("td:eq(5) .tablesaw-cell-content span").text($('#edit-form #dateOfBirth').val());
             row.find("td:eq(6) .tablesaw-cell-content span").text($('#edit-form #nationality').val());
-            row.find("td:eq(7) .tablesaw-cell-content span").text($('#edit-form #gender').val());
+            row.find("td:eq(7) .tablesaw-cell-content span").text(gender);
         }
 
         function updateBenchOfficialRowFromModal(row) {
+            var gender = $('#edit-form #gender').val()
+            if (gender === null) {
+                gender = "";
+
+            }
             row.find("td:eq(0) .tablesaw-cell-content span").text($('#edit-form #license').val());
             row.find("td:eq(1) .tablesaw-cell-content span").text($('#edit-form #role').val());
             row.find("td:eq(2) .tablesaw-cell-content span").text($('#edit-form #firstName').val());
             row.find("td:eq(3) .tablesaw-cell-content span").text($('#edit-form #lastName').val());
             row.find("td:eq(4) .tablesaw-cell-content span").text($('#edit-form #dateOfBirth').val());
             row.find("td:eq(5) .tablesaw-cell-content span").text($('#edit-form #nationality').val());
-            row.find("td:eq(6) .tablesaw-cell-content span").text($('#edit-form #gender').val());
+            row.find("td:eq(6) .tablesaw-cell-content span").text(gender);
         }
 
         function populateModalForBenchOfficial(currentRow) {
@@ -747,6 +804,13 @@
         }
 
         function addNewRowFromModal() {
+
+            var gender = $('#edit-form #gender').val()
+            if (gender === null) {
+               gender = "";
+
+            }
+
             var newRowHtml = '<tr data-id="0">' +
                 '<td><b class="tablesaw-cell-label">License</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #license').val() + '</span></span></td>' +
                 '<td><b class="tablesaw-cell-label">Role</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #role').val() + '</span></span></td>' +
@@ -755,13 +819,19 @@
                 '<td><b class="tablesaw-cell-label">Jersey Number</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #jerseyNumber').val() + '</span></span></td>' +
                 '<td><b class="tablesaw-cell-label">Date of Birth</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #dateOfBirth').val() + '</span></span></td>' +
                 '<td><b class="tablesaw-cell-label">Nationality</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #nationality').val() + '</span></span></td>' +
-                '<td><b class="tablesaw-cell-label">Gender</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #gender').val() + '</span></span></td>' +
+                '<td><b class="tablesaw-cell-label">Gender</b><span class="tablesaw-cell-content"><span>' + gender + '</span></span></td>' +
                 '<td><button type="button" class="btn btn-danger delete-btn" onclick="event.stopPropagation(); deleteRow(this);"><i class="fas fa-trash"></i></button></td>' +
                 '</tr>';
             $('#data-table tbody').append(newRowHtml);
         }
 
         function addBenchOfficialRowFromModal() {
+            var gender = $('#edit-form #gender').val()
+            if (gender === null) {
+                gender = "";
+
+            }
+
             var newRowHtml = '<tr data-id="0">' +
                 '<td><b class="tablesaw-cell-label">License</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #license').val() + '</span></span></td>' +
                 '<td><b class="tablesaw-cell-label">Role</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #role').val() + '</span></span></td>' +
@@ -769,7 +839,7 @@
                 '<td><b class="tablesaw-cell-label">Last Name</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #lastName').val() + '</span></span></td>' +
                 '<td><b class="tablesaw-cell-label">Date of Birth</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #dateOfBirth').val() + '</span></span></td>' +
                 '<td><b class="tablesaw-cell-label">Nationality</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #nationality').val() + '</span></span></td>' +
-                '<td><b class="tablesaw-cell-label">Gender</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #gender').val() + '</span></span></td>' +
+                '<td><b class="tablesaw-cell-label">Gender</b><span class="tablesaw-cell-content"><span>' + gender + '</span></span></td>' +
                 '<td><button type="button" class="btn btn-danger delete-btn" onclick="event.stopPropagation(); deleteRow(this);"><i class="fas fa-trash"></i></button></td>' +
                 '</tr>';
             $('#benchOfficials tbody').append(newRowHtml);
@@ -811,6 +881,32 @@
             populateModalFromRow(currentRow);
             $('#editModal').modal('show');
         });
+
+        function clearModalFields() {
+            $('#edit-form').find('input[type="text"], select').val('');
+        }
+
+        $("#saveChanges").on("click", function () {
+
+            if (currentRow) {
+                if (currentMode === 'editPlayer') {
+                    updateRowFromModal(currentRow);
+                } else if (currentMode === 'editBenchOfficial') {
+                    updateBenchOfficialRowFromModal(currentRow);
+                }
+            } else {
+                if (currentMode === 'addPlayer') {
+                    // Update player row
+                    addNewRowFromModal();
+                } else if (currentMode === 'addbenchOfficial') {
+                    // Update bench official row
+                    addBenchOfficialRowFromModal();
+                }
+            }
+            $('#editModal').modal('hide');
+            clearModalFields();
+        });
+
 
         function addRowToPlayer() {
             // Clear the form fields in the modal
