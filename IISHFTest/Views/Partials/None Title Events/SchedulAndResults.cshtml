@@ -53,7 +53,7 @@
     </div>
 </div>
 
-<script>
+@*<script>
     $(document).ready(function () {
 
         if (@Model.ScheduleAndResults.Count === 0) {
@@ -107,6 +107,74 @@
         // Adjust text size for all team name texts
         $('.team-name-text').each(function () {
             adjustTextSize($(this));
+        });
+    });
+</script>*@
+
+<script>
+    $(document).ready(function () {
+
+        if (@Model.ScheduleAndResults.Count === 0) {
+            $("#v-pills-schedule-tab").hide();
+        }
+
+        // Define the media query for mobile view
+        var isMobileView = window.matchMedia("(max-width: 992px)").matches;
+
+        // Function to adjust text size based on the container width and text length
+        function adjustTextSize($element) {
+            console.log("in adjust text size")
+            var containerWidth = $element.parent().width();
+            var textLength = $element.text().length;
+            var fontSize = Math.min(24, Math.max(12, containerWidth / textLength)); // Adjust based on max and min font size
+
+            $element.css('font-size', fontSize + 'px');
+        }
+
+        // Function to handle missing or failed images
+        function handleMissingImage($img, $teamName) {
+            // Mobile view: Hide the image and show the team name
+            console.log("in handleMissingImage")
+            $img.hide();
+            $teamName.show();
+            adjustTextSize($teamName);
+        }
+
+        // Adjust text size for all team name texts and initially hide them in mobile view
+        $('.team-name-text').each(function () {
+            console.log("in team-name-text")
+            var $teamName = $(this);
+            if (isMobileView) {
+                $teamName.hide(); // Hide the team name text initially
+            }
+            adjustTextSize($teamName);
+        });
+
+        // Handle images and team name texts
+        $('.team img').each(function () {
+            console.log("in time img")
+            var $img = $(this);
+            var $teamName = $img.next('.team-name-text');
+
+            // Event for successful image load
+            $img.on('load', function () {
+                if (isMobileView) {
+                    // Hide the team name text when the image is present
+                    $teamName.hide();
+                }
+            });
+
+            // Event for image loading error
+            $img.on('error', function () {
+                console.log("in error")
+
+                handleMissingImage($img, $teamName);
+            });
+
+            // Check if the src is missing or empty
+            if (!$img.attr('src') || $img.attr('src').trim() === '') {
+                handleMissingImage($img, $teamName);
+            }
         });
     });
 </script>

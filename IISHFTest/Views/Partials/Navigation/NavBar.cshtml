@@ -38,7 +38,7 @@
 
                                     <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink-@child.Id">
                                         <div class="row">
-                                            
+
                                             @for (int col = 0; col < 3; col++)
                                             {
                                                 <div class="col-md-4">
@@ -46,9 +46,9 @@
                                                     {
                                                         var grandChild = grandChildren[i];
                                                         <a class="dropdown-item" href="@grandChild.Url()">@grandChild.Name</a>
-                    
+
                                                         // Loop through each great-grandchild and display under grandchild
-                                                        foreach(var greatGrandChild in grandChild.Children().Where(x => x.IsVisible()))
+                                                        foreach (var greatGrandChild in grandChild.Children().Where(x => x.IsVisible()))
                                                         {
                                                             <a class="dropdown-item ml-3" href="@greatGrandChild.Url()">@greatGrandChild.Name</a>
                                                         }
@@ -64,20 +64,28 @@
                                     <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink-@child.Id">
                                         @foreach (var grandChild in child.Children().Where(x => x.IsVisible()))
                                         {
-                                            if (child.Name == "Documents")
+                                            try
                                             {
-                                                var file = grandChild.Value<IPublishedContent>("FileDownload");
-                                                var fileUrl = file?.Url();
-                                                var iconClass = FileIconHelper.GetIcon(fileUrl);
+                                                if (child.Name == "Documents")
+                                                {
+                                                    var file = grandChild.Value<IPublishedContent>("FileDownload");
+                                                    var fileUrl = file?.Url();
+                                                    var iconClass = FileIconHelper.GetIcon(fileUrl);
 
-                                                <a class="dropdown-item" href="@fileUrl" target="_blank">
-                                                    <i class="@iconClass p-1"></i>
-                                                    @grandChild.Name
-                                                </a>
+                                                    <a class="dropdown-item" href="@fileUrl" target="_blank">
+                                                        <i class="@iconClass p-1"></i>
+                                                        @grandChild.Name
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <a class="dropdown-item" href="@grandChild.Url()">@grandChild.Name</a>
+                                                }
                                             }
-                                            else
+                                            catch (Exception e)
                                             {
-                                                <a class="dropdown-item" href="@grandChild.Url()">@grandChild.Name</a>
+                                                System.Console.WriteLine(e);
+                                                throw;
                                             }
                                         }
                                     </div>
@@ -92,33 +100,33 @@
                         }
                     }
                     @if (_memberManager.IsLoggedIn())
-                        {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fa-duotone fa-circle-user"></i>
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                <li><a class="dropdown-item" href="/my-account">My Account</a></li>
-                                    <li><a class="dropdown-item" href="/itc">ITC</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        @using (Html.BeginUmbracoForm<UmbLoginStatusController>("HandleLogout", new { RedirectUrl = "/" }))
-                                        {
-                                            //<button type="submit" class="btn btn-primary">Log out!!</button>
-                                            <input type="submit" class="dropdown-item" value="Logout"/>
-                                        }
-                                    </li>
-                                </ul>
-                            </li>
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-duotone fa-circle-user"></i>
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <!-- <li><a class="dropdown-item" href="/my-account">My Account</a></li> -->
+                                <li><a class="dropdown-item" href="/itc">ITC</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    @using (Html.BeginUmbracoForm<UmbLoginStatusController>("HandleLogout", new { RedirectUrl = "/" }))
+                                    {
+                                    //<button type="submit" class="btn btn-primary">Log out!!</button>
+                                        <input type="submit" class="dropdown-item" value="Logout" />
+                                    }
+                                </li>
+                            </ul>
+                        </li>
 
-                        }
-                        else
-                        {
-                            <li class="nav-item active">
-                                <a class="nav-link" href="/login">Sign up | Sign in</a>
-                            </li>
-                        }
-                    
+                    }
+                    else
+                    {
+                        <li class="nav-item active">
+                            <a class="nav-link" href="/login">Sign up | Sign in</a>
+                        </li>
+                    }
+
                 }
             </ul>
         </div>

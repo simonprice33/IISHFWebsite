@@ -11,6 +11,11 @@ namespace IISHFTest.Core.Models
 {
     public class AccountViewModel
     {
+        public AccountViewModel()
+        {
+            Invitations = new List<EventInvitation>();
+        }
+
         public string? Name { get; set; } = string.Empty;
 
         [DisplayName("User Name")]

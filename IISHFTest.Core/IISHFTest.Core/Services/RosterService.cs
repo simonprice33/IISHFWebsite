@@ -64,6 +64,10 @@ namespace IISHFTest.Core.Services
 
         private int SetRosterMemberValues(IPublishedContent team, RosterMember rosterMember, IContent umbracoRosteredMember)
         {
+            var dob = rosterMember.DateOfBirth != null
+                ? rosterMember.DateOfBirth.Value.ToString("yyyy-MM-dd")
+                : string.Empty;
+
             umbracoRosteredMember?.SetValue("playerName", rosterMember.PlayerName);
             umbracoRosteredMember?.SetValue("firstName", rosterMember.FirstName);
             umbracoRosteredMember?.SetValue("lastName", rosterMember.LastName);
@@ -74,7 +78,7 @@ namespace IISHFTest.Core.Services
             umbracoRosteredMember?.SetValue("iso3", GetCountryIso3Code(rosterMember.Nationality));
             umbracoRosteredMember?.SetValue("role", rosterMember.Role);
             umbracoRosteredMember?.SetValue("jerseyNumber", rosterMember.JerseyNumber);
-            umbracoRosteredMember?.SetValue("dateOfBirth", rosterMember.DateOfBirth.ToString("yyyy-MM-dd"));
+            umbracoRosteredMember?.SetValue("dateOfBirth",dob );
             umbracoRosteredMember?.SetValue("nmaCheck", rosterMember.NmaCheck);
             umbracoRosteredMember?.SetValue("iishfCheck", rosterMember.IISHFCheck);
             umbracoRosteredMember?.SetValue("comments", rosterMember.Comments);

@@ -167,7 +167,7 @@
         }
 
     .team-name-text {
-        display: none !i; /* Hide team name text by default */
+        display: none !important; /* Hide team name text by default */
     }
 
     .show-team-name {
@@ -175,7 +175,7 @@
     }
 }
 
-@media screen and (min-width: 993px) {
+@media screen and (min-width: 992px) {
     .team-name-text {
         display: none; /* Hide by default in desktop view */
     }

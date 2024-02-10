@@ -163,6 +163,18 @@ namespace IISHFTest.Core.Services
             return team;
         }
 
+        public Task UpdateTeamColours(string colourHex, string fieldName, IPublishedContent team)
+        {
+            if (team.Value<string>(fieldName) == colourHex)
+            {
+                return Task.CompletedTask;
+            }
+            var teamToUpdate = _contentService.GetById(team.Id);
+            teamToUpdate?.SetValue(fieldName, colourHex);
+
+            return Task.CompletedTask;
+        }
+
         private List<IPublishedContent> GetEventTeams(int year, int tournamentId, int teamId)
         {
             var rootContent = _contentQuery.ContentAtRoot().ToList();

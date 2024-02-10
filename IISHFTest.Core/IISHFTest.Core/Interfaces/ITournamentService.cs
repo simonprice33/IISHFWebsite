@@ -1,4 +1,5 @@
 ﻿using IISHFTest.Core.Models;
+using SendGrid.Helpers.Mail;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +24,6 @@ namespace IISHFTest.Core.Interfaces
 
         Task CreateEventGame(CreateScheduleGames model, IPublishedContent tournament);
 
-
+        Task UpdateTeamColours(string colourHex, string fieldName, IPublishedContent team);
     }
 }

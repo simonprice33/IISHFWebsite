@@ -201,7 +201,7 @@
                         <label for="jerseyTwoColour" class="col-12 col-sm-4 col-md-4 col-form-label">Team history:</label>
                         <div class="col-12 col-md-8">
                             <div class="input-group mb-3">
-                                <div id="summernote"></div>
+                                <div id="teamHistory"></div>
                             </div>
                         </div>
                     </div>
@@ -249,6 +249,10 @@
                                         <td>
                                             @{
                                                 var dob = players[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
+                                                if (dob == DateTime.MinValue.ToString("dd.MM.yyyy"))
+                                                {
+                                                    dob = null;
+                                                }
                                             }
                                             <span>@dob</span>
                                         </td>
@@ -337,10 +341,6 @@
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-teamphoto" role="tabpanel" aria-labelledby="v-pills-teamphoto-tab">
                     <div>
-                        @*<div class="drop-zone" id="dropZonePhoto">Drag and drop a team photo here or click</div>
-                        <div id="removeImageTextPhoto" class="remove-image-text">Remove Image</div>
-                        <div id="filePreviewPhoto" class="file-preview"></div>
-                        <input type="file" id="fileInputPhoto" style="display: none;" accept="image/*" />*@
                         <form action="/upload-team-photo" class="dropzone" id="teamPhotoDropzone"></form>
                     </div>
                 </div>
@@ -350,23 +350,12 @@
                             <h3>Please ensure logos have either a white or transparrent background.</h3>
                             <p>This makes it easier for the host and production of event programs, and media campaigns</p>
                         </div>
-                        @*<div class="drop-zone" id="dropZoneLogo">Drag and drop a team logo here or click</div>
-                        <div id="removeImageTextLogo" class="remove-image-text">Remove Image</div>
-                        <div id="filePreviewLogo" class="file-preview"></div>
-                        <input type="file" id="fileInputLogo" style="display: none;" accept="image/*"/>*@
                         <form action="/upload-team-logo" class="dropzone" id="teamLogoDropzone"></form>
 
                     </div>
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-sponsors" role="tabpanel" aria-labelledby="v-pills-sponsors-tab">
                     <div>
-                        @*<div class="drop-zone" id="dropZoneMultiple">
-                            Drag and drop multiple files here or click
-                        </div>
-                        <div id="removeImageTextMultiple" class="remove-image-text">Remove All Images</div>
-
-                        <div id="filePreviewMultiple" class="file-preview"></div>
-                        <input type="file" id="fileInputMultiple" style="display: none;" accept="image/*" multiple />*@
                         <form action="/upload-multiple-files" class="dropzone" id="multipleFilesDropzone"></form>
 
                     </div>
@@ -466,7 +455,7 @@
 
     $(document).ready(function () {
 
-        $('#summernote').summernote({
+        $('#teamHistory').summernote({
             toolbar: [
                 // Define the toolbar: text formatting, lists, paragraphs, height (line spacing)
                 ['style', ['bold', 'italic', 'underline', 'clear']],
@@ -600,40 +589,6 @@
             dictDefaultMessage: "Drag and drop multiple files here or click",
         });
 
-
-        //$('#submitButton').click(function (e) {
-        //    e.preventDefault();
-
-        //    var formData = new FormData();
-        //    var files = fileInput[0].files;
-
-        //    if (files.length > 0) {
-        //        formData.append("file", files[0]);
-        //    }
-
-        //    // Your function to generate the JSON data
-        //    var json = generateJson(); // Ensure you define this
-        //    formData.append("json", JSON.stringify(json));
-
-        //    ////// AJAX call to send data
-        //    ////$.ajax({
-        //    ////    type: "PUT",
-        //    ////    url: "/api/events/itc",
-        //    ////    data: formData,
-        //    ////    processData: false,
-        //    ////    contentType: false,
-        //    ////    success: function (result) {
-        //    ////        console.log("Success", result);
-        //    ////        // Handle success
-        //    ////    },
-        //    ////    error: function (error) {
-        //    ////        console.log("Error", error);
-        //    ////        // Handle error
-        //    ////    }
-        //    ////});
-        //});
-
-
         $('#submitDraftButton').click(function (e) {
             e.preventDefault();
 
@@ -666,22 +621,22 @@
             console.log(formData.get("teamPhotoDropzone"));
             console.log(formData.get("multipleFilesDropzone"));
 
-            // AJAX call to send data
-            ////$.ajax({
-            ////    type: "PUT",
-            ////    url: "/api/events/itc",
-            ////    data: formData,
-            ////    processData: false, // Important: don't process files
-            ////    contentType: false, // Important: set content type to false
-            ////    success: function (result) {
-            ////        console.log("Success", result);
-            ////        // Handle success
-            ////    },
-            ////    error: function (error) {
-            ////        console.log("Error", error);
-            ////        // Handle error
-            ////    }
-            ////});
+//AJAX call to send data
+            $.ajax({
+                type: "PUT",
+                url: "/api/events/team-information-submission",
+                data: formData,
+                processData: false, // Important: don't process files
+                contentType: false, // Important: set content type to false
+                success: function (result) {
+                    console.log("Sending results to update row ids");
+                    updateRowIds(result);
+                },
+                error: function (error) {
+                    console.log("Error", error);
+                    // Handle error
+                }
+            });
         });
 
         function generateJson() {
@@ -705,11 +660,14 @@
             }
 
             var formData = {
-                "EventYear": year, // Assuming you have an input for EventYear
+                "EventYear": parseInt(year, 10), // Assuming you have an input for EventYear
                 "TitleEvent": $('#shortCode').val(), // Assuming you have an input for TitleEvent
                 "isChampionship": document.getElementById('isChampionship').checked, // Assuming you have a checkbox for IsChampionship
                 "ItcRosterMembers": [],
-                "TeamName": $('#teamName').val() // Assuming you have an input for TeamName
+                "TeamName": $('#teamName').val(), 
+                "JerseyOne": $('#colourOne').val(), 
+                "JerseyTwo": $('#colourTwo').val(),
+                "TeamHistory": $("#teamHistory").summernote('code')
             };
 
             var processRow = function (currentRow, isBench) {
@@ -719,8 +677,7 @@
                 var role = currentRow.querySelector("td:nth-child(2) span span").textContent.trim();
                 var firstName = currentRow.querySelector("td:nth-child(3) span span").textContent.trim();
                 var lastName = currentRow.querySelector("td:nth-child(4) span span").textContent.trim();
-                var jerseyNumber = currentRow.querySelector("td:nth-child(5) span span").textContent.trim();
-                var dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
+                var jerseyNumber = parseInt(currentRow.querySelector("td:nth-child(5) span span").textContent.trim(), 10);
                 var nationality = currentRow.querySelector("td:nth-child(7) span span").textContent.trim();
                 var gender = currentRow.querySelector("td:nth-child(8) span span").textContent.trim();
 
@@ -731,13 +688,23 @@
 
                 // Rearrange the parts into yyyy-mm-dd format
                 // Note: parts index starts from 0, so parts[0] is day, parts[1] is month, parts[2] is year
-                var formattedDate = parts[2] + "-" + parts[1] + "-" + parts[0];
+                var formattedDate;
+
+                // Check if dateOfBirthText is empty, undefined, or not in the expected format
+                if (!dateOfBirth || dateOfBirth.split(".").length !== 3) {
+                    formattedDate = null; // Set to null if the date is invalid
+                } else {
+                    // If the date is valid, format it
+                    var parts = dateOfBirthText.split(".");
+                    formattedDate = parts[2] + "-" + parts[1] + "-" + parts[0]; // yyyy-mm-dd format
+                }
+
                 debugger
                     formData.ItcRosterMembers.push({
                         "Id": rosterId,
                         "License": license,
-                        "firstName": firstName,
-                        "lastName": lastName,
+                        "FirstName": firstName,
+                        "LastName": lastName,
                         "JerseyNumber": jerseyNumber,
                         "Role": role,
                         "IsBenchOfficial": isBench,
@@ -756,6 +723,24 @@
             ////});
 
             return formData;
+        }
+
+        function updateRowIds(updatedRoster) {
+            console.log("updating row ids")
+            updatedRoster.ItcRosterMembers.forEach(function (member) {
+                if (member.Id !== 0) {
+                    // Construct the jQuery selector to find the row with matching license number and last name
+                    $("#data-table tbody tr").each(function () {
+                        var firstName = $(this).find('td:nth-child(3) span span').text().trim();
+                        var lastName = $(this).find('td:nth-child(4) span span').text().trim();
+
+
+                        if (firstName === member.FirstName && lastName === member.LastName) {
+                            $(this).attr('data-id', member.Id);
+                        }
+                    });
+                }
+            });
         }
 
         function populateModalFromRow(currentRow) {

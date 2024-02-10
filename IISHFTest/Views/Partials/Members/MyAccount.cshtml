@@ -55,12 +55,16 @@
                 <h2 class="mb-3">My Teams Invitations</h2>
                 <h3 class="mt-3 mb-3">Team Information Submissions and Status</h3>
                 @{
-                    foreach (var invitation in Model.Invitations.Where(x => !x.TeamInformationSubmitted))
+                    if (Model.Invitations != null)
                     {
-                        var link = $"/team-information-submission?team={invitation.EventTeamId}";
-                        <a href="@link">@invitation.EventName - Pending submission</a>
-                        ;
+                        foreach (var invitation in Model.Invitations.Where(x => !x.TeamInformationSubmitted))
+                        {
+                            var link = $"/team-information-submission?team={invitation.EventTeamId}";
+                            <a href="@link">@invitation.EventName - Pending submission</a>
+                            ;
+                        }                        
                     }
+
                 }
                 <h3 class="mt-3 mb-3">ITC Submissions and Status</h3>
                 @{

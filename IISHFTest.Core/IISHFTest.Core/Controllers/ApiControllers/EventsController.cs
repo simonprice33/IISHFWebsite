@@ -30,7 +30,9 @@ namespace IISHFTest.Core.Controllers.ApiControllers
         private readonly IRosterService _rosterService;
         private readonly IEventResultsService _eventResultsService;
         private readonly IMediaService _mediaService;
+        private readonly ITeamService _teamService;
         private readonly ILogger<EventsController> _logger;
+        private readonly JsonSerializerOptions _options;
 
         public EventsController(
             IPublishedContentQuery contentQuery,
@@ -41,6 +43,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
             IRosterService rosterService,
             IEventResultsService eventResultsService,
             IMediaService mediaService,
+            ITeamService teamService,
             ILogger<EventsController> logger)
         {
             _contentQuery = contentQuery;
@@ -51,7 +54,13 @@ namespace IISHFTest.Core.Controllers.ApiControllers
             _rosterService = rosterService;
             _eventResultsService = eventResultsService;
             _mediaService = mediaService;
+            _teamService = teamService;
             _logger = logger;
+
+            _options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
         }
 
         [HttpPost("Team")]
@@ -261,9 +270,55 @@ namespace IISHFTest.Core.Controllers.ApiControllers
 
         [HttpPut("team-information-submission")]
         [UmbracoMemberAuthorize]
-        public IActionResult PutTeamInformationSubmission(IFormFile file, string json)
+        public IActionResult PutTeamInformationSubmission(IFormCollection formCollection)
         {
-            return NoContent();
+
+            // ToDo
+            // Get files from collection
+            var files = formCollection.Files;
+           var teamPhoto = files["teamPhotoDropzone"];
+
+            // Get json by key of json into model
+            var model = JsonSerializer.Deserialize<TeamInformationSubmission>(formCollection["json"].ToString(), _options);
+
+            var tournament = _tournamentService.GetTournament(
+                model.IsChampionships,
+                model.TitleEvent,
+                model.EventYear.ToString());
+
+            if (tournament == null)
+            {
+                return NotFound();
+            }
+
+            var team = _tournamentService.GetTournamentTeamByName(model.TeamName, tournament);
+
+            if (team == null)
+            {
+                return NotFound();
+            }
+
+            // save players and coaches to roster
+            var result = _rosterService.UpsertRosterMembers(model, team);
+
+            // save hd version of club image 
+
+            // save club \ team history as the html from the rich text box
+            var nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
+            _teamService.UpdateNmaTeamHistory(model.TeamHistory, nmaTeam);
+            var imageUrl = _teamService.UploadTeamPhoto(files["teamPhotoDropzone"]).Result;
+            _teamService.AddImageToTeam(imageUrl, nmaTeam);
+
+            var club = nmaTeam.Parent;
+            
+            // update jersey colours for event team
+            _tournamentService.UpdateTeamColours(model.JerseyOne, "jerseyOneColour", team);
+            _tournamentService.UpdateTeamColours(model.JerseyTwo, "jerseyTwoColour", team);
+
+            // check status - is being submitted or saved as draft?
+
+            var json = JsonSerializer.Serialize(result);
+            return Ok(json);
         }
 
 
