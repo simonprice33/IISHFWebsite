@@ -82,7 +82,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
         }
 
         [HttpPost("Roster")]
-        public IActionResult PostRosterMember([FromBody] RosterMembers model)
+        public async Task<IActionResult> PostRosterMember([FromBody] RosterMembers model)
         {
             var tournament = _tournamentService.GetTournament(
                 model.IsChampionships,
@@ -101,7 +101,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
                 return NotFound();
             }
 
-            _rosterService.UpsertRosterMembers(model, team);
+            await _rosterService.UpsertRosterMembers(model, team);
 
             return Ok();
         }
@@ -228,7 +228,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
             }
 
             _mediaService.SetVideoFeed(model, tournament);
-            
+
             return NoContent();
         }
 
@@ -244,7 +244,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
 
         [HttpPut("itc")]
         [UmbracoMemberAuthorize]
-        public IActionResult PutItcRoster([FromBody] RosterMembers model)
+        public async Task<IActionResult> PutItcRoster([FromBody] RosterMembers model)
         {
             var tournament = _tournamentService.GetTournament(
                 model.IsChampionships,
@@ -263,22 +263,20 @@ namespace IISHFTest.Core.Controllers.ApiControllers
                 return NotFound();
             }
 
-            var result = _rosterService.UpsertRosterMembers(model, team);
+            var result = await _rosterService.UpsertRosterMembers(model, team);
             var json = JsonSerializer.Serialize(result);
             return Ok(json);
         }
 
         [HttpPut("team-information-submission")]
         [UmbracoMemberAuthorize]
-        public IActionResult PutTeamInformationSubmission(IFormCollection formCollection)
+        public async Task<IActionResult> PutTeamInformationSubmission(IFormCollection formCollection)
         {
-
-            // ToDo
-            // Get files from collection
             var files = formCollection.Files;
-           var teamPhoto = files["teamPhotoDropzone"];
+            var teamPhoto = files["teamPhotoDropzone"];
+            var teamLogo = files["teamLogoDropzone"];
+            var sponsors = files.Where(x => x.Name == "multipleFilesDropzone").ToList();
 
-            // Get json by key of json into model
             var model = JsonSerializer.Deserialize<TeamInformationSubmission>(formCollection["json"].ToString(), _options);
 
             var tournament = _tournamentService.GetTournament(
@@ -298,27 +296,54 @@ namespace IISHFTest.Core.Controllers.ApiControllers
                 return NotFound();
             }
 
-            // save players and coaches to roster
-            var result = _rosterService.UpsertRosterMembers(model, team);
+            var result = await _rosterService.UpsertRosterMembers(model, team);
 
-            // save hd version of club image 
-
-            // save club \ team history as the html from the rich text box
             var nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
-            _teamService.UpdateNmaTeamHistory(model.TeamHistory, nmaTeam);
-            var imageUrl = _teamService.UploadTeamPhoto(files["teamPhotoDropzone"]).Result;
-            _teamService.AddImageToTeam(imageUrl, nmaTeam);
+            await _teamService.UpdateNmaTeamHistory(model.TeamHistory, nmaTeam);
+            if (teamPhoto != null)
+            {
+                var teamPhotoMedia = await _teamService.UploadTeamPhoto(teamPhoto, "TeamPhotos");
+                await _teamService.AddImageToTeam(teamPhotoMedia, nmaTeam, "teamPhoto");
+            }
 
-            var club = nmaTeam.Parent;
+            if (teamLogo != null)
+            {
+                var teamLogoMedia = await _teamService.UploadTeamPhoto(teamLogo, "Unsanitised Logos");
+                await _teamService.AddImageToTeam(teamLogoMedia, nmaTeam, "teamLogo");
+            }
+
+            if (sponsors != null && sponsors.Any())
+            {
+                await _teamService.UploadSponsors(sponsors, nmaTeam, "Sponsors");
+            }
             
             // update jersey colours for event team
-            _tournamentService.UpdateTeamColours(model.JerseyOne, "jerseyOneColour", team);
-            _tournamentService.UpdateTeamColours(model.JerseyTwo, "jerseyTwoColour", team);
+            await _tournamentService.UpdateTeamColours(model.JerseyOne, "jerseyOneColour", team);
+            await _tournamentService.UpdateTeamColours(model.JerseyTwo, "jerseyTwoColour", team);
 
-            // check status - is being submitted or saved as draft?
+            // Re-get nma team object and return saved \ published information
+            nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
+            var sponsorList = nmaTeam.Children.Where(x => x.ContentType.Alias == "sponsor")
+                .Select(x => x.Value<IPublishedContent>("sponsorImage").Url().ToString()).ToList();
 
-            var json = JsonSerializer.Serialize(result);
-            return Ok(json);
+            var teamPhotoUrl = nmaTeam.Value<IPublishedContent>("teamPhoto");
+            var teamLogoUrl = nmaTeam.Value<IPublishedContent>("teamLogo");
+
+            if (model.SubmitToHost)
+            {
+                await _tournamentService.SetSubmissionDate(team);
+                // ToDo - Create Submission Service - send on to Azure Function. 
+            }
+
+            var responseModel = new TeamInformationSubmissionResponse
+            {
+                ItcRosterMembers = result.ItcRosterMembers,
+                TeamPhotoPath = teamPhotoUrl == null ? string.Empty : teamPhotoUrl.Url(),
+                TeamLogoPath = teamLogoUrl == null ? string.Empty : teamLogoUrl.Url(),
+                SponsorPaths = sponsorList
+            };
+
+            return Ok(responseModel);
         }
 
 
@@ -358,7 +383,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
 
             // delete roster member
             _rosterService.DeleteRosteredPlayer(rosterMember.Id);
-                return NoContent();
+            return NoContent();
         }
     }
 }

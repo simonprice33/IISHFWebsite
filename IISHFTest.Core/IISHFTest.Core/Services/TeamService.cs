@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using IISHFTest.Core.Interfaces;
+﻿using IISHFTest.Core.Interfaces;
+using IISHFTest.Core.Models;
 using Microsoft.AspNetCore.Http;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.IO;
@@ -12,8 +8,6 @@ using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Strings;
-using Umbraco.Cms.Infrastructure.PublishedCache;
-using Umbraco.Extensions;
 using IMediaService = Umbraco.Cms.Core.Services.IMediaService;
 
 namespace IISHFTest.Core.Services
@@ -46,49 +40,81 @@ namespace IISHFTest.Core.Services
             _mediaUrlGeneratorCollection = mediaUrlGeneratorCollection;
         }
 
-        public Task UpdateNmaTeamHistory(string html, IPublishedContent team)
+        public async Task UpdateNmaTeamHistory(string html, IPublishedContent team)
         {
             var nmaTeam = _contentService.GetById(team.Id);
             if (nmaTeam == null)
             {
-                return Task.CompletedTask;
+                return;
             }
 
-            nmaTeam.SetValue("teamHistory", html);
-            _contentService.SaveAndPublish(nmaTeam);
-
-            return Task.CompletedTask;
+            await Task.Run(() =>
+            {
+                nmaTeam.SetValue("teamHistory", html);
+                _contentService.SaveAndPublish(nmaTeam);
+                return Task.CompletedTask;
+            });
         }
 
-        public Task<IMedia>? UploadTeamPhoto(IFormFile file)
+        public async Task<IMedia>? UploadTeamPhoto(IFormFile file, string teamPhoto)
         {
             if (file.Length == 0)
             {
                 return null;
             }
 
-            using var stream = file.OpenReadStream();
-            int folderId = EnsureFolderExists("Unsanitised Logos");
-            IMedia media = _umbracoMediaService.CreateMedia("Unicorn", folderId, Constants.Conventions.MediaTypes.Image);
-            media.SetValue(_mediaFileManager, _mediaUrlGeneratorCollection, _shortStringHelper, _contentTypeBaseServiceProvider, Constants.Conventions.Media.File, file.FileName, stream);
-            _umbracoMediaService.Save(media);
-            return Task.FromResult(media);
+            return await CreateMedia(file, teamPhoto);
         }
 
-        public Task AddImageToTeam(IMedia image, IPublishedContent team)
+        private async Task<IMedia> CreateMedia(IFormFile file, string directory)
         {
-            var nmaTeam = _contentService.GetById(team.Id);
-           
-            if (nmaTeam != null)
+            return await Task.Run(async () =>
             {
-                    var media = _contentQuery.Media(image.Key);
-                    var udi = Udi.Create(Constants.UdiEntityType.Media, media.Key);
-                    nmaTeam.SetValue("teamPhoto", udi.ToString());
-                    
-                    _contentService.SaveAndPublish(nmaTeam);
+                await using var stream = file.OpenReadStream();
+                int folderId = EnsureFolderExists(directory);
+                IMedia media = _umbracoMediaService.CreateMedia(file.FileName, folderId, Constants.Conventions.MediaTypes.Image);
+                media.SetValue(_mediaFileManager, _mediaUrlGeneratorCollection, _shortStringHelper, _contentTypeBaseServiceProvider,
+                    Constants.Conventions.Media.File, file.FileName, stream);
+                _umbracoMediaService.Save(media);
+                return media;
+            });
+        }
+
+        public async Task<List<IMedia>> UploadSponsors(List<IFormFile> files, IPublishedContent team, string teamPhoto)
+        {
+            var mediaList = new List<IMedia>();
+            foreach (var file in files)
+            {
+                var mediaItem = await CreateMedia(file, "Sponsors");
+                var sponsor = _contentService.Create(file.FileName, team.Id, "sponsor");
+                _contentService.SaveAndPublish(sponsor);
+                await AddImageToTeam(mediaItem, sponsor, "sponsorImage");
+                mediaList.Add(mediaItem);
             }
 
-            return Task.CompletedTask;
+            return mediaList;
+        }
+
+        public async Task AddImageToTeam(IMedia image, IPublishedContent team, string propertyAlias)
+        {
+            var nmaTeam = _contentService.GetById(team.Id);
+            await AddImageToTeam(image, nmaTeam, propertyAlias);
+        }
+
+        public async Task AddImageToTeam(IMedia image, IContent team, string propertyAlias)
+        {
+            if (team != null)
+            {
+                await Task.Run(() =>
+                {
+                    var media = _contentQuery.Media(image.Key);
+                    var udi = Udi.Create(Constants.UdiEntityType.Media, media.Key);
+                    team.SetValue(propertyAlias, udi.ToString());
+
+                    _contentService.SaveAndPublish(team);
+                    return Task.CompletedTask;
+                });
+            }
         }
 
         private int EnsureFolderExists(string folderName)

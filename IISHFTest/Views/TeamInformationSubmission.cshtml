@@ -2,12 +2,16 @@
 @inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.TeamInformationSubmission>
 @using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
 @using System.Globalization
+@using System.Text.Json
+@using Umbraco.Cms.Core.Models
+@using Umbraco.Cms.Core.Services
 @{
-	Layout = "Main.cshtml";
+    Layout = "Main.cshtml";
     var heroImageObj = Model.Value<IPublishedContent>("heroImage");
     var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
 
     IPublishedContent? team = null;
+    IPublishedContent? nmaTeam = null;
     IPublishedContent? selectedTournament = null;
 
     Guid.TryParse(Context.Request.Query["team"].ToString(), out var teamInformationKey);
@@ -15,13 +19,13 @@
     {
         // build itc information from team information for event
         team = Umbraco.Content(teamInformationKey);
+        nmaTeam = Umbraco.Content(team.Value<Guid>("nMATeamKey"));
         selectedTournament = Umbraco.Content(team.Parent.Id);
     }
 
     var rosterMembers = team?.Children().Where(x => x.ContentType.Alias == "roster").ToList() ?? new List<IPublishedContent>();
     var players = rosterMembers.Where(x => !x.Value<bool>("isBenchOfficial")).ToList();
     var benchOfficials = rosterMembers.Where(x => x.Value<bool>("isBenchOfficial")).ToList();
-
 
     var eventYear = DateTime.UtcNow.Year.ToString();
 
@@ -69,7 +73,7 @@
     <div class="overlay"></div>
     <div class="inner">
         <div class="container custom-container">
-            
+
             @{
                 var headerTitle = string.Empty;
                 if (team != null)
@@ -281,55 +285,55 @@
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-bench" role="tabpanel" aria-labelledby="v-pills-bench-tab">
                     <table id="benchOfficials" class="table table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
                         <thead>
-                        <tr>
-                            <th style="width: 150px">License</th>
-                            <th>Role</th>
-                            <th>First Name</th>
-                            <th>Last Name</th>
-                            <th>Date of Birth</th>
-                            <th>Nationality</th>
-                            <th>Gender</th>
-                            <th></th>
-                        </tr>
+                            <tr>
+                                <th style="width: 150px">License</th>
+                                <th>Role</th>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Date of Birth</th>
+                                <th>Nationality</th>
+                                <th>Gender</th>
+                                <th></th>
+                            </tr>
                         </thead>
                         <tbody id="formRowsBench">
-                        @for (int i = 0; i < benchOfficials.Count(); i++)
-                        {
-                            <tr data-id="@benchOfficials[i].Id">
-                                <td>
-                                    <span>@benchOfficials[i].Value("licenseNumber")</span>
-                                </td>
-                                <td>
-                                    <span>@benchOfficials[i].Value("role")</span>
+                            @for (int i = 0; i < benchOfficials.Count(); i++)
+                            {
+                                <tr data-id="@benchOfficials[i].Id">
+                                    <td>
+                                        <span>@benchOfficials[i].Value("licenseNumber")</span>
+                                    </td>
+                                    <td>
+                                        <span>@benchOfficials[i].Value("role")</span>
 
-                                </td>
-                                <td>
+                                    </td>
+                                    <td>
 
-                                    <span>@players[i].Value("firstName")</span>
-                                </td>
-                                <td>
+                                        <span>@players[i].Value("firstName")</span>
+                                    </td>
+                                    <td>
 
-                                    <span>@players[i].Value("lastName")</span>
-                                </td>
-                                <td>
-                                    @{
-                                        var dob = benchOfficials[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
-                                    }
-                                    <span>@dob</span>
-                                </td>
-                                <td>
-                                    <span>@benchOfficials[i].Value("nationality")</span>
-                                </td>
-                                <td>
-                                    <span>@benchOfficials[i].Value("gender")</span>
-                                </td>
-                                <td>
-                                    <button type="button" class="btn btn-danger" onclick="deleteRow(this)">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        }
+                                        <span>@players[i].Value("lastName")</span>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var dob = benchOfficials[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
+                                        }
+                                        <span>@dob</span>
+                                    </td>
+                                    <td>
+                                        <span>@benchOfficials[i].Value("nationality")</span>
+                                    </td>
+                                    <td>
+                                        <span>@benchOfficials[i].Value("gender")</span>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-danger" onclick="deleteRow(this)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
                         </tbody>
                     </table>
 
@@ -342,6 +346,16 @@
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-teamphoto" role="tabpanel" aria-labelledby="v-pills-teamphoto-tab">
                     <div>
                         <form action="/upload-team-photo" class="dropzone" id="teamPhotoDropzone"></form>
+                        @{
+                            if (nmaTeam != null)
+                            {
+                                var photo = nmaTeam.Value<IPublishedContent>("teamPhoto");
+                                if (photo != null)
+                                {
+                                    <img id="teamPhoto" class="img img-fluid" src="@photo.Url()"/>                                    
+                                }
+                            }
+                        }
                     </div>
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-logo" role="tabpanel" aria-labelledby="v-pills-teamlogophoto-tab">
@@ -351,6 +365,16 @@
                             <p>This makes it easier for the host and production of event programs, and media campaigns</p>
                         </div>
                         <form action="/upload-team-logo" class="dropzone" id="teamLogoDropzone"></form>
+                        @{
+                            if (nmaTeam != null)
+                            {
+                                var logo = nmaTeam.Value<IPublishedContent>("teamLogo");
+                                if (logo != null)
+                                {
+                                    <img id="teamLogo" class="img img-fluid" src="@logo.Url()"/>                                    
+                                }
+                            }
+                        }
 
                     </div>
                 </div>
@@ -361,8 +385,20 @@
                     </div>
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-submit" role="tabpanel" aria-labelledby="v-pills-submit-tab">
-                    <button id="submitDraftButton" class="btn btn-light">Save Draft</button>
-                    <button class="btn btn-secondary" onclick="submit()">Submit</button>
+                    @{
+                        
+                        if (@team.Value<bool>("teamInformationSubmitted"))
+                        {
+                                var submittedDate = team.Value<DateTime>("teamInformationSubmissionDate").ToString("dd.MM.yyyy HH:mm");
+                            var submittedBy = team.Value<IPublishedContent>("teamInformationSubmittedBy");
+                        <h5>Submitted : @submittedDate By @submittedBy.Name</h5>
+                        }
+                        else
+                        {
+                            <button id="submitDraft" class="btn btn-light">Save Draft</button>
+                            <button id="submit"  class="btn btn-secondary">Submit</button>
+                        }
+                    }
                 </div>
             </div>
         </div>
@@ -396,7 +432,7 @@
                             <!-- Add other role options here -->
                         </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="firstName">First Name:</label>
                         <input type="text" class="form-control" id="firstName" name="firstName">
@@ -469,62 +505,71 @@
             height: 300
         });
 
+    @{
+        if (nmaTeam != null && !string.IsNullOrWhiteSpace(nmaTeam.Value<string>("teamHistory")))
+        {
+            <text>
+                                var teamHistoryContent = @Html.Raw(JsonSerializer.Serialize(nmaTeam.Value<string>("teamHistory")));
+                $('#teamHistory').summernote('code', teamHistoryContent);
+            </text>
+        }
+    }
 
-        var teamPhotoDropzone = new Dropzone("#teamPhotoDropzone", {
-            url: "/upload-team-photo",
-            autoProcessQueue: false,
-            maxFiles: 1, 
-            addRemoveLinks: true,
-            dictDefaultMessage: "Drag and drop a team photo here or click",
-            acceptedFiles: "image/*,application/pdf", // Accept images and PDFs
-            accept: function (file, done) {
-                // Check if the file is an image for dimension validation
-                if (file.type.match(/image.*/)) {
-                    // Image dimension validation
-                    file.acceptDimensions = done;
-                    file.rejectDimensions = function () { done("The image must be at least 1920x1080 pixels."); };
-                    // Load the image to check its dimensions
-                    var reader = new FileReader();
-                    reader.onload = function (e) {
-                        var img = new Image();
-                        img.onload = function () {
-                            if (img.width >= 1920 && img.height >= 1080) {
-                                file.acceptDimensions();
-                            } else {
-                                file.rejectDimensions();
-                            }
+            var teamPhotoDropzone = new Dropzone("#teamPhotoDropzone", {
+                url: "/upload-team-photo",
+                autoProcessQueue: false,
+                maxFiles: 1,
+                addRemoveLinks: true,
+                dictDefaultMessage: "Drag and drop a team photo here or click",
+                acceptedFiles: "image/*,application/pdf", // Accept images and PDFs
+                accept: function (file, done) {
+                    // Check if the file is an image for dimension validation
+                    if (file.type.match(/image.*/)) {
+                        // Image dimension validation
+                        file.acceptDimensions = done;
+                        file.rejectDimensions = function () { done("The image must be at least 1920x1080 pixels."); };
+                        // Load the image to check its dimensions
+                        var reader = new FileReader();
+                        reader.onload = function (e) {
+                            var img = new Image();
+                            img.onload = function () {
+                                if (img.width >= 1920 && img.height >= 1080) {
+                                    file.acceptDimensions();
+                                } else {
+                                    file.rejectDimensions();
+                                }
+                            };
+                            img.src = e.target.result;
                         };
-                        img.src = e.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                } else if (file.type === "application/pdf") {
-                    // Immediately accept PDF files without dimension checks
-                    done();
-                } else {
-                    // Reject files that are neither images nor PDFs
-                    done("File must be an image or a PDF.");
+                        reader.readAsDataURL(file);
+                    } else if (file.type === "application/pdf") {
+                        // Immediately accept PDF files without dimension checks
+                        done();
+                    } else {
+                        // Reject files that are neither images nor PDFs
+                        done("File must be an image or a PDF.");
+                    }
+                },
+                init: function () {
+                    this.on("thumbnail", function (file) {
+                        // If an image doesn't meet the size criteria, reject it
+                        if (file.type.match(/image.*/) && (file.width < 1920 || file.height < 1080)) {
+                            file.rejectDimensions();
+                        }
+                    });
+                    this.on("addedfile", function (file) {
+                        if (file.accepted === false) {
+                            var errorMark = file.previewElement.querySelector('.dz-error-mark');
+                            errorMark.style.display = 'block';
+                            // Bind click event to the error mark to remove the file
+                            errorMark.addEventListener('click', function () {
+                                file.previewElement.remove();
+                                teamPhotoDropzone.removeFile(file);
+                            });
+                        }
+                    });
                 }
-            },
-            init: function () {
-                this.on("thumbnail", function (file) {
-                    // If an image doesn't meet the size criteria, reject it
-                    if (file.type.match(/image.*/) && (file.width < 1920 || file.height < 1080)) {
-                        file.rejectDimensions();
-                    }
-                });
-                this.on("addedfile", function (file) {
-                    if (file.accepted === false) {
-                        var errorMark = file.previewElement.querySelector('.dz-error-mark');
-                        errorMark.style.display = 'block';
-                        // Bind click event to the error mark to remove the file
-                        errorMark.addEventListener('click', function () {
-                            file.previewElement.remove();
-                            teamPhotoDropzone.removeFile(file);
-                        });
-                    }
-                });
-            }
-        });
+            });
 
 
         var teamLogoDropzone = new Dropzone("#teamLogoDropzone", {
@@ -577,7 +622,7 @@
                         });
                     }
                 });
-                
+
             }
         });
 
@@ -589,9 +634,18 @@
             dictDefaultMessage: "Drag and drop multiple files here or click",
         });
 
-        $('#submitDraftButton').click(function (e) {
+        $('#submitDraft').click(function (e) {
             e.preventDefault();
+            submit(true)
+        });
 
+        $('#submit').click(function (e) {
+            e.preventDefault();
+            submit(false)
+        });
+
+        function submit(isDraft){
+        
             // Create a FormData object
             var formData = new FormData();
 
@@ -604,9 +658,7 @@
                     formData.append(dropzone.element.getAttribute("id"), file, file.name); // Use the Dropzone's element ID as the name
                 });
             });
-            debugger
-            // Generate JSON payload
-            var json = generateJson(); // Ensure this function returns your structured JSON data
+            var json = generateJson(isDraft); // Ensure this function returns your structured JSON data
             formData.append("json", JSON.stringify(json));
 
             console.log("FormData data:");
@@ -621,7 +673,7 @@
             console.log(formData.get("teamPhotoDropzone"));
             console.log(formData.get("multipleFilesDropzone"));
 
-//AJAX call to send data
+            //AJAX call to send data
             $.ajax({
                 type: "PUT",
                 url: "/api/events/team-information-submission",
@@ -630,16 +682,32 @@
                 contentType: false, // Important: set content type to false
                 success: function (result) {
                     console.log("Sending results to update row ids");
+                    debugger;
                     updateRowIds(result);
+                    updateImage(result.teamPhotoPath, "teamPhoto", "teamPhotoDropzone")
+                    updateImage(result.teamLogoPath, "teamLogo", "teamLogoDropzone")
                 },
                 error: function (error) {
                     console.log("Error", error);
                     // Handle error
                 }
             });
-        });
+        
+        }
 
-        function generateJson() {
+
+        function updateImage(imagePath, elementId, dropzoneId){
+            var imageElement = $('#' + elementId);
+            imageElement.attr('src', imagePath);
+            clearDropzoneById(dropzoneId);
+        }
+
+        function clearDropzoneById(dropzoneId) {
+            var myDropzone = Dropzone.forElement('#' + dropzoneId);
+            myDropzone.removeAllFiles(true);
+        }
+
+        function generateJson(isDraft) {
 
             // Retrieve the value of the element with ID 'startDate'
             var startDate = $("#startDate").text();
@@ -664,10 +732,11 @@
                 "TitleEvent": $('#shortCode').val(), // Assuming you have an input for TitleEvent
                 "isChampionship": document.getElementById('isChampionship').checked, // Assuming you have a checkbox for IsChampionship
                 "ItcRosterMembers": [],
-                "TeamName": $('#teamName').val(), 
-                "JerseyOne": $('#colourOne').val(), 
+                "TeamName": $('#teamName').val(),
+                "JerseyOne": $('#colourOne').val(),
                 "JerseyTwo": $('#colourTwo').val(),
-                "TeamHistory": $("#teamHistory").summernote('code')
+                "TeamHistory": $("#teamHistory").summernote('code'),
+                "SubmitToHost": !isDraft
             };
 
             var processRow = function (currentRow, isBench) {
@@ -699,19 +768,18 @@
                     formattedDate = parts[2] + "-" + parts[1] + "-" + parts[0]; // yyyy-mm-dd format
                 }
 
-                debugger
-                    formData.ItcRosterMembers.push({
-                        "Id": rosterId,
-                        "License": license,
-                        "FirstName": firstName,
-                        "LastName": lastName,
-                        "JerseyNumber": jerseyNumber,
-                        "Role": role,
-                        "IsBenchOfficial": isBench,
-                        "DateOfBirth": formattedDate,
-                        "Nationality": nationality,
-                        "Gender": gender
-                    });
+                formData.ItcRosterMembers.push({
+                    "Id": rosterId,
+                    "License": license,
+                    "FirstName": firstName,
+                    "LastName": lastName,
+                    "JerseyNumber": jerseyNumber,
+                    "Role": role,
+                    "IsBenchOfficial": isBench,
+                    "DateOfBirth": formattedDate,
+                    "Nationality": nationality,
+                    "Gender": gender
+                });
             };
 
             document.querySelectorAll('#formRows tr').forEach(function (row) {
@@ -727,16 +795,22 @@
 
         function updateRowIds(updatedRoster) {
             console.log("updating row ids")
-            updatedRoster.ItcRosterMembers.forEach(function (member) {
+            updatedRoster.itcRosterMembers.forEach(function (member) {
                 if (member.Id !== 0) {
                     // Construct the jQuery selector to find the row with matching license number and last name
                     $("#data-table tbody tr").each(function () {
                         var firstName = $(this).find('td:nth-child(3) span span').text().trim();
                         var lastName = $(this).find('td:nth-child(4) span span').text().trim();
+                        if (firstName === member.firstName && lastName === member.lastName) {
+                            $(this).attr('data-id', member.id);
+                        }
+                    });
 
-
-                        if (firstName === member.FirstName && lastName === member.LastName) {
-                            $(this).attr('data-id', member.Id);
+                    $("#benchOfficials tbody tr").each(function () {
+                        var firstName = $(this).find('td:nth-child(3) span span').text().trim();
+                        var lastName = $(this).find('td:nth-child(4) span span').text().trim();
+                        if (firstName === member.firstName && lastName === member.lastName) {
+                            $(this).attr('data-id', member.id);
                         }
                     });
                 }
@@ -765,9 +839,9 @@
 
         function updateRowFromModal(row) {
             var gender = $('#edit-form #gender').val()
-            if(gender === null){
+            if (gender === null) {
                 gender = "";
-            
+
             }
 
             row.find("td:eq(0) .tablesaw-cell-content span").text($('#edit-form #license').val());
@@ -820,7 +894,7 @@
 
             var gender = $('#edit-form #gender').val()
             if (gender === null) {
-               gender = "";
+                gender = "";
 
             }
 
@@ -1100,7 +1174,7 @@
         if (selectedTournament != null && @selectedTournament.Id > 0)
         {
             <text>
-                                        var selectedValue = @selectedTournament.Id;
+                                                    var selectedValue = @selectedTournament.Id;
                 $('#eventSelect').val(selectedValue).change();
                 $('#eventSelect').prop('disabled', true);
 
@@ -1122,7 +1196,7 @@
             </text>
 
         }
-        
+
         if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyTwoColour")))
         {
             <text>
@@ -1133,5 +1207,5 @@
         }
     }
 
-    });
+        });
 </script>

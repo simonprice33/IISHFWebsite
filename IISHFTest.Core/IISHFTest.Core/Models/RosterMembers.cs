@@ -18,6 +18,6 @@ namespace IISHFTest.Core.Models
         public string? TeamName { get; set; }
 
         [JsonPropertyName("itcRosterMembers")]
-        public IEnumerable<RosterMember> ItcRosterMembers { get; set; }
+        public List<RosterMember> ItcRosterMembers { get; set; }
     }
 }

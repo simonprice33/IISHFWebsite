@@ -18,7 +18,7 @@ namespace IISHFTest.Core.Models
         [JsonPropertyName("jerseyTwo")]
         public string JerseyTwo { get; set; }
 
-        [JsonPropertyName("status")]
+        [JsonPropertyName("submitToHost")]
         public bool SubmitToHost { get; set; }
     }
 }

@@ -13,8 +13,10 @@ namespace IISHFTest.Core.Interfaces
     {
         Task UpdateNmaTeamHistory(string html, IPublishedContent team);
 
-        Task<IMedia>? UploadTeamPhoto(IFormFile file);
+        Task<IMedia>? UploadTeamPhoto(IFormFile file, string directory);
 
-        Task AddImageToTeam(IMedia imageId, IPublishedContent team);
+        Task<List<IMedia>> UploadSponsors(List<IFormFile> files, IPublishedContent team, string directory);
+
+        Task AddImageToTeam(IMedia imageId, IPublishedContent team, string propertyAlias);
     }
 }

@@ -30,23 +30,26 @@ namespace IISHFTest.Core.Services
             _logger = logger;
         }
         
-        public RosterMembers UpsertRosterMembers(RosterMembers model, IPublishedContent team)
+        public async Task<RosterMembers> UpsertRosterMembers(RosterMembers model, IPublishedContent team)
         {
-            foreach (var rosterMember in model.ItcRosterMembers)
+            return await Task.Run(async () =>
             {
-                if (rosterMember.Id == 0)
+                foreach (var rosterMember in model.ItcRosterMembers)
                 {
-                    var newRosterMember = _contentService.Create(rosterMember.PlayerName, team.Id, "roster");
-                    rosterMember.Id = SetRosterMemberValues(team, rosterMember, newRosterMember);
+                    if (rosterMember.Id == 0)
+                    {
+                        var newRosterMember = _contentService.Create(rosterMember.PlayerName, team.Id, "roster");
+                        rosterMember.Id = SetRosterMemberValues(team, rosterMember, newRosterMember);
+                    }
+                    else
+                    {
+                        var umbracoRosteredMember = _contentService.GetById(rosterMember.Id);
+                        SetRosterMemberValues(team, rosterMember, umbracoRosteredMember);
+                    }
                 }
-                else
-                {
-                    var umbracoRosteredMember = _contentService.GetById(rosterMember.Id);
-                    SetRosterMemberValues(team, rosterMember, umbracoRosteredMember);
-                }
-            }
 
-            return model;
+                return model;
+            });
         }
 
         public IPublishedContent FindRosterMemberById(int playerId, IPublishedContent team)

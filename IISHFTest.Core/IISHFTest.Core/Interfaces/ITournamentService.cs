@@ -25,5 +25,7 @@ namespace IISHFTest.Core.Interfaces
         Task CreateEventGame(CreateScheduleGames model, IPublishedContent tournament);
 
         Task UpdateTeamColours(string colourHex, string fieldName, IPublishedContent team);
+
+        Task SetSubmissionDate(IPublishedContent team);
     }
 }

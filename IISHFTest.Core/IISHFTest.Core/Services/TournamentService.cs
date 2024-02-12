@@ -12,6 +12,7 @@ using SendGrid.Helpers.Errors.Model;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.PublishedContent;
+using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 
 namespace IISHFTest.Core.Services
@@ -20,15 +21,21 @@ namespace IISHFTest.Core.Services
     {
         private readonly IPublishedContentQuery _contentQuery;
         private readonly IContentService _contentService;
+        private readonly IMemberService _memberService;
+        private readonly IMemberManager _memberManager;
         private readonly ILogger<TournamentService> _logger;
 
         public TournamentService(
             IPublishedContentQuery contentQuery,
             IContentService contentService,
+            IMemberService memberService,
+            IMemberManager memberManager,
             ILogger<TournamentService> logger)
         {
             _contentQuery = contentQuery;
             _contentService = contentService;
+            _memberService = memberService;
+            _memberManager = memberManager;
             _logger = logger;
         }
 
@@ -103,7 +110,7 @@ namespace IISHFTest.Core.Services
                 var game = tournament.Children.FirstOrDefault(x => x.Name == finalScore.GameNumber.ToString() && x.ContentType.Alias == "game");
                 if (game == null)
                 {
-                    var exception =  new NullReferenceException($"Game number {finalScore.GameNumber} not found");
+                    var exception = new NullReferenceException($"Game number {finalScore.GameNumber} not found");
                     _logger.LogError(exception, "Unable to find game number {gameId}", finalScore.GameNumber);
                     throw exception;
                 }
@@ -163,16 +170,40 @@ namespace IISHFTest.Core.Services
             return team;
         }
 
-        public Task UpdateTeamColours(string colourHex, string fieldName, IPublishedContent team)
+        public async Task UpdateTeamColours(string colourHex, string fieldName, IPublishedContent team)
         {
-            if (team.Value<string>(fieldName) == colourHex)
+            await Task.Run(() =>
             {
+                if (team.Value<string>(fieldName) == colourHex)
+                {
+                    return Task.FromResult(Task.CompletedTask);
+                }
+                var teamToUpdate = _contentService.GetById(team.Id);
+                teamToUpdate?.SetValue(fieldName, colourHex);
                 return Task.CompletedTask;
-            }
-            var teamToUpdate = _contentService.GetById(team.Id);
-            teamToUpdate?.SetValue(fieldName, colourHex);
+            });
+        }
 
-            return Task.CompletedTask;
+        public async Task SetSubmissionDate(IPublishedContent team)
+        {
+            var user = await _memberManager.GetCurrentMemberAsync();
+            if (user == null)
+            {
+                return;
+            }
+
+            var tournamentTeam = _contentService.GetById(team.Id);
+            if (tournamentTeam == null)
+            {
+                return;
+            }
+
+            var udi = Udi.Create(Constants.UdiEntityType.Member, user.Key);
+
+            tournamentTeam.SetValue("teamInformationSubmissionDate", DateTime.UtcNow);
+            tournamentTeam.SetValue("teamInformationSubmitted", true);
+            tournamentTeam.SetValue("teamInformationSubmittedBy", udi);
+            _contentService.SaveAndPublish(tournamentTeam);
         }
 
         private List<IPublishedContent> GetEventTeams(int year, int tournamentId, int teamId)
