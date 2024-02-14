@@ -49,6 +49,7 @@ namespace IISHFTest
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IInvitationService, InvitationService>();
             services.AddScoped<ITeamService, TeamService>();
+            services.AddScoped<IDocumentService, DocumentService>();
 
             services.Configure<SendGridConfiguration>
                 (_config.GetSection("SendGridConfiguration"));

@@ -253,7 +253,7 @@
                                         <td>
                                             @{
                                                 var dob = players[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
-                                                if (dob == DateTime.MinValue.ToString("dd.MM.yyyy"))
+                                                if (dob == "01.01.0001" || dob == "01.01.1753")
                                                 {
                                                     dob = null;
                                                 }
@@ -318,6 +318,10 @@
                                     <td>
                                         @{
                                             var dob = benchOfficials[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
+                                            if (dob == "01.01.0001" || dob == "01.01.1753")
+                                            {
+                                                dob = null;
+                                            }
                                         }
                                         <span>@dob</span>
                                     </td>
@@ -381,9 +385,28 @@
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-sponsors" role="tabpanel" aria-labelledby="v-pills-sponsors-tab">
                     <div>
                         <form action="/upload-multiple-files" class="dropzone" id="multipleFilesDropzone"></form>
+                        <div class="row">
+                            @{
+                                if (nmaTeam != null)
+                                {
+                                    var sponsors = nmaTeam.Children().Where(x => x.ContentType.Alias == "sponsor");
 
-                    </div>
-                </div>
+                                    foreach (var sponsor in sponsors)
+                                    {
+                                        var logo = sponsor.Value<IPublishedContent>("sponsorImage");
+
+                                        if (logo != null)
+                                        {
+                                            <div class="col-12 col-sm-12 col-md-4 col-lg-4 mt-3">
+                                                <img id="teamLogo" class="img img-fluid" src="@logo.Url()"/>
+                                            </div>
+                                        }
+                                    }
+                                }
+                            }
+                        </div>
+                            </div>
+                            </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-submit" role="tabpanel" aria-labelledby="v-pills-submit-tab">
                     @{
                         
@@ -682,7 +705,6 @@
                 contentType: false, // Important: set content type to false
                 success: function (result) {
                     console.log("Sending results to update row ids");
-                    debugger;
                     updateRowIds(result);
                     updateImage(result.teamPhotoPath, "teamPhoto", "teamPhotoDropzone")
                     updateImage(result.teamLogoPath, "teamLogo", "teamLogoDropzone")
@@ -746,11 +768,22 @@
                 var role = currentRow.querySelector("td:nth-child(2) span span").textContent.trim();
                 var firstName = currentRow.querySelector("td:nth-child(3) span span").textContent.trim();
                 var lastName = currentRow.querySelector("td:nth-child(4) span span").textContent.trim();
-                var jerseyNumber = parseInt(currentRow.querySelector("td:nth-child(5) span span").textContent.trim(), 10);
-                var nationality = currentRow.querySelector("td:nth-child(7) span span").textContent.trim();
-                var gender = currentRow.querySelector("td:nth-child(8) span span").textContent.trim();
+                var dateOfBirth = null;
+                if(isBench){
+                    dateOfBirth = currentRow.querySelector("td:nth-child(5) span span").textContent.trim();
+                    var nationality = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
+                    var gender = currentRow.querySelector("td:nth-child(7) span span").textContent.trim();
+                }else{
 
-                var dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
+                    var jerseyNumber = parseInt(currentRow.querySelector("td:nth-child(5) span span").textContent.trim(), 10);
+                    dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
+                    var nationality = currentRow.querySelector("td:nth-child(7) span span").textContent.trim();
+                    var gender = currentRow.querySelector("td:nth-child(8) span span").textContent.trim();
+                }
+
+                if (dateOfBirth === "01.01.0001" || dateOfBirth === "01.01.1753"){
+                dateOfBirth = null;
+                }
 
                 // Split the date into [day, month, year]
                 var parts = dateOfBirth.split(".");
@@ -764,7 +797,7 @@
                     formattedDate = null; // Set to null if the date is invalid
                 } else {
                     // If the date is valid, format it
-                    var parts = dateOfBirthText.split(".");
+                    var parts = dateOfBirth.split(".");
                     formattedDate = parts[2] + "-" + parts[1] + "-" + parts[0]; // yyyy-mm-dd format
                 }
 
@@ -786,9 +819,9 @@
                 processRow(row, false);
             });
 
-            ////document.querySelectorAll('#formRowsBench tr').forEach(function (row) {
-            ////    processRow(row, true);
-            ////});
+            document.querySelectorAll('#formRowsBench tr').forEach(function (row) {
+                processRow(row, true);
+            });
 
             return formData;
         }

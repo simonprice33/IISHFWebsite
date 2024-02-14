@@ -300,6 +300,7 @@ namespace IISHFTest.Core.Controllers.ApiControllers
 
             var nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
             await _teamService.UpdateNmaTeamHistory(model.TeamHistory, nmaTeam);
+
             if (teamPhoto != null)
             {
                 var teamPhotoMedia = await _teamService.UploadTeamPhoto(teamPhoto, "TeamPhotos");
@@ -329,19 +330,25 @@ namespace IISHFTest.Core.Controllers.ApiControllers
             var teamPhotoUrl = nmaTeam.Value<IPublishedContent>("teamPhoto");
             var teamLogoUrl = nmaTeam.Value<IPublishedContent>("teamLogo");
 
-            if (model.SubmitToHost)
-            {
-                await _tournamentService.SetSubmissionDate(team);
-                // ToDo - Create Submission Service - send on to Azure Function. 
-            }
-
-            var responseModel = new TeamInformationSubmissionResponse
+            var responseModel = new TeamInformationModel
             {
                 ItcRosterMembers = result.ItcRosterMembers,
                 TeamPhotoPath = teamPhotoUrl == null ? string.Empty : teamPhotoUrl.Url(),
                 TeamLogoPath = teamLogoUrl == null ? string.Empty : teamLogoUrl.Url(),
-                SponsorPaths = sponsorList
+                SponsorPaths = sponsorList,
+                TeamHistory = model.TeamHistory,
+                JerseyOneColour = model.JerseyOne,
+                JerseyTwoColour = model.JerseyTwo,
+                SubmittedDate = model.SubmitToHost ? DateTime.UtcNow : null
             };
+
+            if (model.SubmitToHost)
+            {
+                await _tournamentService.SetSubmissionDate(team);
+
+                team = _contentQuery.Content(team.Id);
+                await _tournamentService.SubmitTeamInformationToHost(tournament, nmaTeam, team);
+            }
 
             return Ok(responseModel);
         }

@@ -6,14 +6,20 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using IISHFTest.Core.Interfaces;
 using IISHFTest.Core.Models;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using SendGrid.Helpers.Errors.Model;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
+using static PdfSharpCore.Pdf.PdfDictionary;
+using File = System.IO.File;
+using IMediaService = Umbraco.Cms.Core.Services.IMediaService;
 
 namespace IISHFTest.Core.Services
 {
@@ -23,6 +29,10 @@ namespace IISHFTest.Core.Services
         private readonly IContentService _contentService;
         private readonly IMemberService _memberService;
         private readonly IMemberManager _memberManager;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IDocumentService _documentService;
+        private readonly IMediaService _umbracoMediaService;
+        private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly ILogger<TournamentService> _logger;
 
         public TournamentService(
@@ -30,12 +40,20 @@ namespace IISHFTest.Core.Services
             IContentService contentService,
             IMemberService memberService,
             IMemberManager memberManager,
+            IHttpContextAccessor httpContextAccessor,
+            IDocumentService documentService,
+            IMediaService umbracoMediaService,
+            IWebHostEnvironment webHostEnvironment,
             ILogger<TournamentService> logger)
         {
             _contentQuery = contentQuery;
             _contentService = contentService;
             _memberService = memberService;
             _memberManager = memberManager;
+            _httpContextAccessor = httpContextAccessor;
+            _documentService = documentService;
+            _umbracoMediaService = umbracoMediaService;
+            _webHostEnvironment = webHostEnvironment;
             _logger = logger;
         }
 
@@ -206,6 +224,115 @@ namespace IISHFTest.Core.Services
             _contentService.SaveAndPublish(tournamentTeam);
         }
 
+        public async Task SubmitTeamInformationToHost(IPublishedContent tournament, IPublishedContent nmaTeam, IPublishedContent team)
+        {
+            // Logos from nma team - done
+            // Photo from nma team - done
+            // Sponsor from tournament team - done
+            // Roster from tournament team - dine
+            // Team write up from nma team - done
+            // Age group from tournament - done
+            // Host information from tournament - done
+
+            var protocol = _httpContextAccessor.HttpContext.Request.Scheme;
+            var baseUrl = _httpContextAccessor.HttpContext.Request.Host;
+
+            var sponsorList = nmaTeam.Children.Where(x => x.ContentType.Alias == "sponsor")
+                .Select(x => x.Value<IPublishedContent>("sponsorImage").Url().ToString()).ToList();
+
+            var teamPhotoUrl = nmaTeam.Value<IPublishedContent>("teamPhoto");
+            var teamPhotoMediaItem = GetImageByteArray(teamPhotoUrl.Id, teamPhotoUrl.Url());
+            var teamLogoUrl = nmaTeam.Value<IPublishedContent>("teamLogo");
+            var teamLogoMediaItem = GetImageByteArray(teamLogoUrl.Id, teamLogoUrl.Url());
+
+            var logos = _umbracoMediaService.GetRootMedia().FirstOrDefault(x => x.Name == "Logos");
+
+            var iishfLogo = _umbracoMediaService.GetPagedChildren(logos.Id, 0, int.MaxValue, out var totalChildren).FirstOrDefault(x => x.Name == "IISHF");
+
+            var value = iishfLogo.Properties[0].Values
+                .FirstOrDefault(v => !string.IsNullOrEmpty(v.EditedValue.ToString()) &&
+                                     v.EditedValue.ToString().Contains("\"src\"") &&
+                                     v.EditedValue.ToString().Contains("iishf"));
+            var src = string.Empty;
+            if (value != null)
+            {
+                var jsonDocument = JsonDocument.Parse(value.EditedValue.ToString());
+                src = jsonDocument.RootElement.GetProperty("src").GetString();
+                // Use the src value as needed
+            }
+
+            var iishfLogoBytes = GetImageByteArray(iishfLogo.Id, src);
+
+            var teamWriteUp = nmaTeam.Value<string>("teamHistory");
+            ;
+
+            var roster = team.Children().Where(x => x.ContentType.Alias == "roster").ToList();
+
+            var roleOrder = new Dictionary<string, int>
+            {
+                {"Captain", 11},
+                {"Assistant Captain", 12},
+                {"Netminder", 13},
+
+                {"Head Coach", 24},
+                {"Assistant Coach", 25},
+                {"Training Staff", 26},
+                {"Equipment Manager", 27},
+                {"Physio", 28},
+                {"Photographer", 29},
+            };
+
+            var sortedRoster = roster
+                .OrderBy(player => player.Value<bool>("isBenchOfficial") ? 1 : 0) // First, separate bench officials from players
+                .ThenBy(player => roleOrder.ContainsKey(player.Value<string>("role")) ? roleOrder[player.Value<string>("role")] : int.MaxValue)
+                .ThenBy(player => player.Value<int>("jerseyNumber"))
+                .ThenBy(player => player.Value<bool>("isBenchOfficial") && roleOrder.ContainsKey(player.Value<string>("role")) ? roleOrder[player.Value<string>("role")] : int.MaxValue) // Additional sorting for bench officials by role
+                .ToList();
+
+            var rosteredMembers = sortedRoster.Select(x => new RosterMember()
+            {
+                Id = x.Id,
+                Role = x.Value<string>("role"),
+                FirstName = x.Value<string>("firstName"),
+                LastName = x.Value<string>("lastName"),
+                JerseyNumber = x.Value<int?>("jerseyNumber"),
+                IsBenchOfficial = x.Value<bool>("isBenchOfficial")
+            }).ToList();
+
+            var ageGroup = tournament.Parent.Value<string>("AgeGroup");
+
+            var sanction = tournament.Value<string>("eventReference");
+
+            var teamInformationSubmissionDate = team.Value<DateTime>("teamInformationSubmissionDate");
+            var teamInformationSubmittedBy = team.Value<IPublishedContent>("teamInformationSubmittedBy");
+            var submittedByMember = _memberService.GetById(teamInformationSubmittedBy.Id);
+
+            var hostName = tournament.Value<string>("hostContact");
+            var hostEmail = tournament.Value<string>("hostEmail");
+
+            var submittedTeamInformationModel = new SubmittedTeamInformationModel
+            {
+                Id = team.Id,
+                EventReference = sanction,
+                AgeGroup = ageGroup,
+                Roster = rosteredMembers, // need to map the roster
+                TeamName = team.Name,
+                TeamWriteUp = teamWriteUp,
+                TeamPhoto = teamPhotoMediaItem,
+                TeamLogo = teamLogoMediaItem,
+                SubmittedBy = teamInformationSubmittedBy.Name,
+                SubmittedDateTime = teamInformationSubmissionDate,
+                SubmittedByEmail = submittedByMember.Email
+            };
+
+
+            // ToDo - get IISHF logo and add to GeneratePdfToMemoryStreamAsync
+            var document = await _documentService.GeneratePdfToMemoryStreamAsync(submittedTeamInformationModel, iishfLogoBytes);
+            using FileStream file = new FileStream(@$"c:\temp\teamInfo-{team.Name}-{ageGroup}.pdf",
+                FileMode.Create, FileAccess.Write);
+            document.WriteTo(file);
+        }
+
         private List<IPublishedContent> GetEventTeams(int year, int tournamentId, int teamId)
         {
             var rootContent = _contentQuery.ContentAtRoot().ToList();
@@ -237,5 +364,19 @@ namespace IISHFTest.Core.Services
 
             return team;
         }
+
+        public byte[] GetImageByteArray(int mediaId, string filePath)
+        {
+            // Retrieve the media item
+            var mediaItem = _umbracoMediaService.GetById(mediaId);
+            if (mediaItem == null) return null;
+           
+            // Combine with the root path if it's stored locally
+            var fullPath = Path.Combine(_webHostEnvironment.WebRootPath, filePath.TrimStart('/'));
+
+            // Read the file into a byte array
+            return System.IO.File.Exists(fullPath) ? System.IO.File.ReadAllBytes(fullPath) : null;
+        }
+
     }
 }

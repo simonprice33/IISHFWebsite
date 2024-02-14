@@ -69,7 +69,7 @@ namespace IISHFTest.Core.Services
         {
             var dob = rosterMember.DateOfBirth != null
                 ? rosterMember.DateOfBirth.Value.ToString("yyyy-MM-dd")
-                : string.Empty;
+                : DateTime.Parse("1/1/1753").ToString("yyyy-MM-dd"); // Umbraco default date
 
             umbracoRosteredMember?.SetValue("playerName", rosterMember.PlayerName);
             umbracoRosteredMember?.SetValue("firstName", rosterMember.FirstName);

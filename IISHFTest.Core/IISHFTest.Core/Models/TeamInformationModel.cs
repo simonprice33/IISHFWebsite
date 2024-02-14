@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IISHFTest.Core.Models
 {
-    public class TeamInformationSubmissionResponse
+    public class TeamInformationModel
     {
     
         public List<RosterMember> ItcRosterMembers { get; set; }
@@ -16,5 +16,13 @@ namespace IISHFTest.Core.Models
         public string TeamLogoPath { get; set; }
 
         public List<string> SponsorPaths { get; set; }
+
+        public string TeamHistory { get; set; }
+
+        public string JerseyOneColour { get; set; }
+
+        public string JerseyTwoColour { get; set; }
+
+        public object SubmittedDate { get; set; }
     }
 }
