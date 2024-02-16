@@ -1,0 +1,45 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.Event>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@using IISHF.Helpers
+
+@{
+    var id = Model.Id;
+    var events = Umbraco.Content(id).Children();
+    var selectedCalendarYear = DateTime.Now.Year;
+
+    if (!string.IsNullOrWhiteSpace(Context.Request.Query["year"].ToString()))
+    {
+        int.TryParse(Context.Request.Query["year"].ToString(), out selectedCalendarYear);
+    }
+
+    var selectedEvent = events.FirstOrDefault(x => x.Name == selectedCalendarYear.ToString());
+    if (selectedEvent == null)
+    {
+        selectedEvent = events.FirstOrDefault();
+    }
+
+    var documents = selectedEvent.Children().Where(x => x.ContentType.Alias == "document").ToList();
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-5">Tournament Documents</h1>
+        </div>
+        @{
+            foreach (var document in documents)
+            {
+                var file = document.Value<IPublishedContent>("FileDownload");
+                var fileUrl = file?.Url();
+                var iconClass = FileIconHelper.GetIcon(fileUrl);
+
+                <a class="dropdown-item" href="@fileUrl" target="_blank">
+                    <i class="@iconClass fa-2xl p-1"></i>
+                    @document.Name
+                </a>
+            }
+        }
+    </div>
+</div>

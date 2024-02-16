@@ -1,0 +1,241 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.NewsArticles>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@using Newtonsoft.Json.Linq
+@using Azure.Core
+@using System.Text.RegularExpressions
+@using IISHF.Extensions
+@{
+    Layout = "Main.cshtml";
+    var heroImageObj = Model.HeroImage;
+    var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
+
+    DateTime today = DateTime.UtcNow;
+
+    var newsArticles = Umbraco.Content(Guid.Parse("6627a7e1-7f4d-467e-a29e-cc71a885a27f"))
+        .ChildrenOfType("newsArticle")
+        .Where(x => x.IsVisible() && x.Value<DateTime>("postDate") <= today)
+        .OrderByDescending(x => x.Value<DateTime>("postDate")).ToList();
+
+    var tags = newsArticles
+         .SelectMany(x => x.Value<string[]>("newsCategories"))
+         .Distinct()
+         .ToArray();
+
+    var orderedTags = tags
+        .OrderBy(tag => {
+                            var match = Regex.Match(tag, @"\b(20\d{2})\b");
+                            if (match.Success && int.TryParse(match.Value, out int year))
+                            {
+                                return year < today.Year;
+                            }
+                            return false; // Tags without a year or with a future year come first
+        })
+        .ThenBy(tag => tag) // Alphabetical secondary sort
+        .ToArray();
+
+    var catValue = Context.Request.Query["cat"].ToString();
+    int.TryParse(Context.Request.Query["year"].ToString(), out var yearValue);
+
+    var articleYears = newsArticles.Select(x => x.Value<DateTime>("PostDate").Year).Distinct().ToList();
+
+    newsArticles = newsArticles.Where(x =>
+        (string.IsNullOrWhiteSpace(catValue) || x.Value<string[]>("newsCategories").Contains(catValue)) &&
+        (yearValue <= 0 || x.Value<DateTime>("postDate").Year == yearValue)
+        ).ToList();
+
+
+    const int pageSize = 9; // Make this configurable
+
+    var numberOfPages = (int)Math.Ceiling((double)newsArticles.Count() / (double)pageSize);
+    var selectedPage = 1;
+
+    if (!string.IsNullOrWhiteSpace(Context.Request.Query["page"].ToString()))
+    {
+        int.TryParse(Context.Request.Query["page"].ToString(), out selectedPage);
+        if (selectedPage <= 0 || selectedPage > numberOfPages)
+        {
+            selectedPage = 1;
+        }
+    }
+
+    var nextPage = selectedPage + 1;
+    var previousPage = selectedPage - 1;
+
+    newsArticles = newsArticles.Skip((selectedPage - 1) * pageSize).Take(pageSize).ToList();
+}
+
+<div class="jumbotron jumbotron-fluid hero" style="background-image: url('@heroImage')">
+    <div class="overlay"></div>
+    <div class="inner">
+        <div class="container custom-container">
+            <h1 class="display-4">@Model.Value("heroTitle")</h1>
+            <p class="lead">@Model.Value("heroSubtitle")</p>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-5 mb-5">
+    <div class="row">
+
+        <div id="filter" class="col-12 col-sm-12 col-md-2 col-lg-2 order-1 order-md-2 mb-3">
+            <div class="row">
+                <div class="col-12">
+                    <h1>Filters <i id="toggleFilters" class="fa-light fa-filter"></i></h1>
+                </div>
+             
+                <div id="filters" class="col-12">
+                    <a href="@Model.UrlSegment" class="badge bg-secondary text-white">Clear Filters</a>
+
+                    <h4 class="mt-2">Article Year</h4>
+                    @foreach (var year in articleYears)
+                    {
+                        var yearActiveClass = yearValue == year ? "bg-orange" : "bg-secondary";
+                        var yearQueryString = yearValue == year ? (string.IsNullOrWhiteSpace(catValue) ? "" : $"cat={catValue}") : (string.IsNullOrWhiteSpace(catValue) ? $"year={year}" : $"year={year}&cat={catValue}");
+                        <a href="@Model.UrlSegment?@yearQueryString" class="badge @yearActiveClass text-white">@year</a>
+                    }
+
+                    <h4 class="mt-2">Tags</h4>
+                    @foreach (var tag in orderedTags)
+                    {
+                        var tagActiveClass = catValue.Equals(tag, StringComparison.InvariantCultureIgnoreCase) ? "bg-orange" : "bg-secondary";
+                        var tagQueryString = catValue.Equals(tag, StringComparison.InvariantCultureIgnoreCase) ? (yearValue > 0 ? $"year={yearValue}" : "") : (yearValue > 0 ? $"cat={tag}&year={yearValue}" : $"cat={tag}");
+                        <a href="@Model.UrlSegment?@tagQueryString" class="badge @tagActiveClass text-white">@tag.CapitalizeFirstLetter()</a>
+                    }
+                </div>
+
+            </div>
+        </div>
+
+        <div id="news-stories" class="col-12 col-sm-12 col-md-10 col-lg-10 order-2 order-md-1">
+            <div class="row">
+                <div class="col-12">
+                    <h1>Articles</h1>
+                </div>
+                @foreach (var article in newsArticles)
+                {
+                    var imageCropperJson = article.Value<string>("articleImage");
+                    var imageCropperObj = JObject.Parse(imageCropperJson);
+                    var originalImageUrl = imageCropperObj["src"].ToString();
+
+                    var thumbCrop = imageCropperObj["crops"]?.FirstOrDefault(c => c["alias"].ToString() == "Main");
+                    var thumbUrl = string.Empty;
+                    if (thumbCrop != null)
+                    {
+                        var width = int.Parse(thumbCrop["width"].ToString());
+                        var height = int.Parse(thumbCrop["height"].ToString());
+
+                        var coordinates = thumbCrop["coordinates"];
+                        if (coordinates is JObject && coordinates["x1"] is JToken x1Token &&
+                        coordinates["y1"] is JToken y1Token && coordinates["x2"] is JToken x2Token &&
+                        coordinates["y2"] is JToken y2Token)
+                        {
+                            double x1, y1, x2, y2;
+                            if (double.TryParse(x1Token.ToString(), out x1) &&
+                            double.TryParse(y1Token.ToString(), out y1) &&
+                            double.TryParse(x2Token.ToString(), out x2) &&
+                            double.TryParse(y2Token.ToString(), out y2))
+                            {
+                                // Convert fractional coordinates to pixel values
+                                var cropX = (int)(x1 * width);
+                                var cropY = (int)(y1 * height);
+                                var cropWidth = (int)((x2 - x1) * width);
+                                var cropHeight = (int)((y2 - y1) * height);
+
+                                thumbUrl = $"{originalImageUrl}?mode=crop&x={cropX}&y={cropY}&width={cropWidth}&height={cropHeight}";
+                            }
+                            else
+                            {
+                                // Handle the case where coordinates are not valid numbers
+                                // Possibly log this issue and decide on fallback behavior
+                                thumbUrl = originalImageUrl; // Fallback to the original image
+                            }
+                        }
+                        else
+                        {
+                            thumbUrl = $"{originalImageUrl}?mode=crop&width={width}&height={height}";
+                        }
+                    }
+
+                    <div class="col-6 col-sm-6 col-md-4 col-lg-4 mb-3">
+                        <a href="@article.Url()" class="card-link">
+                            <div class="card">
+                                <img class="card-img-top" src="@thumbUrl" alt="Card image cap">
+                                <div class="card-body news">
+                                    <h5 class="card-title">@article.Name</h5>
+                                    <p class="card-text">@article.Value("leadIn")</p>
+                                </div>
+                                <div class="card-overlay">
+                                    <i class="fa-regular fa-eye fa-flip-vertical text-white mr-3"></i>
+                                    <span class="overlay-text">Read Now</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                }
+
+
+            </div>
+            @if (numberOfPages > 1)
+            {
+                <div id="pagination" class="row d-flex justify-content-center">
+                    <div class="col-auto">
+                        <nav aria-label="Page navigation example">
+                            <ul class="pagination">
+                                <li class="page-item @(previousPage < 1 ? "disabled" : "")">
+                                    <a class="page-link orange" href="@(previousPage < 1 ? "#" : Model.UrlSegment + "?page=" + previousPage)" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+
+                                @{
+                                    int startPage = 1;
+                                    int endPage = numberOfPages;
+
+                                    if (numberOfPages > 10)
+                                    {
+                                        if (selectedPage <= 6)
+                                        {
+                                            endPage = 10;
+                                        }
+                                        else if (selectedPage + 4 >= numberOfPages)
+                                        {
+                                            startPage = numberOfPages - 9;
+                                        }
+                                        else
+                                        {
+                                            startPage = selectedPage - 5;
+                                            endPage = selectedPage + 4;
+                                        }
+                                    }
+                                }
+
+                                @for (var i = startPage; i <= endPage; i++)
+                                {
+                                    <li class="page-item @(i == selectedPage ? "active-orange" : "")">
+                                        <a class="page-link orange" href="@Model.UrlSegment?page=@i">@i</a>
+                                    </li>
+                                }
+
+                                <li class="page-item @(nextPage > numberOfPages ? "disabled" : "")">
+                                    <a class="page-link orange" href="@(nextPage > numberOfPages ? "#" : Model.UrlSegment + "?page=" + nextPage)" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            }
+
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $('#toggleFilters').click(function () {
+            $('#filters').slideToggle(250); // 250 milliseconds for animation
+        });
+    });
+</script>

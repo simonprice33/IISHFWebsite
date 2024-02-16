@@ -1,0 +1,290 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.NewsArticle>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@using Umbraco.Cms.Core.PropertyEditors.ValueConverters
+@using System.Globalization
+@using IISHF.Helpers
+@using Newtonsoft.Json.Linq
+@{
+    Layout = "Main.cshtml";
+
+    ////var imageCropper = Model.Value<ImageCropperValue>("articleImage");
+    var imageCropper = Model.Value<string>("articleImage");
+    var imageCropperObjHeader = JObject.Parse(imageCropper);
+    var originalImageUrlHeader = imageCropperObjHeader["src"].ToString();
+
+    var thumbCrop = imageCropperObjHeader["crops"]?.FirstOrDefault(c => c["alias"].ToString() == "Main");
+    var thumbUrl = string.Empty;
+    if (thumbCrop != null)
+    {
+        var width = int.Parse(thumbCrop["width"].ToString());
+        var height = int.Parse(thumbCrop["height"].ToString());
+
+        var coordinates = thumbCrop["coordinates"];
+        if (coordinates is JObject && coordinates["x1"] is JToken x1Token &&
+        coordinates["y1"] is JToken y1Token && coordinates["x2"] is JToken x2Token &&
+        coordinates["y2"] is JToken y2Token)
+        {
+            double x1, y1, x2, y2;
+            if (double.TryParse(x1Token.ToString(), out x1) &&
+            double.TryParse(y1Token.ToString(), out y1) &&
+            double.TryParse(x2Token.ToString(), out x2) &&
+            double.TryParse(y2Token.ToString(), out y2))
+            {
+                // Convert fractional coordinates to pixel values
+                var cropX = (int)(x1 * width);
+                var cropY = (int)(y1 * height);
+                var cropWidth = (int)((x2 - x1) * width);
+                var cropHeight = (int)((y2 - y1) * height);
+
+                thumbUrl = $"{originalImageUrlHeader}?mode=crop&x={cropX}&y={cropY}&width={cropWidth}&height={cropHeight}";
+            }
+            else
+            {
+                // Handle the case where coordinates are not valid numbers
+                // Possibly log this issue and decide on fallback behavior
+                thumbUrl = originalImageUrlHeader; // Fallback to the original image
+            }
+        }
+        else
+        {
+            thumbUrl = $"{originalImageUrlHeader}?mode=crop&width={width}&height={height}";
+        }
+    }
+
+    var articleUrl = Model.Url(null, UrlMode.Absolute);
+
+    var relatedArticles = Model.Value<System.Collections.Generic.IList<IPublishedContent>>("ArticleRelatedContent");
+    var documents = Model.Children().Where(x => x.ContentType.Alias == "document").ToList();
+
+}
+
+@section head
+    {
+    <meta property="og:title" content="@Model.Name" />
+    <meta property="og:description" content="@Model.LeadIn" />
+    <meta property="og:type" content="News Article" />
+}
+@*<div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@thumbUrl')">*@
+<div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@thumbUrl'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+    <div class="overlay"></div>
+    <div class="inner">
+        <div class="container custom-container">
+            <h1 class="display-4">@Model.Value("heroTitle")</h1>
+            <p class="lead">@Model.Value("heroSubtitle")</p>
+        </div>
+    </div>
+</div>
+<div class="container">
+    <div class="row mb-5 mt-5">
+        <div class="col-12 col-sm-12 col-md-9 col-lg-9">
+            <h1 class="orange text-center mb-3">@Model.ArticleTitle</h1>
+
+            <div id="article-content">
+                @Model.ArticleContent
+            </div>
+            <br />
+            Authored By: @Model.Author<br />
+            @Model.PostDate.ToString("dd.MM.yyyy")
+            <br />
+
+            @{
+                foreach (var document in documents)
+                {
+                    var file = document.Value<IPublishedContent>("FileDownload");
+                    var fileUrl = file?.Url();
+                    var iconClass = FileIconHelper.GetIcon(fileUrl);
+
+                    <a class="dropdown-item mb-2 mt-3" href="@fileUrl" target="_blank">
+                        <i class="@iconClass fa-2xl p-1"></i>
+                        @document.Name
+                    </a>
+                }
+            }
+        </div>
+
+        <div class="col-12 col-sm-12 col-md-3 col-lg-3">
+
+            @{
+                if (relatedArticles != null && relatedArticles.Any())
+                {
+
+                    <h2 class="orange text-center">Related Stores</h2>
+                    var limitedItems = relatedArticles
+                    .Where(x => x.IsVisible() && x.Value<DateTime>("postDate") <= DateTime.UtcNow)
+                    .OrderByDescending(x => x.Value<DateTime>("postDate")).Take(3);
+                    @foreach (var article in limitedItems)
+                    {
+                        var imageCropperJson = article.Value<string>("articleImage");
+                        var imageCropperObj = JObject.Parse(imageCropperJson);
+                        var originalImageUrl = imageCropperObj["src"].ToString();
+
+                        var thumbCropRelated = imageCropperObj["crops"]?.FirstOrDefault(c => c["alias"].ToString() == "Main");
+                        var thumbUrlRelated = string.Empty;
+                        if (thumbCropRelated != null)
+                        {
+                            var width = int.Parse(thumbCropRelated["width"].ToString());
+                            var height = int.Parse(thumbCropRelated["height"].ToString());
+
+                            var coordinates = thumbCropRelated["coordinates"];
+                            if (coordinates is JObject && coordinates["x1"] is JToken x1Token &&
+                            coordinates["y1"] is JToken y1Token && coordinates["x2"] is JToken x2Token &&
+                            coordinates["y2"] is JToken y2Token)
+                            {
+                                double x1, y1, x2, y2;
+                                if (double.TryParse(x1Token.ToString(), out x1) &&
+                                double.TryParse(y1Token.ToString(), out y1) &&
+                                double.TryParse(x2Token.ToString(), out x2) &&
+                                double.TryParse(y2Token.ToString(), out y2))
+                                {
+                                    // Convert fractional coordinates to pixel values
+                                    var cropX = (int)(x1 * width);
+                                    var cropY = (int)(y1 * height);
+                                    var cropWidth = (int)((x2 - x1) * width);
+                                    var cropHeight = (int)((y2 - y1) * height);
+
+                                    thumbUrlRelated = $"{originalImageUrl}?mode=crop&x={cropX}&y={cropY}&width={cropWidth}&height={cropHeight}";
+                                }
+                                else
+                                {
+                                    // Handle the case where coordinates are not valid numbers
+                                    // Possibly log this issue and decide on fallback behavior
+                                    thumbUrlRelated = originalImageUrl; // Fallback to the original image
+                                }
+                            }
+                            else
+                            {
+                                thumbUrlRelated = $"{originalImageUrl}?mode=crop&width={width}&height={height}";
+                            }
+                        }
+
+                        <div class="col-12 col-sm-12 col-lg-12 mb-5">
+                            <a href="@article.Url()" class="card-link">
+                                <div class="card">
+                                    <img class="card-img-top" src="@thumbUrlRelated" alt="Card image cap">
+                                    <div class="card-body">
+                                        <h5 class="card-title">@article.Name</h5>
+                                        <p class="card-text">@article.Value("leadIn")</p>
+                                    </div>
+                                    <div class="card-overlay">
+                                        <i class="fa-regular fa-eye fa-flip-vertical text-white mr-3"></i>
+                                        <span class="overlay-text">Read Now</span>
+                                    </div>
+
+                                </div>
+                            </a>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <h2 class="orange text-center">Other News</h2>
+
+                    var newsArticles = Umbraco.Content(Guid.Parse("6627a7e1-7f4d-467e-a29e-cc71a885a27f"))
+                    .ChildrenOfType("newsArticle")
+                    .Where(x => x.IsVisible() && x.Id != Model.Id && x.Value<DateTime>("postDate") <= DateTime.UtcNow)
+                    .OrderByDescending(x => x.Value<DateTime>("postDate")).Take(3);
+
+                    @foreach (var article in newsArticles)
+                    {
+                        var imageCropperJson = article.Value<string>("articleImage");
+                        var imageCropperObj = JObject.Parse(imageCropperJson);
+                        var originalImageUrl = imageCropperObj["src"].ToString();
+
+                        var thumbCropRelated = imageCropperObj["crops"]?.FirstOrDefault(c => c["alias"].ToString() == "Main");
+                        var thumbUrlRelated = string.Empty;
+                        if (thumbCropRelated != null)
+                        {
+                            var width = int.Parse(thumbCropRelated["width"].ToString());
+                            var height = int.Parse(thumbCropRelated["height"].ToString());
+
+                            var coordinates = thumbCropRelated["coordinates"];
+                            if (coordinates is JObject && coordinates["x1"] is JToken x1Token &&
+                            coordinates["y1"] is JToken y1Token && coordinates["x2"] is JToken x2Token &&
+                            coordinates["y2"] is JToken y2Token)
+                            {
+                                double x1, y1, x2, y2;
+                                if (double.TryParse(x1Token.ToString(), out x1) &&
+                                double.TryParse(y1Token.ToString(), out y1) &&
+                                double.TryParse(x2Token.ToString(), out x2) &&
+                                double.TryParse(y2Token.ToString(), out y2))
+                                {
+                                    // Convert fractional coordinates to pixel values
+                                    var cropX = (int)(x1 * width);
+                                    var cropY = (int)(y1 * height);
+                                    var cropWidth = (int)((x2 - x1) * width);
+                                    var cropHeight = (int)((y2 - y1) * height);
+
+                                    thumbUrlRelated = $"{originalImageUrl}?mode=crop&x={cropX}&y={cropY}&width={cropWidth}&height={cropHeight}";
+                                }
+                                else
+                                {
+                                    // Handle the case where coordinates are not valid numbers
+                                    // Possibly log this issue and decide on fallback behavior
+                                    thumbUrlRelated = originalImageUrl; // Fallback to the original image
+                                }
+                            }
+                            else
+                            {
+                                thumbUrlRelated = $"{originalImageUrl}?mode=crop&width={width}&height={height}";
+                            }
+                        }
+
+                        <div class="col-12 col-sm-12 col-lg-12 mb-5">
+                            <a href="@article.Url()" class="card-link">
+                                <div class="card">
+                                    <img class="card-img-top" src="@thumbUrlRelated" alt="Card image cap">
+                                    <div class="card-body">
+                                        <h5 class="card-title">@article.Name</h5>
+                                        <p class="card-text">@article.Value("leadIn")</p>
+                                    </div>
+                                    <div class="card-overlay">
+                                        <i class="fa-regular fa-eye fa-flip-vertical text-white mr-3"></i>
+                                        <span class="overlay-text">Read Now</span>
+                                    </div>
+
+                                </div>
+                            </a>
+                        </div>
+                    }
+
+                }
+            }
+        </div>
+
+
+        <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+            <footer class="fa-border d-flex justify-content-center align-items-center mt-5 mb-5">
+                <div class="d-flex">
+                    <a class="ml-2 mr-2 text-black" href="https://www.twitter.com/intent/tweet?text=@Model.Name&amp;url=@articleUrl"><i class="fab fa-twitter fa-2x"></i></a>
+                    <a class="ml-2 mr-2 text-black" href="https://www.facebook.com/sharer/sharer.php?u=@articleUrl"><i class="fab fa-facebook fa-2x"></i></a>
+                </div>
+            </footer>
+
+        </div>
+
+        <div>
+            @{
+                foreach (var tag in @Model.NewsCategories)
+                {
+                    <span class="badge bg-secondary">@tag</span>
+                }
+            }
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var articleContentDiv = document.getElementById("article-content");
+        if (articleContentDiv) {
+            var images = articleContentDiv.getElementsByTagName("img");
+            for (var i = 0; i < images.length; i++) {
+                images[i].classList.add("img");
+                images[i].classList.add("img-fluid");
+            }
+        }
+    });
+</script>

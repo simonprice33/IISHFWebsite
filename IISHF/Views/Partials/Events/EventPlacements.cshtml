@@ -1,0 +1,59 @@
+﻿@model IISHF.Core.Models.FinalPlacementsViewModel
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@using IISHF.Helpers
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-5">Placements</h1>
+
+            @{
+                if (Model.TeamPlacements.All(x => x.Placement == 0))
+                {
+                    <h3 class="text-center">Awaiting result</h3>
+                }
+            }
+
+            @foreach (var result in Model.TeamPlacements.OrderBy(placement => placement.Placement))
+            {
+                if (@result.Placement > 0)
+                {
+                    string boxClass = PlacementHelper.GetPlacementClass(result.Placement);
+
+                    <div class="container mb-3">
+                        <div class="row" style="margin: 5px;">
+                            <div class="col-12 @boxClass">
+                                <div class="d-flex align-items-center justify-content-start row">
+                                    <div class="col-12 col-sm-6 col-md-2 col-lg-2">
+                                        <h1>@result.Placement.ToOrdinal()</h1>
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-6 col-lg-6">
+                                        <h3>@result.TeamName</h3>
+                                    </div>
+
+                                    <div class="col-12 col-sm-6 col-md-2 col-lg-2">
+                                        @{
+                                            if (!string.IsNullOrWhiteSpace(@result.TeamLogoUrl))
+                                            {
+
+                                                <img class="img img-fluid" style="max-height: 75px" src="@result.TeamLogoUrl" alt="@result.TeamName" />
+                                            }
+                                        }
+                                    </div>
+
+                                    <div class="col-12 col-sm-6 col-md-2 col-lg-2">
+                                        <h3>@result.Iso3</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+            }
+
+
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,11 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.Register>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@using IISHF.Core.Models
+@{
+    Layout = "Main.cshtml";
+}
+
+
+@await Html.PartialAsync("~/Views/Partials/Members/Register.cshtml", new RegisterViewModel())
+
