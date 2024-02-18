@@ -14,6 +14,8 @@
     IPublishedContent? nmaTeam = null;
     IPublishedContent? selectedTournament = null;
 
+
+
     Guid.TryParse(Context.Request.Query["team"].ToString(), out var teamInformationKey);
     if (teamInformationKey != Guid.Empty)
     {
@@ -22,6 +24,8 @@
         nmaTeam = Umbraco.Content(team.Value<Guid>("nMATeamKey"));
         selectedTournament = Umbraco.Content(team.Parent.Id);
     }
+
+    var isSubmitted = team.Value<bool>("teamInformationSubmitted");
 
     var rosterMembers = team?.Children().Where(x => x.ContentType.Alias == "roster").ToList() ?? new List<IPublishedContent>();
     var players = rosterMembers.Where(x => !x.Value<bool>("isBenchOfficial")).ToList();
@@ -67,6 +71,7 @@
         .Where(x => !string.IsNullOrEmpty(x.ISO3))
         .OrderBy(x => Array.IndexOf(priorityCountries, x.Country) == -1 ? int.MaxValue : Array.IndexOf(priorityCountries.OrderBy(x => x).ToArray(), x.Country))
         .ThenBy(x => x.Country);
+
 }
 
 <div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
@@ -131,9 +136,14 @@
                 <a class="nav-link mb-3 p-3 shadow" id="v-pills-sponsors-tab" data-bs-toggle="pill" href="#v-pills-sponsors" role="tab" aria-controls="v-players-sponsors" aria-selected="true">
                     <span class="font-weight-bold small text-uppercase">Sponsors</span>
                 </a>
-                <a class="nav-link mb-3 p-3 shadow" id="v-pills-submit-tab" data-bs-toggle="pill" href="#v-pills-submit" role="tab" aria-controls="v-submit-submit" aria-selected="true">
-                    <span class="font-weight-bold small text-uppercase">Submit</span>
-                </a>
+                        @{
+                            if (!isSubmitted)
+                            {
+                                <a class="nav-link mb-3 p-3 shadow" id="v-pills-submit-tab" data-bs-toggle="pill" href="#v-pills-submit" role="tab" aria-controls="v-submit-submit" aria-selected="true">
+                                    <span class="font-weight-bold small text-uppercase">Submit</span>
+                                </a>
+                            }
+                        }
             </div>
 
         </div>
@@ -278,7 +288,12 @@
                             </tbody>
                         </table>
                     </div>
-                    <button id="addRowButton" type="button">Add Row</button>
+                    @{
+                        if (!isSubmitted)
+                        {
+                            <button id="addRowButton" type="button">Add Row</button>                            
+                        }
+                    }
 
                 </div>
 
@@ -344,19 +359,30 @@
                     <div id="addBenchOfficialButtonErrors" class="alert alert-danger" role="alert">
                         <h3>Cannot add more than 8 bench officials</h3>
                     </div>
-                    <button id="addBenchOfficialButton" type="button">Add Row</button>
+                    @{
+                        if (!isSubmitted)
+                        {
+                            <button id="addBenchOfficialButton" type="button">Add Row</button>
+                        }
+                    }
 
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-teamphoto" role="tabpanel" aria-labelledby="v-pills-teamphoto-tab">
                     <div>
-                        <form action="/upload-team-photo" class="dropzone" id="teamPhotoDropzone"></form>
+                        
+                        @{
+                            if (!isSubmitted)
+                            {
+                                <form action="/upload-team-photo" class="dropzone" id="teamPhotoDropzone"></form>
+                            }
+                        }
                         @{
                             if (nmaTeam != null)
                             {
                                 var photo = nmaTeam.Value<IPublishedContent>("teamPhoto");
                                 if (photo != null)
                                 {
-                                    <img id="teamPhoto" class="img img-fluid" src="@photo.Url()" />
+                                    <img id="teamPhoto" class="img img-fluid" src="@photo.Url()"/>
                                 }
                             }
                         }
@@ -368,7 +394,13 @@
                             <h3>Please ensure logos have either a white or transparrent background.</h3>
                             <p>This makes it easier for the host and production of event programs, and media campaigns</p>
                         </div>
-                        <form action="/upload-team-logo" class="dropzone" id="teamLogoDropzone"></form>
+                        @{
+                            if (!isSubmitted)
+                            {
+                                <form action="/upload-team-logo" class="dropzone" id="teamLogoDropzone"></form>
+                            }
+                        }
+                       
                         @{
                             if (nmaTeam != null)
                             {
@@ -384,7 +416,13 @@
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-sponsors" role="tabpanel" aria-labelledby="v-pills-sponsors-tab">
                     <div>
-                        <form action="/upload-multiple-files" class="dropzone" id="multipleFilesDropzone"></form>
+                        @{
+                            if (!isSubmitted)
+                            {
+                                <form action="/upload-multiple-files" class="dropzone" id="multipleFilesDropzone"></form>
+                            }
+                        }
+                        
                         <div class="row" id="sponsor-images">
                             @{
                                 if (nmaTeam != null)
@@ -399,13 +437,13 @@
                                         var id = @sponsor.Id;
                                         if (logo != null)
                                         {
-                                                <div id="sponsor-@id" class="col-12 col-sm-12 col-md-4 col-lg-4 mt-3 sponsor-container">
-                                                    <div class="image-overlay" style="display:none;">
-                                                        <span class="btn btn-danger mt-2" onclick="deleteImage(@id, @logo.Id)">Delete</span>
-                                                    </div>
-                                                <img id="@id" data-media="@logo.Id" class="img img-fluid delete-btn" src="@logo.Url()" />
-                                                    
+                                            <div id="sponsor-@id" class="col-12 col-sm-12 col-md-4 col-lg-4 mt-3 sponsor-container">
+                                                <div class="image-overlay" style="display:none;">
+                                                    <span class="btn btn-danger mt-2" onclick="deleteImage(@id, @logo.Id)">Delete</span>
                                                 </div>
+                                                <img id="@id" data-media="@logo.Id" class="img img-fluid delete-btn" src="@logo.Url()"/>
+
+                                            </div>
                                         }
                                     }
                                 }
@@ -516,8 +554,6 @@
         </div>
     </div>
 </div>
-
-
 
 <!-- Summernote JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.18/summernote-bs4.min.js"></script>
@@ -646,7 +682,8 @@
         }
     }
 
-                    var teamPhotoDropzone = new Dropzone("#teamPhotoDropzone", {
+            if ($("#teamPhotoDropzone").length) {
+            var teamPhotoDropzone = new Dropzone("#teamPhotoDropzone", {
                 url: "/upload-team-photo",
                 autoProcessQueue: false,
                 maxFiles: 1,
@@ -701,70 +738,75 @@
                     });
                 }
             });
+    }
 
 
-        var teamLogoDropzone = new Dropzone("#teamLogoDropzone", {
-            url: "/upload-team-photo",
-            autoProcessQueue: false,
-            maxFiles: 1,
-            addRemoveLinks: true,
-            dictDefaultMessage: "Drag and drop a team logo here or click",
-            acceptedFiles: "image/*,application/pdf", // Accept images and PDFs
-            accept: function (file, done) {
-                // Check if the file is an image for dimension validation
-                if (file.type.match(/image.*/)) {
-                    // Image dimension validation
-                    file.acceptDimensions = done;
-                    file.rejectDimensions = function () { done("The image must be at least 1920x1080 pixels."); };
-                    // Load the image to check its dimensions
-                    var reader = new FileReader();
-                    reader.onload = function (e) {
-                        var img = new Image();
-                        img.onload = function () {
-                            if (img.width >= 1920 && img.height >= 1080) {
-                                file.acceptDimensions();
-                            } else {
-                                file.rejectDimensions();
-                            }
+        if ($("#teamLogoDropzone").length) {
+            var teamLogoDropzone = new Dropzone("#teamLogoDropzone", {
+                url: "/upload-team-photo",
+                autoProcessQueue: false,
+                maxFiles: 1,
+                addRemoveLinks: true,
+                dictDefaultMessage: "Drag and drop a team logo here or click",
+                acceptedFiles: "image/*,application/pdf", // Accept images and PDFs
+                accept: function (file, done) {
+                    // Check if the file is an image for dimension validation
+                    if (file.type.match(/image.*/)) {
+                        // Image dimension validation
+                        file.acceptDimensions = done;
+                        file.rejectDimensions = function () { done("The image must be at least 1920x1080 pixels."); };
+                        // Load the image to check its dimensions
+                        var reader = new FileReader();
+                        reader.onload = function (e) {
+                            var img = new Image();
+                            img.onload = function () {
+                                if (img.width >= 1920 && img.height >= 1080) {
+                                    file.acceptDimensions();
+                                } else {
+                                    file.rejectDimensions();
+                                }
+                            };
+                            img.src = e.target.result;
                         };
-                        img.src = e.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                } else if (file.type === "application/pdf") {
-                    // Immediately accept PDF files without dimension checks
-                    done();
-                } else {
-                    // Reject files that are neither images nor PDFs
-                    done("File must be an image or a PDF.");
+                        reader.readAsDataURL(file);
+                    } else if (file.type === "application/pdf") {
+                        // Immediately accept PDF files without dimension checks
+                        done();
+                    } else {
+                        // Reject files that are neither images nor PDFs
+                        done("File must be an image or a PDF.");
+                    }
+                },
+                init: function () {
+                    this.on("thumbnail", function (file) {
+                        // If an image doesn't meet the size criteria, reject it
+                        if (file.type.match(/image.*/) && (file.width < 1920 || file.height < 1080)) {
+                            file.rejectDimensions();
+                        }
+                    });
+                    this.on("addedfile", function (file) {
+                        if (file.accepted === false) {
+                            var errorMark = file.previewElement.querySelector('.dz-error-mark');
+                            errorMark.addEventListener('click', function () {
+                                teamLogoDropzone.removeFile(file);
+                            });
+                        }
+                    });
+
                 }
-            },
-            init: function () {
-                this.on("thumbnail", function (file) {
-                    // If an image doesn't meet the size criteria, reject it
-                    if (file.type.match(/image.*/) && (file.width < 1920 || file.height < 1080)) {
-                        file.rejectDimensions();
-                    }
-                });
-                this.on("addedfile", function (file) {
-                    if (file.accepted === false) {
-                        var errorMark = file.previewElement.querySelector('.dz-error-mark');
-                        errorMark.addEventListener('click', function () {
-                            teamLogoDropzone.removeFile(file);
-                        });
-                    }
-                });
+            });
+        }
 
-            }
-        });
-
-        // Multiple Files Dropzone
-        var multipleFilesDropzone = new Dropzone("#multipleFilesDropzone", {
-            url: "/upload-multiple-files",
-            autoProcessQueue: false, // Disable auto processing
-            addRemoveLinks: true,
-            dictDefaultMessage: "Drag and drop multiple files here or click",
-        });
-
+        if ($("#multipleFilesDropzone").length) {
+            // Multiple Files Dropzone
+            var multipleFilesDropzone = new Dropzone("#multipleFilesDropzone", {
+                url: "/upload-multiple-files",
+                autoProcessQueue: false, // Disable auto processing
+                addRemoveLinks: true,
+                dictDefaultMessage: "Drag and drop multiple files here or click",
+            });
+        }
+       
         $('#submitDraft').click(function (e) {
             e.preventDefault();
             submit(true)
@@ -841,9 +883,14 @@
                     }
                     else{
                         var html = '<div class="alert alert-success">Team Information has been submitted to the host. </br>You should receive an email with a copy of the submitted information within the next 10 minutes.  If not received, please check your spam folder. </br> If you have any issues, please contact <a href="mailto:webmaster@iishf.com">IISHF Webmaster</a> </div>'
-
-                        $("submitDraft").hide();
-                        $("submit").hide();
+                        $('#saveMessage').html(html)
+                        $("#submitDraft").hide();
+                        $("#submit").hide();
+                        $('.btn.btn-danger.delete-btn').hide();
+                        $("#addRowButton").hide();
+                        $("#addBenchOfficialButton").hide();
+                        $(".dropzone").hide();
+                        $('.input-group.mb-3').find('button, input').prop('disabled', true);
                     }
                 },
                 error: function (error) {
@@ -1452,7 +1499,17 @@
             deleteRow(this); // Call your deleteRow function
         });
 
-    @{
+        @{
+            if (isSubmitted)
+            {
+                <text>
+                    $('.input-group.mb-3').find('button, input').prop('disabled', true);
+                $('#teamHistory').summernote('disable');
+                 </text>
+            }
+            }
+
+            @{
         if (selectedTournament != null && @selectedTournament.Id > 0)
         {
             <text>
