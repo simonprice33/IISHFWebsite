@@ -17,7 +17,11 @@
     <div class="overlay"></div>
     <div class="inner">
         <div class="container custom-container">
-            <h1 class="display-4">@Model.Value("heroTitle")</h1>
+            @{
+                var title = $"{@parent.Name} - {@Model.Value("heroTitle")}";
+
+            }
+            <h1 class="display-4">@title</h1>
             <p class="lead">@Model.Value("heroSubtitle")</p>
         </div>
     </div>
@@ -61,9 +65,9 @@
                                     <div class="form-group">
                                         <i class="fa-regular fa-at"></i>
                                         @{
-                                            var email = string.IsNullOrWhiteSpace(contact.Value<string>("contactEmail"))
+                                            var email = string.IsNullOrWhiteSpace(contact.Value<string>("nMAContactEmail"))
                                             ? parent.Value<string>("email")
-                                            : contact.Value<string>("contactEmail");
+                                            : contact.Value<string>("nMAContactEmail");
                                         }
                                         <a href="mailto:@email">@email</a>
                                     </div>
@@ -80,7 +84,7 @@
         if (reportedClubs != null && reportedClubs.Any())
         {
             <div class="row">
-                <h2 class="text-center">Teams</h2>
+                <h2 class="text-center">Clubs</h2>
                 @{
                     foreach (var club in reportedClubs)
                     {

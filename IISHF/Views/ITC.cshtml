@@ -17,6 +17,8 @@
         selectedTournament = Umbraco.Content(team.Parent.Id);
     }
 
+    bool.TryParse(Context.Request.Query["create-new"], out var createNewItc);
+
     var rosterMembers = team?.Children().Where(x => x.ContentType.Alias == "roster").ToList() ?? new List<IPublishedContent>();
     var players = rosterMembers.Where(x => !x.Value<bool>("isBenchOfficial")).ToList();
     var benchOfficials = rosterMembers.Where(x => x.Value<bool>("isBenchOfficial")).ToList();

@@ -13,5 +13,7 @@ namespace IISHF.Core.Interfaces
         Task<List<IMedia>> UploadSponsors(List<IFormFile> files, IPublishedContent team, string directory);
 
         Task AddImageToTeam(IMedia imageId, IPublishedContent team, string propertyAlias);
+
+        Task DeleteSponsor(int sponsorId, int mediaId, IPublishedContent team);
     }
 }

@@ -9,7 +9,7 @@
 
         public string TeamLogoPath { get; set; }
 
-        public List<string> SponsorPaths { get; set; }
+        public List<SponsorImages> SponsorPaths { get; set; }
 
         public string TeamHistory { get; set; }
 

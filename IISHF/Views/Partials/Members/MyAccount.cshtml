@@ -8,73 +8,194 @@
 
 }
 
-<div class="container mt-5">
+<div class="container custom-container mt-5">
     <div class="row">
-        <div id="myDetails" class="col-12 col-sm-12 col-md-5 col-lg-5">
+        <div id="myDetails" class="col-12 col-sm-12 col-md-4 col-lg-4">
             <div class="col-12">
-                <h2>My Details</h2>
-                <div id="successResult"></div>
-                <div class="form-group row mb-2">
-                    @Html.LabelFor(m => m.Name, new { @class = "col-form-label col-md-4", placeholder = "Full Name" })
-                    <div class="col-md-8">
-                        @Html.TextBoxFor(m => m.Name, new { @class = "form-control", placeholder = "Full Name" })
+                <div class="tab-content" id="v-pills-tabContent">
+                    <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-team" role="tabpanel" aria-labelledby="v-pills-team-tab">
+                        <h2>My Details</h2>
+                        <div id="successResult"></div>
+                        <div class="form-group row mb-2">
+                            @Html.LabelFor(m => m.Name, new { @class = "col-form-label col-md-4", placeholder = "Full Name" })
+                            <div class="col-md-8">
+                                @Html.TextBoxFor(m => m.Name, new { @class = "form-control", placeholder = "Full Name" })
+                            </div>
+                        </div>
+                        <div class="form-group row mb-2">
+                            @Html.LabelFor(m => m.Email, new { @class = "col-form-label col-md-4", placeholder = "Email Address" })
+                            <div class="col-md-8">
+                                @Html.TextBoxFor(m => m.Email, new { @class = "form-control", placeholder = "Email Address", type = "email" })
+                            </div>
+                        </div>
+                        <div class="form-group row mb-2">
+                            @Html.LabelFor(m => m.Password, new { @class = "col-form-label col-md-4", placeholder = "New Password" })
+                            <div class="col-md-8">
+                                @Html.TextBoxFor(m => m.Password, new { @class = "form-control", placeholder = "New Password", type = "password" })
+                            </div>
+                        </div>
+                        <div class="form-group row mb-2">
+                            @Html.LabelFor(m => m.ConfirmPassword, new { @class = "col-form-label col-md-4", placeholder = "New Password" })
+                            <div class="col-md-8">
+                                @Html.TextBoxFor(m => m.ConfirmPassword, new { @class = "form-control", placeholder = "New Password", type = "password" })
+                            </div>
+                        </div>
+                        <span class="btn btn-secondary" id="update" value="">Update details</span>
                     </div>
                 </div>
-                <div class="form-group row mb-2">
-                    @Html.LabelFor(m => m.Email, new { @class = "col-form-label col-md-4", placeholder = "Email Address" })
-                    <div class="col-md-8">
-                        @Html.TextBoxFor(m => m.Email, new { @class = "form-control", placeholder = "Email Address", type = "email" })
-                    </div>
-                </div>
-                <div class="form-group row mb-2">
-                    @Html.LabelFor(m => m.Password, new { @class = "col-form-label col-md-4", placeholder = "New Password" })
-                    <div class="col-md-8">
-                        @Html.TextBoxFor(m => m.Password, new { @class = "form-control", placeholder = "New Password", type = "password" })
-                    </div>
-                </div>
-                <div class="form-group row mb-2">
-                    @Html.LabelFor(m => m.ConfirmPassword, new { @class = "col-form-label col-md-4", placeholder = "New Password" })
-                    <div class="col-md-8">
-                        @Html.TextBoxFor(m => m.ConfirmPassword, new { @class = "form-control", placeholder = "New Password", type = "password" })
-                    </div>
-                </div>
-                <span class="btn btn-secondary" id="update" value="">Update details</span>
+
 
             </div>
         </div>
 
 
-        <!-- Vertical Line for md and lg screens -->
-        <div class="vertical-line-md-lg d-none d-md-block col-md-2 col-lg-2"></div>
 
+        <div id="myInvitations" class="col-12 col-sm-12 col-md-8 col-lg-8">
+            <div class="tab-content" id="v-pills-tabContent">
+                <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-team" role="tabpanel" aria-labelledby="v-pills-team-tab">
+                    <div class="col-12">
+                        <h2 class="mb-3">My Teams Invitations</h2>
 
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Event Name</th>
+                                    <th>Event Dates</th>
+                                    <th>Team Information Submission Status</th>
+                                    <th>ITC Status</th>
+                                    <th>ITC Status Change Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    foreach (var invitation in Model.Invitations)
+                                    {
+                                        var teamInformationSubmissionStatus = "Not Submitted";
+                                        string teamInformationSubmittedDate = null;
+                                        if (invitation.TeamInformationSubmitted)
+                                        {
+                                            teamInformationSubmissionStatus = "Submitted";
+                                            teamInformationSubmittedDate = invitation.TeamInformationSubmittedDate.ToString("dd.MM.yyyy - HH:mm");
+                                        }
 
-        <div id="myInvitations" class="col-12 col-sm-12 col-md-5 col-lg-5">
-            <div class="col-12">
-                <h2 class="mb-3">My Teams Invitations</h2>
-                <h3 class="mt-3 mb-3">Team Information Submissions and Status</h3>
-                @{
-                    if (Model.Invitations != null)
-                    {
+                                        var submissionRequiredByDays = invitation.TeamSubmissionRequiredBy - invitation.EventStartDate.AddDays(-14);
+                                        var daysFromEvent = invitation.EventStartDate - DateTime.Now;
+                                        var dueSoon = daysFromEvent.Days < submissionRequiredByDays.Days;
+
+                                        <tr>
+                                            <td>@invitation.EventName</td>
+                                            <td>@invitation.EventStartDate.ToString("dd.MM.yyyy") - @invitation.EventEndDate.ToString("dd.MM.yyyy")</td>
+                                            <td>
+                                                @{
+                                                    var teamInfoLink = $"/team-information-submission?team={invitation.EventTeamId}";
+                                                    if (teamInformationSubmittedDate != null)
+                                                    {
+                                                        <span class="badge bg-success">@teamInformationSubmissionStatus @teamInformationSubmittedDate</span>
+                                                    }
+                                                    else if (teamInformationSubmittedDate == null && dueSoon)
+
+                                                    {
+                                                        <span class="badge bg-warning black">
+                                                            <a href="@teamInfoLink" class="black" style="text-decoration: none">Create \ Update - Due soon </a>
+                                                        </span>
+                                                    }
+                                                    else if (teamInformationSubmittedDate == null && DateTime.UtcNow > invitation.TeamSubmissionRequiredBy)
+                                                    {
+                                                        var timeSpan = DateTime.UtcNow - invitation.TeamSubmissionRequiredBy;
+                                                        if (timeSpan.Days == 1)
+                                                        {
+                                                            <span class="badge bg-danger white">
+                                                                <a href="@teamInfoLink" class="white" style="text-decoration: none">Create \ Update - @timeSpan.Days day Late</a>
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-danger white">
+                                                                <a href="@teamInfoLink" class="white" style="text-decoration: none">Create \ Update - @timeSpan.Days days Late</a>
+                                                            </span>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-success white">
+                                                            <a href="@teamInfoLink" class="text-white" style="text-decoration: none">Create \ Update - Required by @invitation.TeamSubmissionRequiredBy.ToString("dd.MM.yyyy")</a>
+                                                        </span>
+                                                    }
+                                                }
+                                            </td>
+
+                                            <td>
+                                                @{
+                                                    // ToDo
+
+                                                    if (teamInformationSubmittedDate != null && invitation.ITCStatus == "Not submitted")
+                                                    {
+                                                        var link = $"/itc?team={invitation.EventTeamId}";
+                                                        <span class="badge bg-success white">
+                                                            <a href="@link" class="text-white" style="text-decoration: none">Create \ Update</a>
+                                                        </span>
+                                                    }
+                                                    if (teamInformationSubmittedDate != null && invitation.ITCStatus == "Pending NMA Approval")
+                                                    {
+                                                        var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
+                                                        <span class="badge bg-success white">
+                                                            Submitted
+                                                        </span>
+                                                        <span class="badge bg-warning white">
+                                                            <a href="@link" class="black" style="text-decoration: none">Unsubmit and Create New</a>
+                                                        </span>
+                                                    }
+                                                    if (teamInformationSubmittedDate != null && invitation.ITCStatus == "NMA Approved - Pending IISHF Approval")
+                                                    {
+                                                        var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
+                                                        <span class="badge bg-success white">
+                                                            Submitted
+                                                        </span>
+                                                        <span class="badge bg-warning white">
+                                                            <a href="@link" class="black" style="text-decoration: none">Unsubmit and Create New</a>
+                                                        </span>
+                                                    }
+                                                }
+                                            </td>
+                                            <td>
+                                                @{
+                                                    if (@invitation.ItcStatusChangeDate != null)
+                                                    {
+                                                        @invitation.ItcStatusChangeDate.Value.ToString("dd.MM.yyyy")                                                        
+                                                    }
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+
+                        @* @{
+                        if (Model.Invitations != null)
+                        {
                         foreach (var invitation in Model.Invitations.Where(x => !x.TeamInformationSubmitted))
                         {
-                            var link = $"/team-information-submission?team={invitation.EventTeamId}";
-                            <a href="@link">@invitation.EventName - Pending submission</a>
-                            ;
-                        }                        
-                    }
+                        var link = $"/team-information-submission?team={invitation.EventTeamId}";
+                        <a href="@link">@invitation.EventName - Pending submission</a>
+                        ;
+                        }
+                        }
 
-                }
-                <h3 class="mt-3 mb-3">ITC Submissions and Status</h3>
-                @{
-                    foreach (var invitation in Model.Invitations.Where(x => x.TeamInformationSubmitted))
-                    {
+                        }
+                        <h3 class="mt-3 mb-3">ITC Submissions and Status</h3>
+                        @{
+                        foreach (var invitation in Model.Invitations.Where(x => x.TeamInformationSubmitted))
+                        {
                         var link = $"/itc?team={invitation.EventTeamId}";
                         <a href="@link">@invitation.EventName</a>
                         ;
-                    }
-                }
+                        }
+                        }*@
+                    </div>
+                </div>
             </div>
+
         </div>
     </div>
 </div>
@@ -84,7 +205,7 @@
     $(document).ready(function () {
 
         $("#update").on("click", function () {
-           
+
             // Create an object with the form data
             var formData = {
                 Name: $("#Name").val(),
@@ -111,7 +232,7 @@
                     setTimeout(function () {
                         $("#successResult").slideUp(500);
                     }, 5000);
-                    
+
                 },
                 error: function (result) {
                     console.log(result);

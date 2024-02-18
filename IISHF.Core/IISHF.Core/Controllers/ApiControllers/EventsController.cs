@@ -321,7 +321,12 @@ namespace IISHF.Core.Controllers.ApiControllers
             // Re-get nma team object and return saved \ published information
             nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
             var sponsorList = nmaTeam.Children.Where(x => x.ContentType.Alias == "sponsor")
-                .Select(x => x.Value<IPublishedContent>("sponsorImage").Url().ToString()).ToList();
+                .Select(x => new SponsorImages
+                {
+                    Id = x.Id,
+                    MediaId = x.Value<IPublishedContent>("sponsorImage").Id,
+                    path = x.Value<IPublishedContent>("sponsorImage").Url()
+                }).ToList();
 
             var teamPhotoUrl = nmaTeam.Value<IPublishedContent>("teamPhoto");
             var teamLogoUrl = nmaTeam.Value<IPublishedContent>("teamLogo");
@@ -386,6 +391,37 @@ namespace IISHF.Core.Controllers.ApiControllers
 
             // delete roster member
             _rosterService.DeleteRosteredPlayer(rosterMember.Id);
+            return NoContent();
+        }
+
+        [HttpDelete]
+        [Route("team-submission/team/titel-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/sponsor/{sponsorId}/media/{mediaId}")]
+        public async Task<IActionResult> DeleteSponsorImage(string titleEvent, bool isChampionship, int eventYear, string teamName, int sponsorId, int mediaId)
+        {
+            // Check we have the tournament
+            var tournament = _tournamentService.GetTournament(
+                isChampionship,
+                titleEvent,
+                eventYear.ToString());
+
+            if (tournament == null)
+            {
+                return NotFound();
+            }
+
+            teamName = HttpUtility.UrlDecode(teamName);
+
+            // Check team is in that tournament
+            var team = _tournamentService.GetTournamentTeamByName(teamName, tournament);
+
+            if (team == null)
+            {
+                return NotFound();
+            }
+
+            // Check roster member belongs to this team
+            await _teamService.DeleteSponsor(sponsorId, mediaId, team);
+            
             return NoContent();
         }
     }

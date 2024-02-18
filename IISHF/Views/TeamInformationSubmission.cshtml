@@ -309,11 +309,11 @@
                                     </td>
                                     <td>
 
-                                        <span>@players[i].Value("firstName")</span>
+                                        <span>@benchOfficials[i].Value("firstName")</span>
                                     </td>
                                     <td>
 
-                                        <span>@players[i].Value("lastName")</span>
+                                        <span>@benchOfficials[i].Value("lastName")</span>
                                     </td>
                                     <td>
                                         @{
@@ -332,7 +332,7 @@
                                         <span>@benchOfficials[i].Value("gender")</span>
                                     </td>
                                     <td>
-                                        <button type="button" class="btn btn-danger" onclick="deleteRow(this)">
+                                        <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); deleteRow(this)">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </td>
@@ -356,7 +356,7 @@
                                 var photo = nmaTeam.Value<IPublishedContent>("teamPhoto");
                                 if (photo != null)
                                 {
-                                    <img id="teamPhoto" class="img img-fluid" src="@photo.Url()"/>                                    
+                                    <img id="teamPhoto" class="img img-fluid" src="@photo.Url()" />
                                 }
                             }
                         }
@@ -375,7 +375,7 @@
                                 var logo = nmaTeam.Value<IPublishedContent>("teamLogo");
                                 if (logo != null)
                                 {
-                                    <img id="teamLogo" class="img img-fluid" src="@logo.Url()"/>                                    
+                                    <img id="teamLogo" class="img img-fluid" src="@logo.Url()" />
                                 }
                             }
                         }
@@ -385,7 +385,7 @@
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-sponsors" role="tabpanel" aria-labelledby="v-pills-sponsors-tab">
                     <div>
                         <form action="/upload-multiple-files" class="dropzone" id="multipleFilesDropzone"></form>
-                        <div class="row">
+                        <div class="row" id="sponsor-images">
                             @{
                                 if (nmaTeam != null)
                                 {
@@ -394,32 +394,40 @@
                                     foreach (var sponsor in sponsors)
                                     {
                                         var logo = sponsor.Value<IPublishedContent>("sponsorImage");
-
+                                        // when sponsor is added it has a media id and then when its attached to the nma it has a nma id. 
+                                        // Need to delete the media and the link to the the team
+                                        var id = @sponsor.Id;
                                         if (logo != null)
                                         {
-                                            <div class="col-12 col-sm-12 col-md-4 col-lg-4 mt-3">
-                                                <img id="teamLogo" class="img img-fluid" src="@logo.Url()"/>
-                                            </div>
+                                                <div id="sponsor-@id" class="col-12 col-sm-12 col-md-4 col-lg-4 mt-3 sponsor-container">
+                                                    <div class="image-overlay" style="display:none;">
+                                                        <span class="btn btn-danger mt-2" onclick="deleteImage(@id, @logo.Id)">Delete</span>
+                                                    </div>
+                                                <img id="@id" data-media="@logo.Id" class="img img-fluid delete-btn" src="@logo.Url()" />
+                                                    
+                                                </div>
                                         }
                                     }
                                 }
                             }
                         </div>
-                            </div>
-                            </div>
+                    </div>
+                </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-submit" role="tabpanel" aria-labelledby="v-pills-submit-tab">
                     @{
-                        
+
                         if (@team.Value<bool>("teamInformationSubmitted"))
                         {
-                                var submittedDate = team.Value<DateTime>("teamInformationSubmissionDate").ToString("dd.MM.yyyy HH:mm");
+                            var submittedDate = team.Value<DateTime>("teamInformationSubmissionDate").ToString("dd.MM.yyyy HH:mm");
                             var submittedBy = team.Value<IPublishedContent>("teamInformationSubmittedBy");
-                        <h5>Submitted : @submittedDate By @submittedBy.Name</h5>
+                            <h5>Submitted : @submittedDate By @submittedBy.Name</h5>
                         }
                         else
                         {
                             <button id="submitDraft" class="btn btn-light">Save Draft</button>
-                            <button id="submit"  class="btn btn-secondary">Submit</button>
+                            <button id="submit" class="btn btn-secondary">Submit</button>
+
+                            <div id="saveMessage"></div>
                         }
                     }
                 </div>
@@ -495,6 +503,12 @@
                     <!-- Add more input fields as necessary -->
                 </form>
             </div>
+            <div class="row">
+                <div class="col-12 col-sm-12 col-md-12">
+                    <div id="modal-alert" class="alert alert-danger">
+                    </div>
+                </div>
+            </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary close-edit" data-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary" id="saveChanges">Update table</button>
@@ -511,6 +525,100 @@
 <script>
     var countries = @Html.Raw(Json.Serialize(@countries));
     Dropzone.autoDiscover = false; // Prevent auto initialization
+
+    function deleteRow(button) {
+        // Find the row containing the clicked button
+        var row = $(button).closest('tr');
+
+        // Extract the license number from the span
+        var licenseNumber = row.find("td:eq(0) span span").text().trim();
+
+        // Add the license number to the array (if it's not empty)
+        if (licenseNumber) {
+            deletedLicenseNumbers.push(licenseNumber);
+        }
+        var titleEvent = $('#shortCode').val()
+        var rosterId = row.data('id')
+        var eventSelectValue = $("#eventSelect").val();
+        var isChampionship = eventSelectValue.toLowerCase().includes("championship");
+
+        var startDateText = $("#startDate").text();
+        var eventYear = ''
+
+        if (startDateText) {
+            var parts = startDateText.split('.');
+
+            if (parts.length >= 3) {
+                eventYear = parts[2];
+            } else {
+                console.log("The date format is not as expected.");
+            }
+        } else {
+            console.log("No text found for #startDate.");
+        }
+
+        var teamName = $("#teamName").val()
+
+        if (rosterId === 0) {
+            row.remove();
+            return;
+        }
+
+        var url = `/api/events/itc/team/titel-event/${titleEvent}/championship/${isChampionship}/year/${eventYear}/team/${teamName}/roster-member/${rosterId}`
+        var encodedUrl = encodeURI(url);
+        $.ajax({
+            url: encodedUrl,
+            type: 'DELETE',
+            success: function (data) {
+                // Remove the row from the table
+                row.remove();
+            },
+            error: function (xhr, status, error) {
+                console.error("Error: " + error);
+                // Show alert that something went wrong
+            }
+        });
+    }
+
+    function deleteImage(id, mediaId) {
+
+        var titleEvent = $('#shortCode').val()
+        var eventSelectValue = $("#eventSelect").val();
+        var isChampionship = eventSelectValue.toLowerCase().includes("championship");
+               
+        var startDateText = $("#startDate").text();
+        var eventYear = ''
+
+        if (startDateText) {
+            var parts = startDateText.split('.');
+
+            if (parts.length >= 3) {
+                eventYear = parts[2];
+            } else {
+                console.log("The date format is not as expected.");
+            }
+        } else {
+            console.log("No text found for #startDate.");
+        }
+
+        var teamName = $("#teamName").val()
+
+        var url = `/api/events/team-submission/team/titel-event/${titleEvent}/championship/${isChampionship}/year/${eventYear}/team/${teamName}/sponsor/${id}/media/${mediaId}`
+        var encodedUrl = encodeURI(url);
+        $.ajax({
+            url: encodedUrl,
+            type: 'DELETE',
+            success: function (data) {
+                // Remove the row from the table
+                $("#sponsor-" + id).slideUp();
+            },
+            error: function (xhr, status, error) {
+                console.error("Error: " + error);
+                // Show alert that something went wrong
+            }
+        });
+
+    }
 
     $(document).ready(function () {
 
@@ -532,13 +640,13 @@
         if (nmaTeam != null && !string.IsNullOrWhiteSpace(nmaTeam.Value<string>("teamHistory")))
         {
             <text>
-                                var teamHistoryContent = @Html.Raw(JsonSerializer.Serialize(nmaTeam.Value<string>("teamHistory")));
+                                                        var teamHistoryContent = @Html.Raw(JsonSerializer.Serialize(nmaTeam.Value<string>("teamHistory")));
                 $('#teamHistory').summernote('code', teamHistoryContent);
             </text>
         }
     }
 
-            var teamPhotoDropzone = new Dropzone("#teamPhotoDropzone", {
+                    var teamPhotoDropzone = new Dropzone("#teamPhotoDropzone", {
                 url: "/upload-team-photo",
                 autoProcessQueue: false,
                 maxFiles: 1,
@@ -667,8 +775,8 @@
             submit(false)
         });
 
-        function submit(isDraft){
-        
+        function submit(isDraft) {
+
             // Create a FormData object
             var formData = new FormData();
 
@@ -683,6 +791,19 @@
             });
             var json = generateJson(isDraft); // Ensure this function returns your structured JSON data
             formData.append("json", JSON.stringify(json));
+
+            // Check if there are players in the roster
+            var hasPlayers = json.ItcRosterMembers.some(function (member) {
+                return member.JerseyNumber !== undefined && member.JerseyNumber !== null;
+            });
+
+            if (!hasPlayers) {
+                console.log("");
+                var html = '<div id="saveSuccess" class="col-12 col-sm-12 col-md-12 col-lg-12 alert alert-danger text-center">No players found, only bench officials.</div>'
+                $('#saveMessage').html(html)
+                // Optionally, inform the user or handle this case as needed
+                return; // Exit the function to prevent AJAX call
+            }
 
             console.log("FormData data:");
             console.log(formData.get("data"));
@@ -708,17 +829,52 @@
                     updateRowIds(result);
                     updateImage(result.teamPhotoPath, "teamPhoto", "teamPhotoDropzone")
                     updateImage(result.teamLogoPath, "teamLogo", "teamLogoDropzone")
+                    UpdateSponsors(result.sponsorPaths)
+                    console.log(result.sponsorPaths)
+
+                    if(isDraft){
+                        var html = '<div id="saveSuccess" class="col-12 col-sm-12 col-md-4 col-lg-4 alert alert-success">Save as draft successfully completed</div>'
+                        $('#saveMessage').html(html)
+                        setTimeout(function(){
+                            $('#saveMessage').slideUp()
+                        }, 500)
+                    }
+                    else{
+                        var html = '<div class="alert alert-success">Team Information has been submitted to the host. </br>You should receive an email with a copy of the submitted information within the next 10 minutes.  If not received, please check your spam folder. </br> If you have any issues, please contact <a href="mailto:webmaster@iishf.com">IISHF Webmaster</a> </div>'
+
+                        $("submitDraft").hide();
+                        $("submit").hide();
+                    }
                 },
                 error: function (error) {
                     console.log("Error", error);
-                    // Handle error
+                    var html = '<div id="saveSuccess" class="col-12 col-sm-12 col-md-12 col-lg-12 alert alert-danger text-center">There was a problem saving your data. </br>If the problem persists, please contact <a href="mailto:webmaster@iishf.com">IISHF Webmaster</a> </div>'
+                    $('#saveMessage').html(html)
+                   
                 }
             });
-        
+
         }
 
+        function UpdateSponsors(sponsors) {
 
-        function updateImage(imagePath, elementId, dropzoneId){
+            $('#sponsor-images').empty();
+
+            // Loop through each sponsor in the array
+            $.each(sponsors, function (index, sponsor) {
+                // Create the HTML string for each sponsor
+                var sponsorHtml = '<div id=sponsor-' + sponsor.id + ' class="col-12 col-sm-12 col-md-4 col-lg-4 mt-3">' +
+                    '<img id="' + sponsor.id + '" class="img img-fluid" src="' + sponsor.path + '" />' +
+                    '<span class="btn btn-danger w-100 mt-2" onclick="deleteImage(' + sponsor.id + ', ' + sponsor.mediaId + ')">Delete</span>' +
+                    '</div>';
+
+                // Append the new sponsor HTML to the sponsor-images div
+                $('#sponsor-images').append(sponsorHtml);
+            });
+            clearDropzoneById("multipleFilesDropzone");
+        }
+
+        function updateImage(imagePath, elementId, dropzoneId) {
             var imageElement = $('#' + elementId);
             imageElement.attr('src', imagePath);
             clearDropzoneById(dropzoneId);
@@ -728,6 +884,23 @@
             var myDropzone = Dropzone.forElement('#' + dropzoneId);
             myDropzone.removeAllFiles(true);
         }
+
+        function showOverlay() {
+            $(this).closest('.sponsor-container').find('.image-overlay').css('display', 'flex');
+        }
+
+        // Function to hide the overlay
+        function hideOverlay() {
+            $(this).closest('.sponsor-container').find('.image-overlay').css('display', 'none');
+        }
+
+       
+
+        // Attach the showOverlay function to mouseenter on both the delete button and the overlay itself
+        $('.delete-btn, .image-overlay').mouseenter(showOverlay);
+
+        // Attach the hideOverlay function to mouseleave on the overlay
+        $('.image-overlay').mouseleave(hideOverlay);
 
         function generateJson(isDraft) {
 
@@ -769,11 +942,11 @@
                 var firstName = currentRow.querySelector("td:nth-child(3) span span").textContent.trim();
                 var lastName = currentRow.querySelector("td:nth-child(4) span span").textContent.trim();
                 var dateOfBirth = null;
-                if(isBench){
+                if (isBench) {
                     dateOfBirth = currentRow.querySelector("td:nth-child(5) span span").textContent.trim();
                     var nationality = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
                     var gender = currentRow.querySelector("td:nth-child(7) span span").textContent.trim();
-                }else{
+                } else {
 
                     var jerseyNumber = parseInt(currentRow.querySelector("td:nth-child(5) span span").textContent.trim(), 10);
                     dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
@@ -781,8 +954,8 @@
                     var gender = currentRow.querySelector("td:nth-child(8) span span").textContent.trim();
                 }
 
-                if (dateOfBirth === "01.01.0001" || dateOfBirth === "01.01.1753"){
-                dateOfBirth = null;
+                if (dateOfBirth === "01.01.0001" || dateOfBirth === "01.01.1753") {
+                    dateOfBirth = null;
                 }
 
                 // Split the date into [day, month, year]
@@ -921,6 +1094,25 @@
 
             // Hide the jersey number field for bench officials
             $('#edit-form #jerseyNumber').closest('.form-group').hide();
+
+            // Clear existing role options and add options for bench officials
+            var rolesForBenchOfficial = [
+                "Head Coach",
+                "Assistant Coach",
+                "Bench Staff",
+                "Training Staff",
+                "Equipment Manager",
+                "Physio",
+                "Photographer"
+            ];
+            var $roleSelect = $('#edit-form #role');
+            $roleSelect.empty(); // Remove existing options
+
+            rolesForBenchOfficial.forEach(function (role) {
+                $roleSelect.append($('<option>', { value: role, text: role }));
+            });
+            // Optionally, add a default option
+            $roleSelect.prepend($('<option>', { value: '', text: 'Select Role' }).attr('selected', 'selected'));
         }
 
         function addNewRowFromModal() {
@@ -928,7 +1120,6 @@
             var gender = $('#edit-form #gender').val()
             if (gender === null) {
                 gender = "";
-
             }
 
             var newRowHtml = '<tr data-id="0">' +
@@ -968,11 +1159,13 @@
         var currentRow = null;
 
         $('#data-table').on('click', '.btn-danger', function (event) {
+            console.log("989")
             event.stopPropagation(); // Prevent click event from bubbling up to the row
             deleteRow(this); // Call your deleteRow function
         });
 
         $("#benchOfficials tbody").on("click", "tr", function () {
+            $('#modal-alert').hide();
             currentMode = 'editBenchOfficial';
             currentRow = $(this);
             populateModalForBenchOfficial(currentRow);
@@ -980,22 +1173,63 @@
         });
 
         $('#addRowButton').on('click', function () {
+            $('#modal-alert').hide();
             currentMode = 'addPlayer';
             $("#jerseyNumberFormGroup").show()
             currentRow = null;
             clearModalFields();
             $('#editModal').modal('show');
+
+            // Restore standard role options
+            var standardRoles = [
+                "Captain",
+                "Assistant Captain",
+                "Netminder",
+                "Forward",
+                "Defence"
+                // Add other standard roles as necessary
+            ];
+            var $roleSelect = $('#edit-form #role');
+            $roleSelect.empty(); // Remove existing options
+            standardRoles.forEach(function (role) {
+                $roleSelect.append($('<option>', { value: role, text: role }));
+            });
+
+            // Optionally, add a default option
+            $roleSelect.prepend($('<option>', { value: '', text: 'Select Role' }).attr('selected', 'selected'));
+
+            $('#editModal').modal('show');
         });
 
         $('#addBenchOfficialButton').on('click', function () {
+            $('#modal-alert').hide();
             currentMode = 'addbenchOfficial';
             $("#jerseyNumberFormGroup").hide()
             currentRow = null;
             clearModalFields();
             $('#editModal').modal('show');
+
+            // Clear existing role options and add options for bench officials
+            var rolesForBenchOfficial = [
+                "Head Coach",
+                "Assistant Coach",
+                "Bench Staff",
+                "Training Staff",
+                "Equipment Manager",
+                "Physio",
+                "Photographer"
+            ];
+            var $roleSelect = $('#edit-form #role');
+            $roleSelect.empty(); // Remove existing options
+            rolesForBenchOfficial.forEach(function (role) {
+                $roleSelect.append($('<option>', { value: role, text: role }));
+            });
+            // Optionally, add a default option
+            $roleSelect.prepend($('<option>', { value: '', text: 'Select Role' }).attr('selected', 'selected'));
         });
 
         $("#data-table tbody").on("click", "tr", function () {
+            $('#modal-alert').hide();
             currentMode = 'editPlayer';
             currentRow = $(this);
             populateModalFromRow(currentRow);
@@ -1006,7 +1240,61 @@
             $('#edit-form').find('input[type="text"], select').val('');
         }
 
+        function validatePlayerFields(validateJerseyNumber) {
+            let missingFields = [];
+            // Clear previous validation errors
+            $('#firstName, #lastName, #jerseyNumber, #role').removeClass('is-invalid');
+            $('#validationErrors').empty(); // Clear previous error messages
+
+
+            if (!$('#firstName').val()) {
+                $('#firstName').addClass('is-invalid');
+                missingFields.push('First Name');
+            }
+            if (!$('#lastName').val()) {
+                $('#lastName').addClass('is-invalid');
+                missingFields.push('Last Name');
+            }
+            if (validateJerseyNumber) {
+                if (!$('#jerseyNumber').val()) {
+                    $('#jerseyNumber').addClass('is-invalid');
+                    missingFields.push('Jersey Number');
+                }
+            }
+
+            // Check for role selection
+            if ($('#role').val() === '') {
+                $('#role').addClass('is-invalid');
+                missingFields.push('Role');
+            }
+
+            return missingFields; // Return the list of missing fields
+        }
+
+
         $("#saveChanges").on("click", function () {
+            var missingFields;
+            if (currentMode === 'addPlayer' || currentMode === 'editPlayer') {
+                missingFields = validatePlayerFields(true);
+            }
+
+            if (currentMode === 'addbenchOfficial' || currentMode === 'editBenchOfficial') {
+                missingFields = validatePlayerFields(false);
+            }
+
+            if (missingFields.length > 0) {
+                // Populate the validationErrors div with missing fields as bullet points
+                let errorList = '<ul>';
+                missingFields.forEach(function (field) {
+                    errorList += `<li>${field} is required</li>`;
+                });
+                errorList += '</ul>';
+                $('#modal-alert').html(errorList);
+                $('#modal-alert').slideDown()
+                return; // Prevent further execution
+            }
+
+            $('#modal-alert').slideUp()
 
             if (currentRow) {
                 if (currentMode === 'editPlayer') {
@@ -1042,6 +1330,8 @@
         // Handle the save button click
         $(".close-edit").on("click", function () {
             // TODO: Add code to handle the form data, e.g., send an AJAX request
+            $('#firstName, #lastName, #jerseyNumber, #role').removeClass('is-invalid');
+            $('#validationErrors').empty(); // Clear previous error messages
             $('#editModal').modal('hide');
         });
 
@@ -1049,6 +1339,8 @@
         $(window).on("click", function (event) {
             var modal = $("#edit-modal");
             if ($(event.target).is(modal)) {
+                $('#firstName, #lastName, #jerseyNumber, #role').removeClass('is-invalid');
+                $('#validationErrors').empty(); // Clear previous error messages
                 modal.hide();
             }
         });
@@ -1057,7 +1349,8 @@
         $("#edit-form").on("submit", function (event) {
             event.preventDefault();
             // TODO: Add code to handle the form data, e.g., send an AJAX request
-
+            $('#firstName, #lastName, #jerseyNumber, #role').removeClass('is-invalid');
+            $('#validationErrors').empty(); // Clear previous error messages
             $("#edit-modal").hide();
         });
 
@@ -1153,61 +1446,17 @@
             pickr2.setColor(newColor); // Update the color picker with the new color
         });
 
-        function deleteRow(button) {
-            // Find the row containing the clicked button
-            var row = $(button).closest('tr');
-
-            // Extract the license number from the span
-            var licenseNumber = row.find("td:eq(0) span span").text().trim();
-
-            // Add the license number to the array (if it's not empty)
-            if (licenseNumber) {
-                deletedLicenseNumbers.push(licenseNumber);
-            }
-            var titleEvent = $('#shortCode').val()
-            var rosterId = row.data('id')
-            var eventSelectValue = $("#eventSelect").val();
-            var isChampionship = eventSelectValue.toLowerCase().includes("championship");
-
-            var startDateText = $("#startDate").text();
-            var eventYear = ''
-
-            if (startDateText) {
-                var parts = startDateText.split('.');
-
-                if (parts.length >= 3) {
-                    eventYear = parts[2];
-                } else {
-                    console.log("The date format is not as expected.");
-                }
-            } else {
-                console.log("No text found for #startDate.");
-            }
-
-            var teamName = $("#teamName").val()
-
-            var url = `/api/events/team-information-submission/team/titel-event/${titleEvent}/championship/${isChampionship}/year/${eventYear}/team/${teamName}/roster-member/${rosterId}`
-            var encodedUrl = encodeURI(url);
-            $.ajax({
-                url: encodedUrl,
-                type: 'DELETE',
-                success: function (data) {
-                    // Remove the row from the table
-                    row.remove();
-                },
-                error: function (xhr, status, error) {
-                    console.error("Error: " + error);
-                    // Show alert that something went wrong
-                }
-            });
-        }
-
+        $('#data-table').on('click', '.btn-danger', function (event) {
+            console.log("deleting row")
+            event.stopPropagation(); // Prevent click event from bubbling up to the row
+            deleteRow(this); // Call your deleteRow function
+        });
 
     @{
         if (selectedTournament != null && @selectedTournament.Id > 0)
         {
             <text>
-                                                    var selectedValue = @selectedTournament.Id;
+                                                                            var selectedValue = @selectedTournament.Id;
                 $('#eventSelect').val(selectedValue).change();
                 $('#eventSelect').prop('disabled', true);
 
@@ -1240,5 +1489,5 @@
         }
     }
 
-        });
+                });
 </script>

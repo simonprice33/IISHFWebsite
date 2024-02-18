@@ -1,0 +1,91 @@
+Team Information Submission AC
+
+Given when I open the team information submission page 
+And I have a team Id in the url 
+Then I should get basic team information on load
+And I should see event information
+
+Given when I select a team colour
+Then the text fields should represent the hexadecimal colour 
+
+Given when I add text in to the rich text editor for team history 
+Then when I click save draft the infomration is saved. 
+
+Given when I click add player 
+Then a modal will open. 
+
+Given when I add a player 
+When I add First Name, Last Name and Jersery 
+And Then I click Add
+The player information will appear in the players table
+
+Given when I add a player 
+When I fail to add any of the following First Name, Last Name and Jersery 
+And Then I click Add
+Then I will be given a validation error
+The modal will not close and will not add the player to the table
+
+Given when I click add player 
+Then a modal will open. 
+
+Given when I add a bench official 
+When I add First Name, Last Name 
+And Then I click Add
+The bench official  information will appear in the players table
+
+Given when I add a bench official  
+When I fail to add any of the following First Name, Last Name
+And Then I click Add
+Then I will be given a validation error
+The modal will not close and will not add the bench official to the table
+
+Given when I add a team photo using the drop zone
+Then I should should see a small preview of what is uploaded
+
+Given when I add a team photo and I have clicked save draft
+Then the team photo should should show under the drop zone
+
+Given when I add a team logo using the drop zone
+Then I should should see a small preview of what is uploaded
+
+Given when I add a team logo and I have clicked save draft
+Then the team logo should should show under the drop zone
+
+Given when I add a single sponsor using the drop zone
+Then I should should see a small preview of what is uploaded
+
+Given when I add a single sponsor and I have clicked save draft
+Then the sponsor should should show under the drop zone
+
+Given when I add a multiple sponsors using the drop zone
+Then I should should see a small preview of what is uploaded
+
+Given when I add a multiple sponsors and I have clicked save draft
+Then the sponsors should should show under the drop zone
+
+Given I already have an existing sponsor
+When I add a new sponsor image and click safe draft
+Then I should see the new sponsor image added to the list of images
+
+Given when I have one or more sponsors 
+Then each image should have a remove button under them
+
+Given when I click a delete button under a sponsor image 
+Then I the image should be deleted from the list of sponsors
+
+Given when I click save as draft 
+Then all information on the page should be saved
+And an alert box should be shown to represent the success
+
+Given when I cilck save as draft 
+When there is an error in saving any information 
+an alert box is shown with any \ all errors 
+
+Given when I click submit
+Then all information on the page should be saved
+And an alert box should be shown to represent the success
+And the save \ submit buttons should be removed \ hidden
+
+Given when I cilck sibmit 
+When there is an error in saving any information 
+an alert box is shown with any \ all errors

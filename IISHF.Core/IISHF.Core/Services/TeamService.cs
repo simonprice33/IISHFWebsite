@@ -100,6 +100,27 @@ namespace IISHF.Core.Services
             await AddImageToTeam(image, nmaTeam, propertyAlias);
         }
 
+        public async Task DeleteSponsor(int sponsorId, int mediaId, IPublishedContent team)
+        {
+            if (team != null)
+            {
+                await Task.Run(() =>
+                {
+                    var nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
+
+                    var sponsor = nmaTeam.Children().FirstOrDefault(x => x.Id == sponsorId);
+                    var img = _contentService.GetById(sponsorId);
+
+                    var media = _umbracoMediaService.GetById(mediaId);
+
+                    _contentService.Delete(img);
+                    _umbracoMediaService.Delete(media);
+
+                    return Task.CompletedTask;
+                });
+            }
+        }
+
         public async Task AddImageToTeam(IMedia image, IContent team, string propertyAlias)
         {
             if (team != null)

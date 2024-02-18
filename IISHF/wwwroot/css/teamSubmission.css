@@ -1,0 +1,33 @@
+﻿.sponsor-container {
+    position: relative;
+    display: inline-block;
+}
+
+.image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+    color: white;
+    display: none; /* Initially hidden */
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: all 0.5s; /* Smooth transition for better UX */
+}
+
+.img-fluid {
+    width: 100%; /* Responsive image */
+    height: auto;
+}
+
+.delete-btn {
+    display: block;
+    margin-top: 10px; /* Space above the button */
+    text-align: center;
+    cursor: pointer;
+    color: white;
+    padding: 10px;
+}
