@@ -384,6 +384,10 @@
                                 {
                                     <img id="teamPhoto" class="img img-fluid" src="@photo.Url()"/>
                                 }
+                                else
+                                {
+                                    <img id="teamPhoto" class="img img-fluid" src="" />                                    
+                                }
                             }
                         }
                     </div>
@@ -408,6 +412,10 @@
                                 if (logo != null)
                                 {
                                     <img id="teamLogo" class="img img-fluid" src="@logo.Url()" />
+                                }
+                                else
+                                {
+                                    <img id="teamLogo" class="img img-fluid" src="" />                                    
                                 }
                             }
                         }
@@ -839,13 +847,42 @@
                 return member.JerseyNumber !== undefined && member.JerseyNumber !== null;
             });
 
+            var errors = []
+
             if (!hasPlayers) {
                 console.log("");
-                var html = '<div id="saveSuccess" class="col-12 col-sm-12 col-md-12 col-lg-12 alert alert-danger text-center">No players found, only bench officials.</div>'
-                $('#saveMessage').html(html)
-                // Optionally, inform the user or handle this case as needed
-                return; // Exit the function to prevent AJAX call
+                errors.push("No players found")
             }
+
+            var dzInstance = Dropzone.forElement("#teamLogoDropzone");
+            var teamLogoCount = dzInstance.files.length;
+            if ($.trim($("#teamLogo").attr("src")) === "" && teamLogoCount === 0) {
+                errors.push("Team Logo not found")
+            }
+
+
+            var dzInstance = Dropzone.forElement("#teamPhotoDropzone");
+            var teamPhotoCount = dzInstance.files.length;
+
+            if ($.trim($("#teamPhoto").attr("src")) === "" && teamPhotoCount === 0) {
+                errors.push("Team Photo not found")
+            }
+
+            if(errors.length > 0){
+            
+                var html = '<div id="saveSuccess" class="col-12 col-sm-12 col-md-12 col-lg-12 alert alert-danger text-center">'
+                html += '<ul>'
+                errors.forEach(function(error){
+                html += '<li>' + error + '</li>'
+                })
+                html += '</ul>'
+
+                html += '</div>'
+                $('#saveMessage').html(html)
+                return;
+            
+            }
+
 
             console.log("FormData data:");
             console.log(formData.get("data"));
@@ -891,6 +928,8 @@
                         $("#addBenchOfficialButton").hide();
                         $(".dropzone").hide();
                         $('.input-group.mb-3').find('button, input').prop('disabled', true);
+                        $('#teamHistory').summernote('disable');
+                        
                     }
                 },
                 error: function (error) {
