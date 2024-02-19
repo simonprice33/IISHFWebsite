@@ -136,14 +136,14 @@
                 <a class="nav-link mb-3 p-3 shadow" id="v-pills-sponsors-tab" data-bs-toggle="pill" href="#v-pills-sponsors" role="tab" aria-controls="v-players-sponsors" aria-selected="true">
                     <span class="font-weight-bold small text-uppercase">Sponsors</span>
                 </a>
-                        @{
-                            if (!isSubmitted)
-                            {
-                                <a class="nav-link mb-3 p-3 shadow" id="v-pills-submit-tab" data-bs-toggle="pill" href="#v-pills-submit" role="tab" aria-controls="v-submit-submit" aria-selected="true">
-                                    <span class="font-weight-bold small text-uppercase">Submit</span>
-                                </a>
-                            }
-                        }
+                @{
+                    if (!isSubmitted)
+                    {
+                        <a class="nav-link mb-3 p-3 shadow" id="v-pills-submit-tab" data-bs-toggle="pill" href="#v-pills-submit" role="tab" aria-controls="v-submit-submit" aria-selected="true">
+                            <span class="font-weight-bold small text-uppercase">Submit</span>
+                        </a>
+                    }
+                }
             </div>
 
         </div>
@@ -235,7 +235,12 @@
                                     <th>Date of Birth</th>
                                     <th>Nationality</th>
                                     <th>Gender</th>
-                                    <th></th>
+                                    @{
+                                        if (!isSubmitted)
+                                        {
+                                            <th></th>
+                                        }
+                                    }
                                 </tr>
                             </thead>
                             <tbody id="formRows">
@@ -277,12 +282,16 @@
 
                                             <span>@players[i].Value("gender")</span>
                                         </td>
-                                        <td>
-                                            <button type="button" class="btn btn-danger delete-btn" onclick="event.stopPropagation(); deleteRow(this);">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-
-                                        </td>
+                                        @{
+                                            if (!isSubmitted)
+                                            {
+                                                <td>
+                                                    <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); deleteRow(this)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>                                            
+                                            }
+                                        }
                                     </tr>
                                 }
                             </tbody>
@@ -291,7 +300,7 @@
                     @{
                         if (!isSubmitted)
                         {
-                            <button id="addRowButton" type="button">Add Row</button>                            
+                            <button id="addRowButton" type="button">Add Row</button>
                         }
                     }
 
@@ -308,7 +317,12 @@
                                 <th>Date of Birth</th>
                                 <th>Nationality</th>
                                 <th>Gender</th>
-                                <th></th>
+                                @{
+                                    if (!isSubmitted)
+                                    {
+                                        <th></th>
+                                    }
+                                }
                             </tr>
                         </thead>
                         <tbody id="formRowsBench">
@@ -346,11 +360,16 @@
                                     <td>
                                         <span>@benchOfficials[i].Value("gender")</span>
                                     </td>
-                                    <td>
-                                        <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); deleteRow(this)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
+                                    @{
+                                        if (!isSubmitted)
+                                        {
+                                            <td>
+                                                <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); deleteRow(this)">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>                                            
+                                        }
+                                    }
                                 </tr>
                             }
                         </tbody>
@@ -369,7 +388,7 @@
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-teamphoto" role="tabpanel" aria-labelledby="v-pills-teamphoto-tab">
                     <div>
-                        
+
                         @{
                             if (!isSubmitted)
                             {
@@ -382,7 +401,7 @@
                                 var photo = nmaTeam.Value<IPublishedContent>("teamPhoto");
                                 if (photo != null)
                                 {
-                                    <img id="teamPhoto" class="img img-fluid" src="@photo.Url()"/>
+                                    <img id="teamPhoto" class="img img-fluid" src="@photo.Url()" />
                                 }
                                 else
                                 {
@@ -404,7 +423,7 @@
                                 <form action="/upload-team-logo" class="dropzone" id="teamLogoDropzone"></form>
                             }
                         }
-                       
+
                         @{
                             if (nmaTeam != null)
                             {
@@ -415,7 +434,7 @@
                                 }
                                 else
                                 {
-                                    <img id="teamLogo" class="img img-fluid" src="" />                                    
+                                    <img id="teamLogo" class="img img-fluid" src="" />
                                 }
                             }
                         }
@@ -430,7 +449,7 @@
                                 <form action="/upload-multiple-files" class="dropzone" id="multipleFilesDropzone"></form>
                             }
                         }
-                        
+
                         <div class="row" id="sponsor-images">
                             @{
                                 if (nmaTeam != null)
@@ -440,7 +459,7 @@
                                     foreach (var sponsor in sponsors)
                                     {
                                         var logo = sponsor.Value<IPublishedContent>("sponsorImage");
-                                        // when sponsor is added it has a media id and then when its attached to the nma it has a nma id. 
+                                        // when sponsor is added it has a media id and then when its attached to the nma it has a nma id.
                                         // Need to delete the media and the link to the the team
                                         var id = @sponsor.Id;
                                         if (logo != null)
@@ -449,7 +468,7 @@
                                                 <div class="image-overlay" style="display:none;">
                                                     <span class="btn btn-danger mt-2" onclick="deleteImage(@id, @logo.Id)">Delete</span>
                                                 </div>
-                                                <img id="@id" data-media="@logo.Id" class="img img-fluid delete-btn" src="@logo.Url()"/>
+                                                <img id="@id" data-media="@logo.Id" class="img img-fluid delete-btn" src="@logo.Url()" />
 
                                             </div>
                                         }
@@ -629,7 +648,7 @@
         var titleEvent = $('#shortCode').val()
         var eventSelectValue = $("#eventSelect").val();
         var isChampionship = eventSelectValue.toLowerCase().includes("championship");
-               
+
         var startDateText = $("#startDate").text();
         var eventYear = ''
 
@@ -684,7 +703,7 @@
         if (nmaTeam != null && !string.IsNullOrWhiteSpace(nmaTeam.Value<string>("teamHistory")))
         {
             <text>
-                                                        var teamHistoryContent = @Html.Raw(JsonSerializer.Serialize(nmaTeam.Value<string>("teamHistory")));
+                            var teamHistoryContent = @Html.Raw(JsonSerializer.Serialize(nmaTeam.Value<string>("teamHistory")));
                 $('#teamHistory').summernote('code', teamHistoryContent);
             </text>
         }
@@ -746,7 +765,7 @@
                     });
                 }
             });
-    }
+        }
 
 
         if ($("#teamLogoDropzone").length) {
@@ -814,7 +833,7 @@
                 dictDefaultMessage: "Drag and drop multiple files here or click",
             });
         }
-       
+
         $('#submitDraft').click(function (e) {
             e.preventDefault();
             submit(true)
@@ -868,19 +887,19 @@
                 errors.push("Team Photo not found")
             }
 
-            if(errors.length > 0){
-            
+            if (errors.length > 0) {
+
                 var html = '<div id="saveSuccess" class="col-12 col-sm-12 col-md-12 col-lg-12 alert alert-danger text-center">'
                 html += '<ul>'
-                errors.forEach(function(error){
-                html += '<li>' + error + '</li>'
+                errors.forEach(function (error) {
+                    html += '<li>' + error + '</li>'
                 })
                 html += '</ul>'
 
                 html += '</div>'
                 $('#saveMessage').html(html)
                 return;
-            
+
             }
 
 
@@ -911,14 +930,14 @@
                     UpdateSponsors(result.sponsorPaths)
                     console.log(result.sponsorPaths)
 
-                    if(isDraft){
+                    if (isDraft) {
                         var html = '<div id="saveSuccess" class="col-12 col-sm-12 col-md-4 col-lg-4 alert alert-success">Save as draft successfully completed</div>'
                         $('#saveMessage').html(html)
-                        setTimeout(function(){
+                        setTimeout(function () {
                             $('#saveMessage').slideUp()
                         }, 500)
                     }
-                    else{
+                    else {
                         var html = '<div class="alert alert-success">Team Information has been submitted to the host. </br>You should receive an email with a copy of the submitted information within the next 10 minutes.  If not received, please check your spam folder. </br> If you have any issues, please contact <a href="mailto:webmaster@iishf.com">IISHF Webmaster</a> </div>'
                         $('#saveMessage').html(html)
                         $("#submitDraft").hide();
@@ -929,14 +948,14 @@
                         $(".dropzone").hide();
                         $('.input-group.mb-3').find('button, input').prop('disabled', true);
                         $('#teamHistory').summernote('disable');
-                        
+
                     }
                 },
                 error: function (error) {
                     console.log("Error", error);
                     var html = '<div id="saveSuccess" class="col-12 col-sm-12 col-md-12 col-lg-12 alert alert-danger text-center">There was a problem saving your data. </br>If the problem persists, please contact <a href="mailto:webmaster@iishf.com">IISHF Webmaster</a> </div>'
                     $('#saveMessage').html(html)
-                   
+
                 }
             });
 
@@ -979,8 +998,6 @@
         function hideOverlay() {
             $(this).closest('.sponsor-container').find('.image-overlay').css('display', 'none');
         }
-
-       
 
         // Attach the showOverlay function to mouseenter on both the delete button and the overlay itself
         $('.delete-btn, .image-overlay').mouseenter(showOverlay);
@@ -1250,14 +1267,6 @@
             deleteRow(this); // Call your deleteRow function
         });
 
-        $("#benchOfficials tbody").on("click", "tr", function () {
-            $('#modal-alert').hide();
-            currentMode = 'editBenchOfficial';
-            currentRow = $(this);
-            populateModalForBenchOfficial(currentRow);
-            $('#editModal').modal('show');
-        });
-
         $('#addRowButton').on('click', function () {
             $('#modal-alert').hide();
             currentMode = 'addPlayer';
@@ -1314,14 +1323,6 @@
             $roleSelect.prepend($('<option>', { value: '', text: 'Select Role' }).attr('selected', 'selected'));
         });
 
-        $("#data-table tbody").on("click", "tr", function () {
-            $('#modal-alert').hide();
-            currentMode = 'editPlayer';
-            currentRow = $(this);
-            populateModalFromRow(currentRow);
-            $('#editModal').modal('show');
-        });
-
         function clearModalFields() {
             $('#edit-form').find('input[type="text"], select').val('');
         }
@@ -1356,7 +1357,6 @@
 
             return missingFields; // Return the list of missing fields
         }
-
 
         $("#saveChanges").on("click", function () {
             var missingFields;
@@ -1400,7 +1400,6 @@
             $('#editModal').modal('hide');
             clearModalFields();
         });
-
 
         function addRowToPlayer() {
             // Clear the form fields in the modal
@@ -1538,21 +1537,46 @@
             deleteRow(this); // Call your deleteRow function
         });
 
-        @{
-            if (isSubmitted)
-            {
-                <text>
-                    $('.input-group.mb-3').find('button, input').prop('disabled', true);
+    @{
+        if (isSubmitted)
+        {
+            <text>
+                $('.input-group.mb-3').find('button, input').prop('disabled', true);
                 $('#teamHistory').summernote('disable');
-                 </text>
-            }
-            }
 
-            @{
+            </text>
+        }
+
+        else
+        {
+            <text>
+                    // Prevent when submitted
+                    $("#data-table tbody").on("click", "tr", function () {
+                        console.log("shouldnt see this")
+                        $('#modal-alert').hide();
+                        currentMode = 'editPlayer';
+                        currentRow = $(this);
+                        populateModalFromRow(currentRow);
+                        $('#editModal').modal('show');
+                    });
+
+                // Prevent when submitted
+                $("#benchOfficials tbody").on("click", "tr", function () {
+                    $('#modal-alert').hide();
+                    currentMode = 'editBenchOfficial';
+                    currentRow = $(this);
+                    populateModalForBenchOfficial(currentRow);
+                    $('#editModal').modal('show');
+                });
+            </text>
+        }
+                }
+
+        @{
         if (selectedTournament != null && @selectedTournament.Id > 0)
         {
             <text>
-                                                                            var selectedValue = @selectedTournament.Id;
+                                                                                        var selectedValue = @selectedTournament.Id;
                 $('#eventSelect').val(selectedValue).change();
                 $('#eventSelect').prop('disabled', true);
 
@@ -1585,5 +1609,5 @@
         }
     }
 
-                });
+    });
 </script>
