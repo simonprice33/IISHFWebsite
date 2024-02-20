@@ -223,11 +223,32 @@
                                             <div class="flex-cell">
                                                 @if (teamInformationSubmittedDate != null)
                                                 {
-                                                    string itcLink = invitation.ITCStatus == "Not submitted" ? "/itc?team=@invitation.EventTeamId" : "/itc?team=@invitation.EventTeamId&create-new=true";
-                                                    <span class="badge @(invitation.ITCStatus == "Not submitted" ? "bg-success" : "bg-warning") text-white">@(invitation.ITCStatus == "Not submitted" ? "Create / Update" : "Submitted")</span>
-                                                    @if (invitation.ITCStatus != "Not submitted")
+                                                    if (teamInformationSubmittedDate != null && invitation.ITCStatus == "Not submitted")
                                                     {
-                                                        <a href="@itcLink" class="badge bg-warning text-dark">Unsubmit and Create New</a>
+                                                        var link = $"/itc?team={invitation.EventTeamId}";
+                                                        <span class="badge bg-success white">
+                                                            <a href="@link" class="text-white" style="text-decoration: none">Create \ Update</a>
+                                                        </span>
+                                                    }
+                                                    if (teamInformationSubmittedDate != null && invitation.ITCStatus == "Pending NMA Approval")
+                                                    {
+                                                        var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
+                                                        <span class="badge bg-success white">
+                                                            Submitted
+                                                        </span>
+                                                        <span class="badge bg-warning white">
+                                                            <a href="@link" class="black" style="text-decoration: none">Unsubmit and Create New</a>
+                                                        </span>
+                                                    }
+                                                    if (teamInformationSubmittedDate != null && invitation.ITCStatus == "NMA Approved - Pending IISHF Approval")
+                                                    {
+                                                        var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
+                                                        <span class="badge bg-success white">
+                                                            Submitted
+                                                        </span>
+                                                        <span class="badge bg-warning white">
+                                                            <a href="@link" class="black" style="text-decoration: none">Unsubmit and Create New</a>
+                                                        </span>
                                                     }
                                                 }
                                             </div>
