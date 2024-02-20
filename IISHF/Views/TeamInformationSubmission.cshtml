@@ -133,9 +133,18 @@
                 <a class="nav-link mb-3 p-3 shadow" id="v-pills-logo-tab" data-bs-toggle="pill" href="#v-pills-logo" role="tab" aria-controls="v-players-logo" aria-selected="true">
                     <span class="font-weight-bold small text-uppercase">Club Logo</span>
                 </a>
-                <a class="nav-link mb-3 p-3 shadow" id="v-pills-sponsors-tab" data-bs-toggle="pill" href="#v-pills-sponsors" role="tab" aria-controls="v-players-sponsors" aria-selected="true">
-                    <span class="font-weight-bold small text-uppercase">Sponsors</span>
-                </a>
+                
+                @{
+                    var hasSponsor = nmaTeam.Children().Any(x => x.ContentType.Alias == "sponsor");
+                    if (!isSubmitted || (hasSponsor && hasSponsor))
+                    {
+                        <a class="nav-link mb-3 p-3 shadow" id="v-pills-sponsors-tab" data-bs-toggle="pill" href="#v-pills-sponsors" role="tab" aria-controls="v-players-sponsors" aria-selected="true">
+                            <span class="font-weight-bold small text-uppercase">Sponsors</span>
+                        </a>
+                    }
+                }
+
+               
                 @{
                     if (!isSubmitted)
                     {

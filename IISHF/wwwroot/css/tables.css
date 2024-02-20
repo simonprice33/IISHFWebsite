@@ -23,3 +23,130 @@
         text-align: right;
     }
 }
+
+/*Flex*/
+/*.flex-table {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.flex-table-header {
+  display: none;*/ /* Hide the header on small screens */
+/*}
+
+.flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #eee;*/ /* Optional border for rows */
+/*}
+
+.flex-cell {
+  flex: 1;
+  padding: 8px;
+  min-width: 150px;*/ /* Minimum width for cells */
+/*}
+
+.badge {
+  display: block;
+  margin-top: 4px;
+}*/
+
+/* Base Flexbox styles */
+
+
+/* Desktop view */
+@media (min-width: 1367px) {
+
+    .flex-table {
+        display: flex;
+        flex-direction: column;
+        width: 95%;
+    }
+
+    .flex-row {
+        display: flex;
+        flex-direction: row;
+    }
+
+    .flex-cell-header, .flex-cell {
+        text-align: center;
+        padding: 5px;
+        box-sizing: border-box;
+    }
+
+    .flex-cell-header {
+        flex: 0 0 20%; /* adjust the percentage based on your number of columns */
+        background-color: #f2f2f2;
+    }
+
+    .flex-cell {
+        flex: 0 0 20%; /* this should match the header cell width */
+    }
+
+    .flex-table-header {
+        width: 100%;
+        display: flex;
+    }
+
+    .flex-table-body .flex-row {
+        display: flex;
+        width: 100%;
+    }
+}
+
+/* Mobile view */
+@media (max-width: 1366px) {
+    .flex-table {
+        width: 100%; /* Full width on mobile */
+    }
+
+    .flex-table-header {
+        display: none; /* Hide the header on mobile */
+    }
+
+    .flex-row {
+        flex-direction: column; /* Stack cells vertically on mobile */
+    }
+
+    .flex-cell {
+        flex: 0 0 100%; /* Each cell takes full width on mobile */
+        text-align: left; /* Align text to the left on mobile */
+        padding: 5px 10px; /* Adjust padding on mobile */
+        min-width: auto; /* Reset min-width for mobile */
+    }
+    .badge {
+        width: 100% !important;
+    }
+}
+
+/* Mobile view */
+@media (max-width: 428px) {
+    /*Flex*/
+    .flex-table {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .flex-table-header {
+        display: none; /* Hide the header on small screens */
+    }
+
+    .flex-row {
+        display: flex;
+        flex-wrap: wrap;
+        border-bottom: 1px solid #eee; /* Optional border for rows */
+    }
+
+    .flex-cell {
+        flex: 1;
+        padding: 8px;
+        min-width: 150px; /* Minimum width for cells */
+    }
+
+    .badge {
+        width: 100% !important;
+    }
+}
+
