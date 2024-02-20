@@ -1,1 +1,25 @@
-﻿
+﻿#data-table .tablesaw-cell-content,
+#benchOfficials .tablesaw-cell-content {
+    min-height: 20px; /* Adjust as needed */
+    white-space: normal; /* Allow text wrapping if needed */
+}
+
+#data-table tr,
+#benchOfficials tr {
+    border-bottom: 1px solid #ccc; /* Adjust color and style as needed */
+}
+
+@media (max-width: 480px) {
+    #data-table .tablesaw-cell-content span,
+    #benchOfficials .tablesaw-cell-content span {
+        display: block;
+        text-align: right;
+        width:100%;
+        margin-left: 20px
+    }
+
+    #data-table th,
+    #benchOfficials th {
+        text-align: right;
+    }
+}
