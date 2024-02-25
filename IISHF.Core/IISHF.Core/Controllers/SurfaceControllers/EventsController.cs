@@ -203,8 +203,19 @@ namespace IISHF.Core.Controllers.SurfaceControllers
                 .Select(x => x.Children.FirstOrDefault(x => x.Name == "2024"))
                 .ToList();
 
-            var selectedEvent = cups.Where(x => x != null).ToList().Concat(championships.Where(x => x != null).ToList())
-                .FirstOrDefault(x => x.Id == id);
+            var nonTitle = tournaments
+                .FirstOrDefault(x => x.Name == "None Title Events")
+                .Children()
+                .ToList();
+
+            var allEvents = cups.Where(x => x != null).ToList()
+                .Concat(championships.Where(x => x != null)
+                    .Concat(nonTitle)
+                    .ToList());
+
+                
+
+            var selectedEvent = allEvents.FirstOrDefault(x => x.Id == id);
 
 
             if (selectedEvent == null)
@@ -217,7 +228,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
             var model = new ITCEventInformationViewModel
             {
                 EventName = selectedEvent.Parent.Name,
-                AgeGroup = selectedEvent.Parent.Value<string>("AgeGroup"),
+                AgeGroup = selectedEvent.Parent.Value<string>("AgeGroup") ?? selectedEvent.Value<string>("AgeGroup"),
                 ShortCode = selectedEvent.Parent.Value<string>("EventShotCode"),
                 EvenLocation = selectedEvent.Value<string>("venueAddress"),
                 EventStartDate = selectedEvent.Value<DateTime>("eventStartDate"),

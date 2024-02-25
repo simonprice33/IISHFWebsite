@@ -2,6 +2,6 @@
 {
     public interface IMessageSender
     {
-        Task SendMessage<T>(T submittedInformation, string subject);
+        Task SendMessage<T>(T serviceBusMessage, string subject);
     }
 }

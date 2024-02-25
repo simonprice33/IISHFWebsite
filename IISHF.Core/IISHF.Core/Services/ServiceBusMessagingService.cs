@@ -16,14 +16,14 @@ namespace IISHF.Core.Services
             _serviceBusSettings = serviceBusSettings.Value;
         }
 
-        public async Task SendMessage<T>(T submittedInformation, string subject)
+        public async Task SendMessage<T>(T serviceBusMessage, string subject)
         {
             await using ServiceBusClient client = new ServiceBusClient(_serviceBusSettings.ConnectionString);
             var sender = client.CreateSender(_serviceBusSettings.Topic);
 
             try
             {
-                var messageBody = JsonSerializer.Serialize(submittedInformation);
+                var messageBody = JsonSerializer.Serialize(serviceBusMessage);
                 var message = new ServiceBusMessage(Encoding.UTF8.GetBytes(messageBody))
                 {
                     ApplicationProperties =

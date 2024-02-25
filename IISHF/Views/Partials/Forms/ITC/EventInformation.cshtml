@@ -88,7 +88,9 @@
             }
 
             $('#teamName').val(selectedTeamName).change();
-            $('#teamName').prop('disabled', true);
+            if(selectedTeamName !== ""){
+                $('#teamName').prop('disabled', true);
+            }
 
             </text>
         }
@@ -99,5 +101,42 @@
             $('#teamName').replaceWith(textboxHtml);
             </text>
         }
+
+        var sanctionNumber = $('#sanction')[0].innerHTML;
+
+        // if (sanctionNumber && sanctionNumber.charAt(0) !== 'A') {
+        //     // Add the "Is Guest" column header at ordinal 9 (after 8th column)
+        //     $('<th>Is Guest</th>').insertAfter('#data-table thead tr th:nth-child(8)');
+
+        //     // Add a checkbox in each row for the new column at the same ordinal position
+        //     $('#data-table tbody tr').each(function () {
+        //         var $td = $('<td>');
+        //         var $checkbox = $('<input>', { type: 'checkbox' });
+        //         $td.append($checkbox);
+        //         $td.insertAfter($(this).find('td:nth-child(8)'));
+        //     });
+        // }
+
+        // Define the position for the new column based on zero-based index; 8th position for 9th column.
+        var columnIndex = 8;
+
+        // Check if the "Is Guest" column already exists
+        var isGuestColumnExists = $('#data-table thead tr th').eq(columnIndex).text() === 'Is Guest';
+
+        if (sanctionNumber.charAt(0) !== 'A' && !isGuestColumnExists) {
+            // Add the "Is Guest" column header if it does not exist and sanction number does not start with 'A'
+            $('<th>Is Guest</th>').insertAfter('#data-table thead tr th:nth-child(' + columnIndex + ')');
+            // Add checkbox in each row for the new column
+            $('#data-table tbody tr').each(function () {
+                $('<td>').insertAfter($(this).find('td:nth-child(' + columnIndex + ')')).append($('<input>', { type: 'checkbox' }));
+            });
+        } else if (sanctionNumber.charAt(0) === 'A' && isGuestColumnExists) {
+            // Remove the "Is Guest" column header and its respective data in each row if sanction number starts with 'A'
+            $('#data-table thead tr th:nth-child(' + (columnIndex + 1) + ')').remove(); // +1 because nth-child is 1-based
+            $('#data-table tbody tr').each(function () {
+                $(this).find('td:nth-child(' + (columnIndex + 1) + ')').remove(); // +1 for the same reason
+            });
+        }
+
     });
 </script>

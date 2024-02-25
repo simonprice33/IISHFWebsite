@@ -46,11 +46,25 @@
         .Select(x => x.Children.FirstOrDefault(x => x.Name == eventYear))
         .ToList();
 
-    var allEvents = cups.Where(x => x != null).ToList().Concat(championships.Where(x => x != null).ToList()).ToList().Select(x => new
+    var nonTitle = tournaments
+        .FirstOrDefault(x => x.Name == "None Title Events")
+        .Children()
+        .ToList();
+
+    var allEvents = cups.Where(x => x != null).ToList()
+        .Concat(championships.Where(x => x != null).ToList())
+        .ToList().Select(x => new
+        {
+            EventName = x.Parent.Name,
+            Id = x.Id
+        }).ToList();
+
+
+    foreach (var nonTitleEvent in nonTitle)
     {
-        EventName = x.Parent.Name,
-        Id = x.Id
-    });
+        allEvents.Add(new {EventName = nonTitleEvent.Name, Id = nonTitleEvent.Id});
+    }
+
 
     string[] priorityCountries = { "United Kingdom", "Germany", "Switzerland", "Austria", "Denmark", "Ukraine" };
 
@@ -132,11 +146,13 @@
                 <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-team" role="tabpanel" aria-labelledby="v-pills-team-tab">
                     <div class="row form-group">
                         <label for="teamName" class="col-12 col-md-4 col-form-label">Team Name:</label>
-                        <div class="col-12 col-md-8">
+                        <div class="col-12 col-md-8" style="position: relative;">
                             @{
                                 var teamName = @team?.Name ?? string.Empty;
                             }
-                            <input type="text" class="form-control" placeholder="Team Name" id="teamName" value="@teamName" />
+                            <input type="text" class="form-control" placeholder="Team Name" id="teamName" value="@teamName"/>
+                            <div id="suggestionsContainer"></div>
+
 
                         </div>
                     </div>
@@ -214,7 +230,7 @@
                                     <th>Date of Birth</th>
                                     <th>Nationality</th>
                                     <th>Gender</th>
-                                    <th></th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="formRows">
@@ -264,7 +280,7 @@
                         </table>
                     </div>
                     <button id="addRowButton" type="button">Add Row</button>
-                    <button type="submit" onclick="validateForms()">Validate</button>
+                   
 
                 </div>
 
@@ -279,7 +295,7 @@
                                 <th>Date of Birth</th>
                                 <th>Nationality</th>
                                 <th>Gender</th>
-                                <th></th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="formRowsBench">
@@ -331,8 +347,8 @@
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-submit" role="tabpanel" aria-labelledby="v-pills-submit-tab">
                     <button class="btn btn-warning" type="submit" onclick="validateForms()">Validate</button>
-                    <button class="btn btn-light" onclick="saveAsDraft()">Save Draft</button>
-                    <button class="btn btn-secondary" onclick="submit()">Submit</button>
+                    <button class="btn btn-light" onclick="submit(true)">Save Draft</button>
+                    <button class="btn btn-secondary" onclick="submit(false)">Submit</button>
                     <div id="submissionErrors" class="alert alert-danger mb-3" role="alert">
                     </div>
                 </div>
@@ -402,6 +418,12 @@
                             <option value="Female">Female</option>
                             <!-- Add other gender options here -->
                         </select>
+                    </div>
+                    
+                    <div class="form-group mt-2">
+                        <label for="isGuest">Is Guest:</label>
+                        <!-- Label and select for Gender -->
+                        <input type="checkbox" id="isGuest"/>
                     </div>
 
                     <!-- Add more input fields as necessary -->
@@ -526,9 +548,6 @@
     function validateBenchRow(licenseNumber, firstName, lastName, role, dateOfBirth, nationality, gender, rowIndex) {
 
         var errors = [];
-        if (!licenseNumber || isNaN(parseInt(licenseNumber))) {
-            errors.push('Invalid license number at row ' + (rowIndex + 1));
-        }
 
         if (!firstName || firstName === "") {
             errors.push('Official name first is required');
@@ -565,7 +584,8 @@
 
         // Clear any previous error indicators
         $('#formRows tr').removeClass('table-danger');
-        $('#submissionErrors').empty().hide();
+        $('#submissionErrors').empty();
+
         // Collect all license and jersey numbers
         $('#formRows tr').each(function (index) {
             var currentRow = $(this);
@@ -674,6 +694,7 @@
 
             console.log(allErrors)
         });
+
 
         return isValid;
     }
@@ -785,6 +806,20 @@
         var isValid = true;
         var licenseNumbers = [];
         var jerseyNumbers = [];
+
+        var benchOfficialCount = $('#formRowsBench tr').length;
+        console.log("Number of bench officials: " + benchOfficialCount)
+
+        var sanction = $("#sanction").text();
+        var classification = sanction.charAt(0).toUpperCase(); // Get the first character and convert to uppercase
+        var isTitleEvent = classification === "A";
+
+        if (isTitleEvent && benchOfficialCount === 0) {
+            allErrors.push({
+                name: 'Bench Officials',
+                errors: 'ITC needs at least one bench official.'
+            })
+        }
 
         // Clear any previous error indicators
         $('#formRowsBench tr').removeClass('table-danger');
@@ -938,14 +973,25 @@
 
         validateForm();
         validateBenchForm()
-        // Call the function to check for duplicate license numbers
-        ////checkDuplicateLicenseNumbers()
         checkDuplicatePlayerNameAndLicenseNumber()
         displayValidationErrors(allErrors);
+
+        if (allErrors.length > 0) {
+            return false
+        }
+        if (allErrors.length === 0) {
+            $('#submissionErrors').slideUp();
+        }
+        return true
     }
 
-    function saveAsDraft() {
-        var json = generateJson();
+    function submit(isDraft) {
+
+        if (!isDraft && !validateForms()) {
+            return
+        }
+
+        var json = generateJson(isDraft);
         console.log(JSON.stringify(json));
 
         $.ajax({
@@ -956,7 +1002,7 @@
             dataType: "json",
             success: function (result) {
                 console.log("Sending results to update row ids");
-                updateRowIds(result);
+                //updateRowIds(result);
             },
             error: function (result) {
                 console.log(result);
@@ -982,7 +1028,7 @@
         });
     }
 
-    function generateJson() {
+    function generateJson(isDraft) {
 
         // Retrieve the value of the element with ID 'startDate'
         var startDate = $("#startDate").text();
@@ -1007,22 +1053,37 @@
             "TitleEvent": $('#shortCode').val(), // Assuming you have an input for TitleEvent
             "isChampionship": document.getElementById('isChampionship').checked, // Assuming you have a checkbox for IsChampionship
             "ItcRosterMembers": [],
-            "TeamName": $('#teamName').val() // Assuming you have an input for TeamName
+            "TeamName": $('#teamName').val(), // Assuming you have an input for TeamName
+            "JerseyOne": $('#colourOne').val(),
+            "JerseyTwo": $('#colourTwo').val(),
+            "SubmitToHost": !isDraft
         };
 
         var processRow = function (currentRow, isBench) {
+
             var $currentRow = $(currentRow); // Convert to jQuery object
             var rosterId = $currentRow.data('id');
             var license = currentRow.querySelector("td:nth-child(1) span span").textContent.trim();
             var role = currentRow.querySelector("td:nth-child(2) span span").textContent.trim();
             var firstName = currentRow.querySelector("td:nth-child(3) span span").textContent.trim();
             var lastName = currentRow.querySelector("td:nth-child(4) span span").textContent.trim();
-            var jerseyNumber = currentRow.querySelector("td:nth-child(5) span span").textContent.trim();
-            var dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
-            var nationality = currentRow.querySelector("td:nth-child(7) span span").textContent.trim();
-            var gender = currentRow.querySelector("td:nth-child(8) span span").textContent.trim();
+            var dateOfBirth = null;
+            if (isBench) {
+                dateOfBirth = currentRow.querySelector("td:nth-child(5) span span").textContent.trim();
+                var nationality = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
+                var gender = currentRow.querySelector("td:nth-child(7) span span").textContent.trim();
+            } else {
 
-            var dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
+                var jerseyNumber = parseInt(currentRow.querySelector("td:nth-child(5) span span").textContent.trim(), 10);
+                dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
+                var nationality = currentRow.querySelector("td:nth-child(7) span span").textContent.trim();
+                var gender = currentRow.querySelector("td:nth-child(8) span span").textContent.trim();
+                var isGuest = currentRow.querySelector("td:nth-child(8) span span").textContent.trim() // This will be a font awesome icon.. will need to test its value
+            }
+
+            if (dateOfBirth === "01.01.0001" || dateOfBirth === "01.01.1753") {
+                dateOfBirth = null;
+            }
 
             // Split the date into [day, month, year]
             var parts = dateOfBirth.split(".");
@@ -1030,30 +1091,29 @@
             // Rearrange the parts into yyyy-mm-dd format
             // Note: parts index starts from 0, so parts[0] is day, parts[1] is month, parts[2] is year
             var formattedDate = parts[2] + "-" + parts[1] + "-" + parts[0];
-            debugger
-            if (license || playerName) {
-                formData.ItcRosterMembers.push({
-                    "Id": rosterId,
-                    "License": license,
-                    "firstName": firstName,
-                    "lastName": lastName,
-                    "JerseyNumber": jerseyNumber,
-                    "Role": role,
-                    "IsBenchOfficial": isBench,
-                    "DateOfBirth": formattedDate,
-                    "Nationality": nationality,
-                    "Gender": gender
-                });
-            }
+
+            formData.ItcRosterMembers.push({
+                "Id": rosterId,
+                "License": license,
+                "firstName": firstName,
+                "lastName": lastName,
+                "JerseyNumber": jerseyNumber,
+                "Role": role,
+                "IsBenchOfficial": isBench,
+                "DateOfBirth": formattedDate,
+                "Nationality": nationality,
+                "Gender": gender
+            });
         };
 
         document.querySelectorAll('#formRows tr').forEach(function (row) {
             processRow(row, false);
         });
 
-        ////document.querySelectorAll('#formRowsBench tr').forEach(function (row) {
-        ////    processRow(row, true);
-        ////});
+        document.querySelectorAll('#formRowsBench tr').forEach(function (row) {
+            debugger
+            processRow(row, true);
+        });
 
         return formData;
     }
@@ -1063,6 +1123,14 @@
     }
 
     function populateModalFromRow(currentRow) {
+
+        var sanctionNumber = $('#sanction')[0].innerHTML;
+
+        if (sanctionNumber && sanctionNumber.charAt(0) !== 'A') {
+            var isGuestChecked = currentRow.find("td:eq(8) i.fa-check").length > 0;
+            $('#isGuest').prop('checked', isGuestChecked);
+        }
+
         var license = currentRow.find("td:eq(0) .tablesaw-cell-content span").text().trim();
         var role = currentRow.find("td:eq(1) .tablesaw-cell-content span").text().trim();
         var firstName = currentRow.find("td:eq(2) .tablesaw-cell-content span").text().trim();
@@ -1091,6 +1159,17 @@
         row.find("td:eq(5) .tablesaw-cell-content span").text($('#edit-form #dateOfBirth').val());
         row.find("td:eq(6) .tablesaw-cell-content span").text($('#edit-form #nationality').val());
         row.find("td:eq(7) .tablesaw-cell-content span").text($('#edit-form #gender').val());
+
+        var sanctionNumber = $('#sanction')[0].innerHTML;
+
+        if (sanctionNumber && sanctionNumber.charAt(0) !== 'A') {
+            // Add the "Is Guest" column header at ordinal 9 (after 8th column)
+            var isGuestChecked = $('#isGuest').is(':checked');
+            var isGuestIcon = isGuestChecked ? '<i class="fas fa-check"></i>' : '';
+            row.find("td:eq(8) .tablesaw-cell-content span").html(isGuestIcon);
+        }
+
+        
     }
 
     function updateBenchOfficialRowFromModal(row) {
@@ -1125,6 +1204,18 @@
     }
 
     function addNewRowFromModal() {
+
+        var sanctionNumber = $('#sanction')[0].innerHTML;
+
+        var guestCell = ''
+
+        if (sanctionNumber && sanctionNumber.charAt(0) !== 'A') {
+            // Add the "Is Guest" column header at ordinal 9 (after 8th column)
+            var isGuestChecked = $('#isGuest').is(':checked');
+            var isGuestIcon = isGuestChecked ? '<i class="fas fa-check"></i>' : '';
+            guestCell = '<td class="text-center"><b class="tablesaw-cell-label">Is Guest</b><span class="tablesaw-cell-content"><span>' + isGuestIcon + '</span></span></td>'
+        }
+
         var newRowHtml = '<tr data-id="0">' +
             '<td><b class="tablesaw-cell-label">License</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #license').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Role</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #role').val() + '</span></span></td>' +
@@ -1134,6 +1225,7 @@
             '<td><b class="tablesaw-cell-label">Date of Birth</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #dateOfBirth').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Nationality</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #nationality').val() + '</span></span></td>' +
             '<td><b class="tablesaw-cell-label">Gender</b><span class="tablesaw-cell-content"><span>' + $('#edit-form #gender').val() + '</span></span></td>' +
+            guestCell + 
             '<td><button type="button" class="btn btn-danger delete-btn" onclick="event.stopPropagation(); deleteRow(this);"><i class="fas fa-trash"></i></button></td>' +
             '</tr>';
         $('#data-table tbody').append(newRowHtml);
@@ -1248,6 +1340,34 @@
 
         var currentRow = null;
 
+        $('#teamName').on('input', function () {
+            var query = $(this).val();
+            if (query.length >= 3) { // Trigger search when 3 or more characters are typed
+                $.ajax({
+                    url: '/api/events/search',
+                    type: 'GET',
+                    data: { searchText: query },
+                    success: function (data) {
+
+                        console.log(data)
+                        $('#suggestionsContainer').empty();
+                        data.forEach(function (item) {
+                            // Include item.key in the data-key attribute
+                            var suggestionItem = $('<div class="suggestion-item" data-key="' + item.key + '">' + item.name + '</div>');
+                            $('#suggestionsContainer').append(suggestionItem);
+                            suggestionItem.on('click', function () {
+                                $('#teamName').val(item.name); // Set the name in the input field
+                                $('#teamName').attr('data-key', item.key); // Set the key as a data attribute on the input
+                                $('#suggestionsContainer').empty();
+                            });
+                        });
+                    }
+                });
+            } else {
+                $('#suggestionsContainer').empty();
+            }
+        });
+
         $('#data-table').on('click', '.btn-danger', function (event) {
             event.stopPropagation(); // Prevent click event from bubbling up to the row
             deleteRow(this); // Call your deleteRow function
@@ -1256,7 +1376,26 @@
         $("#benchOfficials tbody").on("click", "tr", function () {
             currentMode = 'editBenchOfficial';
             currentRow = $(this);
+
+            // Clear existing role options and add options for bench officials
+            var rolesForBenchOfficial = [
+                "Head Coach",
+                "Assistant Coach",
+                "Bench Staff",
+                "Training Staff",
+                "Equipment Manager",
+                "Physio",
+                "Photographer"
+            ];
+            var $roleSelect = $('#edit-form #role');
+            $roleSelect.empty(); // Remove existing options
+            rolesForBenchOfficial.forEach(function (role) {
+                $roleSelect.append($('<option>', { value: role, text: role }));
+            });
+            // Optionally, add a default option
+            $roleSelect.prepend($('<option>', { value: '', text: 'Select Role' }).attr('selected', 'selected'));
             populateModalForBenchOfficial(currentRow);
+
             $('#editModal').modal('show');
         });
 
@@ -1265,6 +1404,25 @@
             $("#jerseyNumberFormGroup").show()
             currentRow = null;
             clearModalFields();
+
+            // Restore standard role options
+            var standardRoles = [
+                "Captain",
+                "Assistant Captain",
+                "Netminder",
+                "Forward",
+                "Defence"
+                // Add other standard roles as necessary
+            ];
+            var $roleSelect = $('#edit-form #role');
+            $roleSelect.empty(); // Remove existing options
+            standardRoles.forEach(function (role) {
+                $roleSelect.append($('<option>', { value: role, text: role }));
+            });
+
+            // Optionally, add a default option
+            $roleSelect.prepend($('<option>', { value: '', text: 'Select Role' }).attr('selected', 'selected'));
+
             $('#editModal').modal('show');
         });
 
@@ -1273,12 +1431,50 @@
             $("#jerseyNumberFormGroup").hide()
             currentRow = null;
             clearModalFields();
+
+            // Clear existing role options and add options for bench officials
+            var rolesForBenchOfficial = [
+                "Head Coach",
+                "Assistant Coach",
+                "Bench Staff",
+                "Training Staff",
+                "Equipment Manager",
+                "Physio",
+                "Photographer"
+            ];
+            var $roleSelect = $('#edit-form #role');
+            $roleSelect.empty(); // Remove existing options
+            rolesForBenchOfficial.forEach(function (role) {
+                $roleSelect.append($('<option>', { value: role, text: role }));
+            });
+            // Optionally, add a default option
+            $roleSelect.prepend($('<option>', { value: '', text: 'Select Role' }).attr('selected', 'selected'));
+
             $('#editModal').modal('show');
         });
 
         $("#data-table tbody").on("click", "tr", function () {
             currentMode = 'editPlayer';
             currentRow = $(this);
+
+            // Restore standard role options
+            var standardRoles = [
+                "Captain",
+                "Assistant Captain",
+                "Netminder",
+                "Forward",
+                "Defence"
+                // Add other standard roles as necessary
+            ];
+            var $roleSelect = $('#edit-form #role');
+            $roleSelect.empty(); // Remove existing options
+            standardRoles.forEach(function (role) {
+                $roleSelect.append($('<option>', { value: role, text: role }));
+            });
+
+            // Optionally, add a default option
+            $roleSelect.prepend($('<option>', { value: '', text: 'Select Role' }).attr('selected', 'selected'));
+
             populateModalFromRow(currentRow);
             $('#editModal').modal('show');
         });
@@ -1356,11 +1552,11 @@
         if (selectedTournament != null && @selectedTournament.Id > 0)
         {
             <text>
-                            var selectedValue = @selectedTournament.Id;
-            $('#eventSelect').val(selectedValue).change();
-            $('#eventSelect').prop('disabled', true);
+                                                    var selectedValue = @selectedTournament.Id;
+                $('#eventSelect').val(selectedValue).change();
+                $('#eventSelect').prop('disabled', true);
 
-        </text>            
+            </text>
         }
 
         if (!string.IsNullOrWhiteSpace(team?.Value<string>("countryIso3")))
@@ -1378,6 +1574,7 @@
             </text>
 
         }
+
         if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyTwoColour")))
         {
             <text>
@@ -1387,84 +1584,85 @@
 
         }
     }
-    });
 
-    const pickr = Pickr.create({
-        el: '#colorPicker',
-        theme: 'classic', // or 'monolith', or 'nano'
+                const pickr = Pickr.create({
+                el: '#colorPicker',
+                theme: 'classic', // or 'monolith', or 'nano'
 
-        swatches: [
-            'rgba(244, 67, 54, 1)',
-            'rgba(233, 30, 99, 0.95)',
-            // ... more colors
-        ],
+                swatches: [
+                    'rgba(244, 67, 54, 1)',
+                    'rgba(233, 30, 99, 0.95)',
+                    // ... more colors
+                ],
 
-        components: {
-            // Main components
-            preview: true,
-            opacity: true,
-            hue: true,
+                components: {
+                    // Main components
+                    preview: true,
+                    opacity: true,
+                    hue: true,
 
-            // Input / output Options
-            interaction: {
-                hex: true,
-                input: true,
+                    // Input / output Options
+                    interaction: {
+                        hex: true,
+                        input: true,
+                    }
+                }
+            });
+
+        const pickr2 = Pickr.create({
+            el: '#colorPicker2',
+            theme: 'classic', // or 'monolith', or 'nano'
+
+            swatches: [
+                'rgba(244, 67, 54, 1)',
+                'rgba(233, 30, 99, 0.95)',
+                // ... more colors
+            ],
+
+            components: {
+                // Main components
+                preview: true,
+                opacity: true,
+                hue: true,
+
+                // Input / output Options
+                interaction: {
+                    hex: true,
+                    input: true,
+                }
+            },
+            strings: {
+                save: 'Apply', // Change the text for the save button to 'Apply'
+                // ... other string customizations ...
             }
-        }
+        });
+
+        pickr.on('change', (color, instance) => {
+            $('.pcr-button').first().css('--pcr-color', color.toRGBA().toString());
+            pickerOneHexVal = color.toHEXA().toString()
+            $("#colourOne").val(pickerOneHexVal)
+
+        });
+
+        pickr2.on('change', (color, instance) => {
+            $('.pcr-button').last().css('--pcr-color', color.toRGBA().toString());
+            pickerTwoHexVal = color.toHEXA().toString()
+            $("#colourTwo").val(pickerTwoHexVal)
+        });
+
+        $('#colourOne').on('blur change', function () {
+
+            var newColor = $(this).val(); // Get the new color value from the textbox
+            pickr.setColor(newColor); // Update the color picker with the new color
+        });
+
+        // Event listener for the second textbox using jQuery
+        $('#colourTwo').on('blur change', function () {
+            var newColor = $(this).val(); // Get the new color value from the textbox
+            pickr2.setColor(newColor); // Update the color picker with the new color
+        });
     });
 
-    const pickr2 = Pickr.create({
-        el: '#colorPicker2',
-        theme: 'classic', // or 'monolith', or 'nano'
-
-        swatches: [
-            'rgba(244, 67, 54, 1)',
-            'rgba(233, 30, 99, 0.95)',
-            // ... more colors
-        ],
-
-        components: {
-            // Main components
-            preview: true,
-            opacity: true,
-            hue: true,
-
-            // Input / output Options
-            interaction: {
-                hex: true,
-                input: true,
-            }
-        },
-        strings: {
-            save: 'Apply', // Change the text for the save button to 'Apply'
-            // ... other string customizations ...
-        }
-    });
-
-    pickr.on('change', (color, instance) => {
-        $('.pcr-button').first().css('--pcr-color', color.toRGBA().toString());
-        pickerOneHexVal = color.toHEXA().toString()
-        $("#colourOne").val(pickerOneHexVal)
-
-    });
-
-    pickr2.on('change', (color, instance) => {
-        $('.pcr-button').last().css('--pcr-color', color.toRGBA().toString());
-        pickerTwoHexVal = color.toHEXA().toString()
-        $("#colourTwo").val(pickerTwoHexVal)
-    });
-
-    $('#colourOne').on('blur change', function () {
-
-        var newColor = $(this).val(); // Get the new color value from the textbox
-        pickr.setColor(newColor); // Update the color picker with the new color
-    });
-
-    // Event listener for the second textbox using jQuery
-    $('#colourTwo').on('blur change', function () {
-        var newColor = $(this).val(); // Get the new color value from the textbox
-        pickr2.setColor(newColor); // Update the color picker with the new color
-    });
 
 
 </script>

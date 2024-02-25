@@ -193,7 +193,7 @@ namespace IISHF.Core.Services
             });
         }
 
-        public async Task SetSubmissionDate(IPublishedContent team)
+        public async Task SetTeamItcSubmissionDateFromTeam(IPublishedContent team)
         {
             var user = await _memberManager.GetCurrentMemberAsync();
             if (user == null)
@@ -201,6 +201,71 @@ namespace IISHF.Core.Services
                 return;
             }
 
+            var tournamentTeam = _contentService.GetById(team.Id);
+            if (tournamentTeam == null)
+            {
+                return;
+            }
+
+            var udi = Udi.Create(Constants.UdiEntityType.Member, user.Key);
+
+            tournamentTeam.SetValue("iTCSubmissionDate", DateTime.UtcNow);
+            tournamentTeam.SetValue("iTCSubmitted", true);
+            tournamentTeam.SetValue("iTCSubmittedBy", udi);
+            _contentService.SaveAndPublish(tournamentTeam);
+        }
+
+        public async Task SetTeamItcNmaApprovalDate(IPublishedContent team)
+        {
+            var user = await _memberManager.GetCurrentMemberAsync();
+            if (user == null)
+            {
+                return;
+            }
+
+            var tournamentTeam = _contentService.GetById(team.Id);
+            if (tournamentTeam == null)
+            {
+                return;
+            }
+
+            var udi = Udi.Create(Constants.UdiEntityType.Member, user.Key);
+
+            tournamentTeam.SetValue("nMAApprovedDate", DateTime.UtcNow);
+            tournamentTeam.SetValue("iTCNMAApprover", udi);
+            _contentService.SaveAndPublish(tournamentTeam);
+        }
+
+        public async Task SetTeamItcIISHFApprovalDate(IPublishedContent team)
+        {
+            var user = await _memberManager.GetCurrentMemberAsync();
+            if (user == null)
+            {
+                return;
+            }
+
+            var tournamentTeam = _contentService.GetById(team.Id);
+            if (tournamentTeam == null)
+            {
+                return;
+            }
+
+            var udi = Udi.Create(Constants.UdiEntityType.Member, user.Key);
+
+            tournamentTeam.SetValue("nMAApprovedDate", DateTime.UtcNow);
+            tournamentTeam.SetValue("iTCNMAApprover", udi);
+            tournamentTeam.SetValue("iTCApproved", true);
+            _contentService.SaveAndPublish(tournamentTeam);
+        }
+
+        public async Task SetTeamInformationSubmissionDate(IPublishedContent team)
+        {
+            var user = await _memberManager.GetCurrentMemberAsync();
+            if (user == null)
+            {
+                return;
+            }
+            
             var tournamentTeam = _contentService.GetById(team.Id);
             if (tournamentTeam == null)
             {
@@ -339,6 +404,47 @@ namespace IISHF.Core.Services
             };
 
             await _messageSender.SendMessage(serviceBusMessage, "team-submission");
+        }
+
+        public async Task NotifyNmaApprover(IPublishedContent tournament, IPublishedContent nmaTeam, IPublishedContent team)
+        {
+            var user = await _memberManager.GetCurrentMemberAsync();
+            if (user == null)
+            {
+                return;
+            }
+            
+            var nma = nmaTeam.Parent.Parent.Parent;
+
+            var itcApprovers = _memberService.GetMembersByPropertyValue("nMAITCApprover", true)
+                .Where(x => x.GetValue<string>("nationalMemberAssosiciation") == nma.Name)
+                .Select(x => new ITCApprover
+                {
+                    NmaApproverName = x.Name,
+                    NmaApproverEmail = x.Email
+                })
+                .ToList();
+
+            var protocol = _httpContextAccessor.HttpContext.Request.Scheme;
+            var baseUrl = _httpContextAccessor.HttpContext.Request.Host;
+            var route = $"itc";
+            var queryString = $"team={nmaTeam.Key.ToString()}";
+
+            var serviceBusMessage = new SubmittedITCInformation
+            {
+                ItcApprovers = itcApprovers,
+                ITCApprovalUri = new Uri($"{protocol}://{baseUrl}/{route}?{queryString}"),
+                TemplateName = "NmaItcApproval",
+                TeamName = team.Name,
+                SubmittedByName = user.Name
+            };
+
+            await _messageSender.SendMessage(serviceBusMessage, "itc-submission");
+        }
+
+        public Task NotifyIISHFApprover(IPublishedContent tournament, IPublishedContent nmaTeam, IPublishedContent team)
+        {
+            throw new NotImplementedException();
         }
 
         private List<IPublishedContent> GetEventTeams(int year, int tournamentId, int teamId)

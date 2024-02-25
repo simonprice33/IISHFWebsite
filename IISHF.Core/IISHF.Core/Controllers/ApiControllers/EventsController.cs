@@ -240,7 +240,7 @@ namespace IISHF.Core.Controllers.ApiControllers
 
         [HttpPut("itc")]
         [UmbracoMemberAuthorize]
-        public async Task<IActionResult> PutItcRoster([FromBody] RosterMembers model)
+        public async Task<IActionResult> PutItcRoster([FromBody] TeamInformationSubmission model)
         {
             var tournament = _tournamentService.GetTournament(
                 model.IsChampionships,
@@ -259,7 +259,28 @@ namespace IISHF.Core.Controllers.ApiControllers
                 return NotFound();
             }
 
+            // update jersey colours for event team
+            await _tournamentService.UpdateTeamColours(model.JerseyOne, "jerseyOneColour", team);
+            await _tournamentService.UpdateTeamColours(model.JerseyTwo, "jerseyTwoColour", team);
+
             var result = await _rosterService.UpsertRosterMembers(model, team);
+            
+            var responseModel = new ItcModel()
+            {
+                ItcRosterMembers = result.ItcRosterMembers,
+                JerseyOneColour = model.JerseyOne,
+                JerseyTwoColour = model.JerseyTwo,
+                SubmittedDate = model.SubmitToHost ? DateTime.UtcNow : null
+            };
+
+            if (model.SubmitToHost)
+            {
+                await _tournamentService.SetTeamItcSubmissionDateFromTeam(team);
+                var nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
+                team = _contentQuery.Content(team.Id);
+                await _tournamentService.NotifyNmaApprover(tournament, nmaTeam, team);
+            }
+
             var json = JsonSerializer.Serialize(result);
             return Ok(json);
         }
@@ -345,7 +366,7 @@ namespace IISHF.Core.Controllers.ApiControllers
 
             if (model.SubmitToHost)
             {
-                await _tournamentService.SetSubmissionDate(team);
+                await _tournamentService.SetTeamInformationSubmissionDate(team);
 
                 team = _contentQuery.Content(team.Id);
                 await _tournamentService.SubmitTeamInformationToHost(tournament, nmaTeam, team);
@@ -423,6 +444,23 @@ namespace IISHF.Core.Controllers.ApiControllers
             await _teamService.DeleteSponsor(sponsorId, mediaId, team);
             
             return NoContent();
+        }
+
+        [HttpGet]
+        [Route("search")]
+        public async Task<IActionResult> Search(string searchText)
+        {
+            var teams = _contentQuery.ContentAtRoot()
+                .DescendantsOrSelfOfType("clubTeam")
+                .Where(x => x.Name.Contains(searchText, StringComparison.InvariantCultureIgnoreCase))
+                .Select(x => new
+                {
+                    Key = x.Key,
+                    Name = x.Name,
+                })
+                .ToList();
+            _logger.LogInformation(searchText);
+             return Ok(teams);
         }
     }
 }

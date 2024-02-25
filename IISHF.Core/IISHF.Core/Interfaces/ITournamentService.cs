@@ -20,8 +20,18 @@ namespace IISHF.Core.Interfaces
 
         Task UpdateTeamColours(string colourHex, string fieldName, IPublishedContent team);
 
-        Task SetSubmissionDate(IPublishedContent team);
+        Task SetTeamInformationSubmissionDate(IPublishedContent team);
+
+        Task SetTeamItcSubmissionDateFromTeam(IPublishedContent team);
+
+        Task SetTeamItcNmaApprovalDate(IPublishedContent team);
+
+        Task SetTeamItcIISHFApprovalDate(IPublishedContent team);
 
         Task SubmitTeamInformationToHost(IPublishedContent tournament, IPublishedContent nmaTeam, IPublishedContent team);
+
+        Task NotifyNmaApprover(IPublishedContent tournament, IPublishedContent nmaTeam, IPublishedContent team);
+
+        Task NotifyIISHFApprover(IPublishedContent tournament, IPublishedContent nmaTeam, IPublishedContent team);
     }
 }

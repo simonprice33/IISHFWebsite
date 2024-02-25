@@ -233,3 +233,33 @@
     /*border: 1px solid #808080 !important;*/
     /*border: var(--bs-border-width) solid var(--bs-border-color) !important;
 }*/
+
+#suggestionsContainer {
+    position: absolute;
+    width: calc(100% - 30px); /* Adjust 30px based on Bootstrap's padding */
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-top: none;
+    z-index: 1000;
+    background: #fff;
+    max-height: 300px;
+    overflow-y: auto;
+    top: 100%;
+    left: 15px; /* Half of the total padding to center it */
+}
+
+.suggestion-item {
+    padding: 8px;
+    cursor: pointer;
+}
+
+    .suggestion-item:hover {
+        background-color: #f0f0f0;
+    }
+
+@media (min-width: 768px) { /* Adjust for medium screens and up */
+    #suggestionsContainer {
+        width: calc(100% - 30px); /* Example: Adjust based on actual padding */
+        left: 15px; /* Example: Adjust based on actual padding */
+    }
+}
