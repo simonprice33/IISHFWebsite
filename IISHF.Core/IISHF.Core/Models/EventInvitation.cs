@@ -6,8 +6,8 @@ namespace IISHF.Core.Models
     {
         public Guid EventTeamId { get; set; }
 
-        public Guid EventId { get; set; } 
-        
+        public Guid EventId { get; set; }
+
         public string EventName { get; set; }
 
         public string ITCStatus { get; set; }

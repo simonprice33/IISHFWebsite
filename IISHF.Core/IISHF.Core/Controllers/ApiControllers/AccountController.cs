@@ -58,7 +58,7 @@ namespace IISHF.Core.Controllers.ApiControllers
                 return Unauthorized();
             }
 
-            if (!string.IsNullOrWhiteSpace(model.Password) 
+            if (!string.IsNullOrWhiteSpace(model.Password)
                 && !string.IsNullOrWhiteSpace(model.ConfirmPassword)
                 && model.Password.Equals(model.ConfirmPassword))
             {

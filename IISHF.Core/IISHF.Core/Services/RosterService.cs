@@ -23,7 +23,7 @@ namespace IISHF.Core.Services
             _contentService = contentService;
             _logger = logger;
         }
-        
+
         public async Task<RosterMembers> UpsertRosterMembers(RosterMembers model, IPublishedContent team)
         {
             return await Task.Run(async () =>
@@ -75,7 +75,7 @@ namespace IISHF.Core.Services
             umbracoRosteredMember?.SetValue("iso3", GetCountryIso3Code(rosterMember.Nationality));
             umbracoRosteredMember?.SetValue("role", rosterMember.Role);
             umbracoRosteredMember?.SetValue("jerseyNumber", rosterMember.JerseyNumber);
-            umbracoRosteredMember?.SetValue("dateOfBirth",dob );
+            umbracoRosteredMember?.SetValue("dateOfBirth", dob);
             umbracoRosteredMember?.SetValue("nmaCheck", rosterMember.NmaCheck);
             umbracoRosteredMember?.SetValue("iishfCheck", rosterMember.IISHFCheck);
             umbracoRosteredMember?.SetValue("comments", rosterMember.Comments);

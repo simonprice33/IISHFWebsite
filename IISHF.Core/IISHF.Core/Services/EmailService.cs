@@ -35,7 +35,7 @@ namespace IISHF.Core.Services
             //var renderedEmail = $"<a href=\"{htmlPath}\">Click here</a> to verify your email address and complete registration of your IISHF Account";
 
             var sender = new EmailAddress(_iishfOptions.NoReplyEmailAdddress, _iishfOptions.DisplayName);
-            
+
             var recipients = new List<EmailAddress>()
             {
                 ////new EmailAddress(_iishfOptions.SenderEmailAdddress),

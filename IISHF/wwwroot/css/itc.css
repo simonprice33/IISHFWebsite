@@ -263,3 +263,52 @@
         left: 15px; /* Example: Adjust based on actual padding */
     }
 }
+
+/* Style the file preview element */
+.dz-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Style the thumbnail image to make sure it's centered */
+.dz-image {
+    display: block;
+    margin: 0 auto; /* Center the thumbnail */
+}
+
+/* Style the details to be in a column, centered, and take full width */
+.dz-details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%; /* Ensure the details container takes full width */
+}
+
+/* Style the filename and filesize to display as blocks and center */
+.dz-filename,
+.dz-size {
+    display: block;
+    width: 100%;
+}
+
+/* Style the label input to match the thumbnail width and center text */
+.file-label-input {
+    width: 150px; /* Set the width of the input */
+    margin-top: 10px; /* Space between the thumbnail and the input */
+    text-align: center;
+    display: block; /* Ensure input behaves as a block for alignment */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Style the remove link to be centered below the input */
+.dz-remove {
+    text-align: center;
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+}
+

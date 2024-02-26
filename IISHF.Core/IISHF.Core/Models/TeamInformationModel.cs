@@ -2,7 +2,7 @@
 {
     public class TeamInformationModel
     {
-    
+
         public List<RosterMember> ItcRosterMembers { get; set; }
 
         public string TeamPhotoPath { get; set; }

@@ -2,7 +2,7 @@
 {
     public class ItcModel
     {
-    
+
         public List<RosterMember> ItcRosterMembers { get; set; }
 
         public string JerseyOneColour { get; set; }

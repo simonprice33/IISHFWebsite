@@ -29,7 +29,7 @@ namespace IISHF.Core.Models
 
         [JsonPropertyName("dateOfBirth")]
         public DateOnly? DateOfBirth { get; set; } = default;
-        
+
         [JsonPropertyName("gender")]
         public string Gender { get; set; }
 
@@ -38,7 +38,7 @@ namespace IISHF.Core.Models
 
         [JsonPropertyName("iishfCheck")]
         public bool IISHFCheck { get; set; }
-        
+
         [JsonPropertyName("comments")]
         public string Comments { get; set; } = string.Empty;
 

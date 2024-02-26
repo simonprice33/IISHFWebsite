@@ -289,7 +289,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             await _tournamentService.UpdateTeamColours(string.IsNullOrWhiteSpace(model.JerseyTwo) ? "#ffffff" : model.JerseyTwo, "jerseyTwoColour", team);
 
             var result = await _rosterService.UpsertRosterMembers(model, team);
-            
+
             var responseModel = new ItcModel()
             {
                 ItcRosterMembers = result.ItcRosterMembers,
@@ -359,7 +359,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             {
                 await _teamService.UploadSponsors(sponsors, nmaTeam, "Sponsors");
             }
-            
+
             // update jersey colours for event team
             await _tournamentService.UpdateTeamColours(model.JerseyOne, "jerseyOneColour", team);
             await _tournamentService.UpdateTeamColours(model.JerseyTwo, "jerseyTwoColour", team);
@@ -504,7 +504,7 @@ namespace IISHF.Core.Controllers.ApiControllers
 
             // Check roster member belongs to this team
             await _teamService.DeleteSponsor(sponsorId, mediaId, team);
-            
+
             return NoContent();
         }
 
@@ -522,7 +522,7 @@ namespace IISHF.Core.Controllers.ApiControllers
                 })
                 .ToList();
             _logger.LogInformation(searchText);
-             return Ok(teams);
+            return Ok(teams);
         }
     }
 }

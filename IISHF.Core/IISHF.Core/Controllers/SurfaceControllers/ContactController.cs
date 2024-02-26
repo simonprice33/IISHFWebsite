@@ -23,7 +23,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
         public ContactController(
             IUmbracoContextAccessor umbracoContextAccessor,
             IUmbracoDatabaseFactory databaseFactory,
-            ServiceContext services, 
+            ServiceContext services,
             AppCaches appCaches,
             IProfilingLogger profilingLogger,
             IPublishedUrlProvider publishedUrlProvider,
@@ -59,7 +59,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
             {
                 return CurrentUmbracoPage();
             }
-           
+
             //ToDo Send email 
 
             TempData["Status"] = "Message Sent Ok";

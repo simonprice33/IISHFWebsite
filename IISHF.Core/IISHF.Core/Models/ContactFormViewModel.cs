@@ -6,7 +6,7 @@ namespace IISHF.Core.Models
     {
         public ContactFormViewModel()
         {
-            
+
         }
 
         [Required]

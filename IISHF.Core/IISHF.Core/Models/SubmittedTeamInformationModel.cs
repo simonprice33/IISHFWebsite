@@ -25,9 +25,9 @@ namespace IISHF.Core.Models
         public IEnumerable<RosterMember> Roster { get; set; } = new List<RosterMember>();
 
         public DateTime SubmittedDateTime { get; set; }
-        
+
         public string SubmittedBy { get; set; }
 
-        public string SubmittedByEmail { get; set;}
+        public string SubmittedByEmail { get; set; }
     }
 }

@@ -19,7 +19,7 @@
         public string Remarks { get; set; }
 
         public string HomeTeamLogoUrl { get; set; }
-        
+
         public string AwayTeamLogoUrl { get; set; }
     }
 }

@@ -24,7 +24,7 @@
 
         public decimal RinkLength { get; set; }
 
-        public decimal RinkWidth { get; set;}
+        public decimal RinkWidth { get; set; }
 
         public string? RinkFloor { get; set; }
     }

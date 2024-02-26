@@ -276,7 +276,7 @@ namespace IISHF.Core.Services
             {
                 return;
             }
-            
+
             var tournamentTeam = _contentService.GetById(team.Id);
             if (tournamentTeam == null)
             {
@@ -424,7 +424,7 @@ namespace IISHF.Core.Services
             {
                 return;
             }
-            
+
             var nma = nmaTeam.Parent.Parent.Parent;
 
             var itcApprovers = _memberService.GetMembersByPropertyValue("nMAITCApprover", true)
@@ -495,7 +495,7 @@ namespace IISHF.Core.Services
             // Retrieve the media item
             var mediaItem = _umbracoMediaService.GetById(mediaId);
             if (mediaItem == null) return null;
-           
+
             // Combine with the root path if it's stored locally
             var fullPath = Path.Combine(_webHostEnvironment.WebRootPath, filePath.TrimStart('/'));
 

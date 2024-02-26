@@ -1,6 +1,6 @@
 ﻿namespace IISHF.Core.Models
 {
-    public class UpdateTeamScore 
+    public class UpdateTeamScore
     {
         public int GameNumber { get; set; }
 

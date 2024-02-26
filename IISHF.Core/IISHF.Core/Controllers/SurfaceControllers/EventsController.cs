@@ -46,7 +46,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
                 return PartialView("~/Views/Partials/Events/EventStandings.cshtml", new GroupRankingsViewModel());
             }
 
-            var teamPlacements = eventTeams.Where(x =>  !string.IsNullOrWhiteSpace(x.Value<string>("group"))).Select(placementItem => new RankingViewModel()
+            var teamPlacements = eventTeams.Where(x => !string.IsNullOrWhiteSpace(x.Value<string>("group"))).Select(placementItem => new RankingViewModel()
             {
                 TeamName = placementItem.Value<string>("eventTeam"),
                 Group = placementItem.Value<string>("group"),
@@ -111,7 +111,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
                     });
                 }
                 catch (Exception ex)
-                { 
+                {
                     Console.WriteLine($"Game {game.Name} has data issues");
                 }
             }
@@ -213,7 +213,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
                     .Concat(nonTitle)
                     .ToList());
 
-                
+
 
             var selectedEvent = allEvents.FirstOrDefault(x => x.Id == id);
 

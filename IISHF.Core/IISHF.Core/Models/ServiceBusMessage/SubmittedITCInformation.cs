@@ -20,7 +20,7 @@ namespace IISHF.Core.Models.ServiceBusMessage
         public string SubmittedByName { get; set; }
 
         public List<ITCApprover> ItcApprovers { get; set; }
-        
+
         public string TemplateName { get; set; }
     }
 }

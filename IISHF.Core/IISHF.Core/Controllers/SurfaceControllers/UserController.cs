@@ -62,7 +62,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
         {
             return PartialView("~/Views/Partials/Members/ForgotPassword.cshtml", new ForgotPasswordResetRequestModel());
         }
-        
+
         [HttpPost]
         public async Task<IActionResult> HandlePasswordResetRequest(ForgotPasswordResetRequestModel model)
         {

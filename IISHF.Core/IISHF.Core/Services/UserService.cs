@@ -117,7 +117,7 @@ namespace IISHF.Core.Services
         {
             var memberIdentity = await _memberManager.FindByEmailAsync(email);
             var resetToken = await _memberManager.GeneratePasswordResetTokenAsync(memberIdentity);
-            var result = await _memberManager.ResetPasswordAsync(memberIdentity, resetToken,password);
+            var result = await _memberManager.ResetPasswordAsync(memberIdentity, resetToken, password);
 
             return result;
         }

@@ -71,11 +71,11 @@ namespace IISHF
                 .AddComposers()
                 .Build();
 
-             services.AddMvc()
-            .AddViewOptions(options =>
-            {
-                options.HtmlHelperOptions.ClientValidationEnabled = true;
-            });
+            services.AddMvc()
+           .AddViewOptions(options =>
+           {
+               options.HtmlHelperOptions.ClientValidationEnabled = true;
+           });
         }
 
         /// <summary>

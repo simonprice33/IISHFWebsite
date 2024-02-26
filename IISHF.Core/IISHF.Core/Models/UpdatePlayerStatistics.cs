@@ -6,7 +6,7 @@
         {
             PlayerStatistics = new List<PlayerStatistics>();
         }
-        
+
         public IEnumerable<PlayerStatistics> PlayerStatistics { get; set; }
     }
 }

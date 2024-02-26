@@ -1,6 +1,6 @@
 ﻿namespace IISHF.Core.Models
 {
-    public class ScheduleGame 
+    public class ScheduleGame
     {
         public string? HomeTeam { get; set; }
 

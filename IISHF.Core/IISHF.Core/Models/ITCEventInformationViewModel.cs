@@ -20,7 +20,7 @@
 
         public string HostingCountry { get; set; }
 
-        public string HostingClub{ get; set; }
+        public string HostingClub { get; set; }
 
         public string ShortCode { get; set; }
 
