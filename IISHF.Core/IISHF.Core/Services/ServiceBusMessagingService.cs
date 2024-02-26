@@ -1,9 +1,9 @@
-﻿using System.Text;
-using System.Text.Json;
-using Azure.Messaging.ServiceBus;
+﻿using Azure.Messaging.ServiceBus;
 using IISHF.Core.Interfaces;
 using IISHF.Core.Settings;
 using Microsoft.Extensions.Options;
+using System.Text;
+using System.Text.Json;
 
 namespace IISHF.Core.Services
 {

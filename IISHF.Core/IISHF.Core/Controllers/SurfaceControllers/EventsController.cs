@@ -110,7 +110,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
                         AwayTeamLogoUrl = awayLogo,
                     });
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     Console.WriteLine($"Game {game.Name} has data issues");
                 }

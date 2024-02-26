@@ -1,6 +1,6 @@
-﻿using System.ComponentModel;
+﻿using DataAnnotationsExtensions;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using DataAnnotationsExtensions;
 
 namespace IISHF.Core.Models
 {

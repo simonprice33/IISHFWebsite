@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace IISHF.Core.Models
+﻿namespace IISHF.Core.Models
 {
     public class SubmittedTeamInformationModel
     {

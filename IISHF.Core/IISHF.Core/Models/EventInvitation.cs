@@ -1,6 +1,4 @@
-﻿using Umbraco.Cms.Infrastructure.Examine;
-
-namespace IISHF.Core.Models
+﻿namespace IISHF.Core.Models
 {
     public class EventInvitation
     {

@@ -2,7 +2,6 @@ using IISHF.Core.Configurations;
 using IISHF.Core.Interfaces;
 using IISHF.Core.Services;
 using IISHF.Core.Settings;
-using Umbraco.Cms.Core.Services;
 using HttpClient = IISHF.Core.Services.HttpClient;
 using IMediaService = IISHF.Core.Interfaces.IMediaService;
 using IUserService = IISHF.Core.Interfaces.IUserService;

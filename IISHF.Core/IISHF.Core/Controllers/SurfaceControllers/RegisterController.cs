@@ -72,7 +72,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
                     TempData["status"] = "OK";
                     return RedirectToUmbracoPage(key);
                 }
-                catch (MemberAccessException mEx)
+                catch (MemberAccessException)
                 {
                     ModelState.AddModelError("Verification Error", "Verification code has already been validated.");
                     return CurrentUmbracoPage();
