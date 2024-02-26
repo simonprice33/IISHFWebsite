@@ -242,10 +242,7 @@ namespace IISHF.Core.Controllers.ApiControllers
         [UmbracoMemberAuthorize]
         public async Task<IActionResult> PutItcRoster([FromBody] TeamInformationSubmission model)
         {
-            var tournament = _tournamentService.GetTournament(
-                model.IsChampionships,
-                model.TitleEvent,
-                model.EventYear.ToString());
+            var tournament = _tournamentService.GetTournament(model.EventId);
 
             if (tournament == null)
             {
@@ -254,14 +251,42 @@ namespace IISHF.Core.Controllers.ApiControllers
 
             var team = _tournamentService.GetTournamentTeamByName(model.TeamName, tournament);
 
-            if (team == null)
+            if (team == null && tournament.Value<string>("sanctionNUmber").StartsWith('A'))
             {
                 return NotFound();
+
+            }
+
+            // Not specifically looking for B events as this could expand in the future
+            if (team == null && !tournament.Value<string>("sanctionNUmber").StartsWith('A'))
+            {
+                var eventTeamModel = new Team
+                {
+                    TeamName = model.TeamName,
+                    EventId = model.EventId,
+                    CountryIso3 = string.Empty, // Need to get this from the form.
+                    EventYear = model.EventYear,
+                    IsChampionships = false,
+                    TitleEvent = string.Empty, // Not a title event,
+                    Group = string.Empty, // Not in our control and not known at the point of data entry
+                    TeamUrl = null, // can try and get this from submitted information
+                };
+
+                var eventTeam = _tournamentService.CreateEventTeam(eventTeamModel, tournament);
+
+                // Get updated tournament information
+                tournament = _tournamentService.GetTournament(model.EventId);
+                team = _tournamentService.GetTournamentTeamByName(eventTeam.PublishName, tournament);
+
+                if (team == null)
+                {
+                    return NotFound();
+                }
             }
 
             // update jersey colours for event team
-            await _tournamentService.UpdateTeamColours(model.JerseyOne, "jerseyOneColour", team);
-            await _tournamentService.UpdateTeamColours(model.JerseyTwo, "jerseyTwoColour", team);
+            await _tournamentService.UpdateTeamColours(string.IsNullOrWhiteSpace(model.JerseyOne) ? "#000000" : model.JerseyOne, "jerseyOneColour", team);
+            await _tournamentService.UpdateTeamColours(string.IsNullOrWhiteSpace(model.JerseyTwo) ? "#ffffff" : model.JerseyTwo, "jerseyTwoColour", team);
 
             var result = await _rosterService.UpsertRosterMembers(model, team);
             
@@ -386,6 +411,43 @@ namespace IISHF.Core.Controllers.ApiControllers
                 isChampionship,
                 titleEvent,
                 eventYear.ToString());
+
+            if (tournament == null)
+            {
+                return NotFound();
+            }
+
+            teamName = HttpUtility.UrlDecode(teamName);
+
+            // Check team is in that tournament
+            var team = _tournamentService.GetTournamentTeamByName(teamName, tournament);
+
+            if (team == null)
+            {
+                return NotFound();
+            }
+
+            // Check roster member belongs to this team
+            var rosterMember = _rosterService.FindRosterMemberById(rosterId, team);
+
+            if (rosterMember == null)
+            {
+                return NotFound();
+            }
+
+            // delete roster member
+            _rosterService.DeleteRosteredPlayer(rosterMember.Id);
+            return NoContent();
+        }
+
+
+        [HttpDelete]
+        [Route("itc/team/tournament/{tournamentId}/team/{teamName}/roster-member/{rosterId}/")]
+        public async Task<IActionResult> DeleteFromRoster(int tournamentId, string teamName, int rosterId)
+        {
+            // Check we have the tournament
+            var tournament = _tournamentService.GetTournament(
+                tournamentId);
 
             if (tournament == null)
             {

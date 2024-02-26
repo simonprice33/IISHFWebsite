@@ -16,12 +16,13 @@ namespace IISHF.Core.Models
 
         public bool TeamInformationSubmitted { get; set; }
 
-        public DateTime TeamInformationSubmittedDate { get; set; }
+        public DateTime? TeamInformationSubmittedDate { get; set; }
 
-        public DateTime TeamSubmissionRequiredBy { get; set; }
+        public DateTime? TeamSubmissionRequiredBy { get; set; }
 
         public DateTime EventStartDate { get; set; }
 
         public DateTime EventEndDate { get; set; }
+        public bool TeamInformationRequired { get; set; }
     }
 }

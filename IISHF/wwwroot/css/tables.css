@@ -9,6 +9,7 @@
     border-bottom: 1px solid #ccc; /* Adjust color and style as needed */
 }
 
+
 @media (max-width: 480px) {
     #data-table .tablesaw-cell-content span,
     #benchOfficials .tablesaw-cell-content span {
@@ -24,39 +25,16 @@
     }
 }
 
-/*Flex*/
-/*.flex-table {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.flex-table-header {
-  display: none;*/ /* Hide the header on small screens */
-/*}
-
-.flex-row {
-  display: flex;
-  flex-wrap: wrap;
-  border-bottom: 1px solid #eee;*/ /* Optional border for rows */
-/*}
-
-.flex-cell {
-  flex: 1;
-  padding: 8px;
-  min-width: 150px;*/ /* Minimum width for cells */
-/*}
-
-.badge {
-  display: block;
-  margin-top: 4px;
-}*/
-
-/* Base Flexbox styles */
-
 
 /* Desktop view */
 @media (min-width: 1367px) {
+
+    /*.flex-table .flex-cell .badge {
+
+        width: 100%;*/ /* This sets the badge to take 100% of its parent's (flex-cell) width */
+        /*text-align: center;*/ /* Optional: if you want the text inside the badge to be centered */
+        /* You can remove white-space, overflow, and text-overflow properties if you want the text to wrap */
+    /*}
 
     .flex-table {
         display: flex;
@@ -76,13 +54,13 @@
     }
 
     .flex-cell-header {
-        flex: 0 0 20%; /* adjust the percentage based on your number of columns */
-        background-color: #f2f2f2;
+        flex: 0 0 20%;*/ /* adjust the percentage based on your number of columns */
+        /*background-color: #f2f2f2;
     }
 
     .flex-cell {
-        flex: 0 0 20%; /* this should match the header cell width */
-    }
+        flex: 0 0 20%;*/ /* this should match the header cell width */
+    /*}
 
     .flex-table-header {
         width: 100%;
@@ -92,7 +70,36 @@
     .flex-table-body .flex-row {
         display: flex;
         width: 100%;
+    }*/
+
+    .flex-table {
+        display: flex;
+        flex-direction: column;
+        width: 95%;
+        margin: auto; /* Center the table on the page */
     }
+
+    .flex-table-header, .flex-row {
+        display: flex;
+        flex-direction: row;
+        width: 100%; /* Ensuring the row takes the full width */
+    }
+
+    .flex-cell-header, .flex-cell {
+        box-sizing: border-box; /* Include padding and borders in the width and height */
+        flex: 1; /* Allow cells to grow and take equal space */
+        text-align: center;
+        padding: 5px;
+        min-width: 0; /* Prevent the cell from growing beyond the flex-basis */
+    }
+
+    /* Specific to badges */
+    .flex-table .flex-cell .badge {
+        width: 100%; /* Set the badge to take 100% of its parent's width */
+        white-space: normal; /* Allow the text to wrap */
+        overflow: hidden; /* Hide the overflowed text */
+    }
+
 }
 
 /* Mobile view */
@@ -115,8 +122,10 @@
         padding: 5px 10px; /* Adjust padding on mobile */
         min-width: auto; /* Reset min-width for mobile */
     }
-    .badge {
-        width: 100% !important;
+    .flex-table .flex-cell .badge {
+        width: 100%; /* This sets the badge to take 100% of its parent's (flex-cell) width */
+        text-align: center; /* Optional: if you want the text inside the badge to be centered */
+        /* You can remove white-space, overflow, and text-overflow properties if you want the text to wrap */
     }
 }
 
@@ -145,8 +154,10 @@
         min-width: 150px; /* Minimum width for cells */
     }
 
-    .badge {
-        width: 100% !important;
+    .flex-table .flex-cell .badge {
+        width: 100%; /* This sets the badge to take 100% of its parent's (flex-cell) width */
+        text-align: center; /* Optional: if you want the text inside the badge to be centered */
+        /* You can remove white-space, overflow, and text-overflow properties if you want the text to wrap */
     }
 }
 

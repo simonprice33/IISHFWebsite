@@ -44,5 +44,8 @@ namespace IISHF.Core.Models
 
         [JsonPropertyName("nationality")]
         public string Nationality { get; set; }
+
+        [JsonPropertyName("isGuest")]
+        public bool IsGuest { get; set; }
     }
 }

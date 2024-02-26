@@ -1597,22 +1597,24 @@
 
         }
 
-        if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyOneColour")))
-        {
-            <text>
-                    $('#colourOne').val('@(team?.Value<string>("jerseyOneColour"))').change();
-            </text>
+            if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyOneColour")))
+            {
+                <text>
+                 setTimeout(function () { 
+                 $('#colourOne').val('@(team?.Value<string>("jerseyOneColour"))').change();}, 500)
+                        </text>
 
-        }
+            }
 
-        if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyTwoColour")))
-        {
-            <text>
-                    $('#colourTwo').val('@(team?.Value<string>("jerseyTwoColour"))').change();
+            if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyTwoColour")))
+            {
+                <text>
+                     setTimeout(function(){
+                     $('#colourTwo').val('@(team?.Value<string>("jerseyTwoColour"))').change();}, 500)
 
-            </text>
+                            </text>
 
-        }
+            }
     }
 
     });

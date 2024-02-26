@@ -114,11 +114,11 @@
                 <span class="nav-link mb-3 p-3 shadow" id="v-pills-players-tab">
                     <select id="eventSelect" class="form-control">
                         @{
-                            <option value="">Select Event for @DateTime.Now.Year.ToString()</option>
+                                                <option value="">Select Event for @DateTime.Now.Year.ToString()</option>
 
                             foreach (var iishfEvent in allEvents)
                             {
-                                <option value="@iishfEvent.Id">@iishfEvent.EventName</option>
+                                                    <option value="@iishfEvent.Id">@iishfEvent.EventName</option>
                             }
                         }
                     </select>
@@ -179,16 +179,16 @@
                                     {
                                         if (country.ISO3 == team?.Value<string>("countryIso3"))
                                         {
-                                            <option selected="true" value="@country.ISO3">@country.Country</option>
+                                                                <option selected="true" value="@country.ISO3">@country.Country</option>
                                         }
                                         else
                                         {
-                                            <option value="@country.ISO3">@country.Country</option>
+                                                                <option value="@country.ISO3">@country.Country</option>
                                         }
                                         if (countries.ToList().IndexOf(country) == lastPriorityCountryIndex && !addedSeparator)
                                         {
                                             // Add the separator
-                                            <option disabled>──────────</option>
+                                                                <option disabled>──────────</option>
                                             addedSeparator = true; // Ensure the separator is only added once
                                         }
                                     }
@@ -226,10 +226,18 @@
                                     <th>Role</th>
                                     <th>First Name</th>
                                     <th>Last Name</th>
-                                    <th style="width: 50px">Jersey Number</th>
+                                    <th class="text-center" style="width: 50px">Jersey Number</th>
                                     <th>Date of Birth</th>
                                     <th>Nationality</th>
                                     <th>Gender</th>
+                                    
+                                    @{
+                                        if (!selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase))
+                                        {
+                                                    <th>Is Guest</th>                                            
+                                        }
+                                    }
+
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -268,6 +276,18 @@
 
                                             <span>@players[i].Value("gender")</span>
                                         </td>
+                                        @{
+                                            if (!selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase))
+                                            {
+                                                        <td>
+                                                            @if (@players[i].Value<bool>("isGuest"))
+                                                    {
+                                                                <span><i class="fas fa-check"></i></span>
+                                                        
+                                                    }
+                                                        </td>                                            
+                                            }
+                                        }
                                         <td>
                                             <button type="button" class="btn btn-danger delete-btn" onclick="event.stopPropagation(); deleteRow(this);">
                                                 <i class="fas fa-trash"></i>
@@ -488,7 +508,7 @@
 
         var teamName = $("#teamName").val()
 
-        var url = `/api/events/itc/team/titel-event/${titleEvent}/championship/${isChampionship}/year/${eventYear}/team/${teamName}/roster-member/${rosterId}`
+        var url = `/api/events/itc/team/tournament/${@selectedTournament.Id}/team/${teamName}/roster-member/${rosterId}`
         var encodedUrl = encodeURI(url);
         $.ajax({
             url: encodedUrl,
@@ -618,9 +638,20 @@
 
         var roleArray = roles.map(item => item.role);
 
+        
+        console.log("Number of players on ITC:" + roleArray.length)
+
         var netminderCount = roleArray.filter(x => x === "Netminder");
         var captainCount = roleArray.filter(x => x === "Captain");
         var assitantCaptainCount = roleArray.filter(x => x === "Assistant Captain");
+
+        if (roleArray.length < 8) { 
+            allErrors.push({
+                name: "Minimum roster count not met",
+                errors: "For international matches the minimum number that shall be registered is 8 (7 outfield players and 1 goalkeeper). These players must be kitted up and be on the players bench or on the pitch for the first game. For more information please refer to Rules of the Game Rule 4.2.2"
+            });
+        }
+
 
         // create title event check here too
         if (netminderCount.length < 2 && isTitleEvent) {
@@ -1002,7 +1033,7 @@
             dataType: "json",
             success: function (result) {
                 console.log("Sending results to update row ids");
-                //updateRowIds(result);
+                updateRowIds(result);
             },
             error: function (result) {
                 console.log(result);
@@ -1011,22 +1042,28 @@
     }
 
     function updateRowIds(updatedRoster) {
-        console.log("updating row ids")
-        updatedRoster.ItcRosterMembers.forEach(function (member) {
-            if (member.Id !== 0) {
-                // Construct the jQuery selector to find the row with matching license number and last name
-                $("#data-table tbody tr").each(function () {
-                    var license = $(this).find('td:nth-child(1) span span').text().trim();
-                    var lastName = $(this).find('td:nth-child(4) span span').text().trim();
+            console.log("updating row ids")
+            updatedRoster.itcRosterMembers.forEach(function (member) {
+                if (member.Id !== 0) {
+                    // Construct the jQuery selector to find the row with matching license number and last name
+                    $("#data-table tbody tr").each(function () {
+                        var firstName = $(this).find('td:nth-child(3) span span').text().trim();
+                        var lastName = $(this).find('td:nth-child(4) span span').text().trim();
+                        if (firstName === member.firstName && lastName === member.lastName) {
+                            $(this).attr('data-id', member.id);
+                        }
+                    });
 
-
-                    if (license === member.License && lastName === member.LastName) {
-                        $(this).attr('data-id', member.Id);
-                    }
-                });
-            }
-        });
-    }
+                    $("#benchOfficials tbody tr").each(function () {
+                        var firstName = $(this).find('td:nth-child(3) span span').text().trim();
+                        var lastName = $(this).find('td:nth-child(4) span span').text().trim();
+                        if (firstName === member.firstName && lastName === member.lastName) {
+                            $(this).attr('data-id', member.id);
+                        }
+                    });
+                }
+            });
+        }
 
     function generateJson(isDraft) {
 
@@ -1049,6 +1086,7 @@
         }
 
         var formData = {
+            "EventId": $("#eventSelect").val(),
             "EventYear": year, // Assuming you have an input for EventYear
             "TitleEvent": $('#shortCode').val(), // Assuming you have an input for TitleEvent
             "isChampionship": document.getElementById('isChampionship').checked, // Assuming you have a checkbox for IsChampionship
@@ -1068,6 +1106,7 @@
             var firstName = currentRow.querySelector("td:nth-child(3) span span").textContent.trim();
             var lastName = currentRow.querySelector("td:nth-child(4) span span").textContent.trim();
             var dateOfBirth = null;
+            var isGuest = false
             if (isBench) {
                 dateOfBirth = currentRow.querySelector("td:nth-child(5) span span").textContent.trim();
                 var nationality = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
@@ -1078,7 +1117,11 @@
                 dateOfBirth = currentRow.querySelector("td:nth-child(6) span span").textContent.trim();
                 var nationality = currentRow.querySelector("td:nth-child(7) span span").textContent.trim();
                 var gender = currentRow.querySelector("td:nth-child(8) span span").textContent.trim();
-                var isGuest = currentRow.querySelector("td:nth-child(8) span span").textContent.trim() // This will be a font awesome icon.. will need to test its value
+                 var isGuestColumnExists = $('#data-table thead tr th').eq(8).text() === 'Is Guest';
+                if (isGuestColumnExists) { 
+                    isGuest = $currentRow.find("td:nth-child(9) span span i").hasClass('fa-check');
+                }
+                
             }
 
             if (dateOfBirth === "01.01.0001" || dateOfBirth === "01.01.1753") {
@@ -1102,7 +1145,8 @@
                 "IsBenchOfficial": isBench,
                 "DateOfBirth": formattedDate,
                 "Nationality": nationality,
-                "Gender": gender
+                "Gender": gender,
+                "isGuest" : isGuest,
             });
         };
 
@@ -1341,7 +1385,9 @@
         var currentRow = null;
 
         $('#teamName').on('input', function () {
+
             var query = $(this).val();
+            console.log(query)
             if (query.length >= 3) { // Trigger search when 3 or more characters are typed
                 $.ajax({
                     url: '/api/events/search',
@@ -1548,42 +1594,7 @@
             });
         });
 
-    @{
-        if (selectedTournament != null && @selectedTournament.Id > 0)
-        {
-            <text>
-                                                    var selectedValue = @selectedTournament.Id;
-                $('#eventSelect').val(selectedValue).change();
-                $('#eventSelect').prop('disabled', true);
-
-            </text>
-        }
-
-        if (!string.IsNullOrWhiteSpace(team?.Value<string>("countryIso3")))
-        {
-            <text>
-                    $('#issuingCountry').prop('disabled', true);
-            </text>
-
-        }
-
-        if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyOneColour")))
-        {
-            <text>
-                    $('#colourOne').val('@(team?.Value<string>("jerseyOneColour"))').change();
-            </text>
-
-        }
-
-        if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyTwoColour")))
-        {
-            <text>
-                    $('#colourTwo').val('@(team?.Value<string>("jerseyTwoColour"))').change();
-
-            </text>
-
-        }
-    }
+   
 
                 const pickr = Pickr.create({
                 el: '#colorPicker',
@@ -1661,6 +1672,46 @@
             var newColor = $(this).val(); // Get the new color value from the textbox
             pickr2.setColor(newColor); // Update the color picker with the new color
         });
+
+         @{
+             if (selectedTournament != null && @selectedTournament.Id > 0)
+             {
+                                     <text>
+                                                                        var selectedValue = @selectedTournament.Id;
+                                    $('#eventSelect').val(selectedValue).change();
+                                    $('#eventSelect').prop('disabled', true);
+
+                                </text>
+             }
+
+             if (!string.IsNullOrWhiteSpace(team?.Value<string>("countryIso3")))
+             {
+                                     <text>
+                                        $('#issuingCountry').prop('disabled', true);
+                                </text>
+
+             }
+
+             if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyOneColour")))
+             {
+                                     <text>
+                         setTimeout(function () { 
+                         $('#colourOne').val('@(team?.Value<string>("jerseyOneColour"))').change();}, 500)
+                                </text>
+
+             }
+
+             if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyTwoColour")))
+             {
+                                     <text>
+                             setTimeout(function(){
+                             $('#colourTwo').val('@(team?.Value<string>("jerseyTwoColour"))').change();}, 500)
+
+                                    </text>
+
+             }
+         }
+        
     });
 
 

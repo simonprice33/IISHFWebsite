@@ -59,10 +59,11 @@
 
 <script>
     $(document).ready(function () {
-        @if (Model != null && Model.Teams != null)
-        {
 
-            
+        var sanctionNumber = $('#sanction')[0].innerHTML;
+
+        @if (Model != null && Model.Teams != null && Model.SanctionNumber.StartsWith('A'))
+        {
             <text>
 
             var selectedTeamName = $("#teamName").val();
@@ -94,7 +95,7 @@
 
             </text>
         }
-        else
+        else if (Model.SanctionNumber.StartsWith('A'))
         {
             <text>
             var textboxHtml = '<input type="text" class="form-control" placeholder="Team Name" id="teamName" />';
@@ -102,20 +103,7 @@
             </text>
         }
 
-        var sanctionNumber = $('#sanction')[0].innerHTML;
-
-        // if (sanctionNumber && sanctionNumber.charAt(0) !== 'A') {
-        //     // Add the "Is Guest" column header at ordinal 9 (after 8th column)
-        //     $('<th>Is Guest</th>').insertAfter('#data-table thead tr th:nth-child(8)');
-
-        //     // Add a checkbox in each row for the new column at the same ordinal position
-        //     $('#data-table tbody tr').each(function () {
-        //         var $td = $('<td>');
-        //         var $checkbox = $('<input>', { type: 'checkbox' });
-        //         $td.append($checkbox);
-        //         $td.insertAfter($(this).find('td:nth-child(8)'));
-        //     });
-        // }
+       
 
         // Define the position for the new column based on zero-based index; 8th position for 9th column.
         var columnIndex = 8;

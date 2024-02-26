@@ -92,6 +92,16 @@ namespace IISHF.Core.Services
             return iishfEvent.Id;
         }
 
+        public IPublishedContent? GetTournament(int id)
+        {
+            var rootContent = _contentQuery.ContentAtRoot().ToList();
+            var tournament = _contentQuery.ContentAtRoot()
+                .DescendantsOrSelfOfType("event")
+                .Where(x => x.Id == id).FirstOrDefault();
+
+            return tournament;
+        }
+
         public IPublishedContent? GetTournament(bool isChampionships, string titleEvent, string eventYear)
         {
             var rootContent = _contentQuery.ContentAtRoot().ToList();
@@ -189,6 +199,7 @@ namespace IISHF.Core.Services
                 }
                 var teamToUpdate = _contentService.GetById(team.Id);
                 teamToUpdate?.SetValue(fieldName, colourHex);
+                _contentService.SaveAndPublish(teamToUpdate);
                 return Task.CompletedTask;
             });
         }

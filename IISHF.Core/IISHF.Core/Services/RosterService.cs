@@ -79,6 +79,7 @@ namespace IISHF.Core.Services
             umbracoRosteredMember?.SetValue("nmaCheck", rosterMember.NmaCheck);
             umbracoRosteredMember?.SetValue("iishfCheck", rosterMember.IISHFCheck);
             umbracoRosteredMember?.SetValue("comments", rosterMember.Comments);
+            umbracoRosteredMember?.SetValue("isGuest", rosterMember.IsGuest);
 
             _contentService.SaveAndPublish(umbracoRosteredMember);
             return umbracoRosteredMember.Id;

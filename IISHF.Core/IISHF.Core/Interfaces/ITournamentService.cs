@@ -10,6 +10,8 @@ namespace IISHF.Core.Interfaces
 
         IContent CreateEventTeam(Team model, IPublishedContent tournament);
 
+        IPublishedContent? GetTournament(int id);
+
         IPublishedContent? GetTournament(bool isChampionships, string titleEvent, string eventYear);
 
         IPublishedContent? GetTournamentTeamByName(string teamName, IPublishedContent tournament);
