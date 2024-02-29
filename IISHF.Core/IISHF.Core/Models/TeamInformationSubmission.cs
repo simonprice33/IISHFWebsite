@@ -15,5 +15,9 @@ namespace IISHF.Core.Models
 
         [JsonPropertyName("submitToHost")]
         public bool SubmitToHost { get; set; }
+
+        public string TeamSignatory { get; set; }
+
+        public string IssuingCountry { get; set; }
     }
 }

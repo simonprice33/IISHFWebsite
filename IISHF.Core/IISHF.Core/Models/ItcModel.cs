@@ -10,5 +10,7 @@
         public string JerseyTwoColour { get; set; }
 
         public DateTime? SubmittedDate { get; set; }
+
+        public int TeamId { get; set; }
     }
 }

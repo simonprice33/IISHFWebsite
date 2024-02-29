@@ -122,6 +122,12 @@ namespace IISHF.Core.Services
             return team;
         }
 
+        public IPublishedContent? GetTournamentTeamById(int id, IPublishedContent tournament)
+        {
+            var team = tournament.Children().FirstOrDefault(x => x.Id == id);
+            return team;
+        }
+
         public Task UpdateGameWithResults(UpdateTeamScores model, IPublishedContent tournament)
         {
             foreach (var finalScore in model.Scores)
@@ -189,16 +195,16 @@ namespace IISHF.Core.Services
             return team;
         }
 
-        public async Task UpdateTeamColours(string colourHex, string fieldName, IPublishedContent team)
+        public async Task UpdateTeamProperties(string propertyValue, string fieldName, IPublishedContent team)
         {
             await Task.Run(() =>
             {
-                if (team.Value<string>(fieldName) == colourHex)
+                if (team.Value<string>(fieldName) == propertyValue)
                 {
                     return Task.FromResult(Task.CompletedTask);
                 }
                 var teamToUpdate = _contentService.GetById(team.Id);
-                teamToUpdate?.SetValue(fieldName, colourHex);
+                teamToUpdate?.SetValue(fieldName, propertyValue);
                 _contentService.SaveAndPublish(teamToUpdate);
                 return Task.CompletedTask;
             });

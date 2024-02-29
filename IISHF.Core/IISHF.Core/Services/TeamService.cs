@@ -1,5 +1,7 @@
 ﻿using IISHF.Core.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using System.Text.RegularExpressions;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.IO;
 using Umbraco.Cms.Core.Models;
@@ -7,6 +9,7 @@ using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Strings;
+using Umbraco.Extensions;
 using IMediaService = Umbraco.Cms.Core.Services.IMediaService;
 
 namespace IISHF.Core.Services
@@ -20,6 +23,7 @@ namespace IISHF.Core.Services
         private readonly IContentTypeBaseServiceProvider _contentTypeBaseServiceProvider;
         private readonly MediaFileManager _mediaFileManager;
         private readonly MediaUrlGeneratorCollection _mediaUrlGeneratorCollection;
+        private readonly ILogger<TeamService> _logger;
 
         public TeamService(
             IPublishedContentQuery contentQuery,
@@ -28,7 +32,8 @@ namespace IISHF.Core.Services
             IShortStringHelper shortStringHelper,
             IContentTypeBaseServiceProvider contentTypeBaseServiceProvider,
             MediaFileManager mediaFileManager,
-            MediaUrlGeneratorCollection mediaUrlGeneratorCollection)
+            MediaUrlGeneratorCollection mediaUrlGeneratorCollection,
+            ILogger<TeamService> logger)
         {
             _contentQuery = contentQuery;
             _contentService = contentService;
@@ -37,6 +42,7 @@ namespace IISHF.Core.Services
             _contentTypeBaseServiceProvider = contentTypeBaseServiceProvider;
             _mediaFileManager = mediaFileManager;
             _mediaUrlGeneratorCollection = mediaUrlGeneratorCollection;
+            _logger = logger;
         }
 
         public async Task UpdateNmaTeamHistory(string html, IPublishedContent team)
@@ -62,21 +68,58 @@ namespace IISHF.Core.Services
                 return null;
             }
 
-            return await CreateMedia(file, teamPhoto);
+            return await CreateMediaAsync(file, teamPhoto);
         }
 
-        private async Task<IMedia> CreateMedia(IFormFile file, string directory)
+        private async Task<IMedia> CreateMediaAsync(IFormFile file, string directory)
         {
             return await Task.Run(async () =>
             {
-                await using var stream = file.OpenReadStream();
-                int folderId = EnsureFolderExists(directory);
-                IMedia media = _umbracoMediaService.CreateMedia(file.FileName, folderId, Constants.Conventions.MediaTypes.Image);
-                media.SetValue(_mediaFileManager, _mediaUrlGeneratorCollection, _shortStringHelper, _contentTypeBaseServiceProvider,
-                    Constants.Conventions.Media.File, file.FileName, stream);
-                _umbracoMediaService.Save(media);
-                return media;
+                try
+                {
+                    await using var stream = file.OpenReadStream();
+                    int folderId = EnsureFolderExists(directory);
+                    IMedia media = _umbracoMediaService.CreateMedia(file.FileName, folderId,
+                        Constants.Conventions.MediaTypes.Image);
+                    media.SetValue(_mediaFileManager, _mediaUrlGeneratorCollection, _shortStringHelper,
+                        _contentTypeBaseServiceProvider,
+                        Constants.Conventions.Media.File, file.FileName, stream);
+                    _umbracoMediaService.Save(media);
+                    return media;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "unable to upload media");
+                    throw;
+                }
+
             });
+
+        }
+
+        public async Task<IContent>? AddPlayerPermissionDocumentToTeam(IFormFile file, string label, IPublishedContent team)
+        {
+
+            string pattern = @"\[(.*?)\]";
+
+            Match match = Regex.Match(label, pattern);
+            if (match.Success)
+            {
+                // This will print the value between the square brackets
+                label = match.Groups[1].Value;
+            }
+
+            var mediaItem = await CreateMediaAsync(file, "Player Permission Documents");
+            var document = _contentService.Create(label, team.Id, "guestPlayerPermission");
+
+            // Ensure the mediaItemId is converted to a UDI
+            var media = _contentQuery.Media(mediaItem.Key);
+            var udi = Udi.Create(Constants.UdiEntityType.Media, media.Key);
+            document.SetValue("permissionDocument", udi.ToString());
+            document.SetValue("identifier", label);
+            _contentService.SaveAndPublish(document);
+
+            return document;
         }
 
         public async Task<List<IMedia>> UploadSponsors(List<IFormFile> files, IPublishedContent team, string teamPhoto)
@@ -84,10 +127,10 @@ namespace IISHF.Core.Services
             var mediaList = new List<IMedia>();
             foreach (var file in files)
             {
-                var mediaItem = await CreateMedia(file, "Sponsors");
+                var mediaItem = await CreateMediaAsync(file, "Sponsors");
                 var sponsor = _contentService.Create(file.FileName, team.Id, "sponsor");
                 _contentService.SaveAndPublish(sponsor);
-                await AddImageToTeam(mediaItem, sponsor, "sponsorImage");
+                await AddMediaToTeam(mediaItem, sponsor, "sponsorImage");
                 mediaList.Add(mediaItem);
             }
 
@@ -97,7 +140,7 @@ namespace IISHF.Core.Services
         public async Task AddImageToTeam(IMedia image, IPublishedContent team, string propertyAlias)
         {
             var nmaTeam = _contentService.GetById(team.Id);
-            await AddImageToTeam(image, nmaTeam, propertyAlias);
+            await AddMediaToTeam(image, nmaTeam, propertyAlias);
         }
 
         public async Task DeleteSponsor(int sponsorId, int mediaId, IPublishedContent team)
@@ -121,7 +164,7 @@ namespace IISHF.Core.Services
             }
         }
 
-        public async Task AddImageToTeam(IMedia image, IContent team, string propertyAlias)
+        public async Task AddMediaToTeam(IMedia image, IContent team, string propertyAlias)
         {
             if (team != null)
             {

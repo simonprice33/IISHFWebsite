@@ -16,11 +16,13 @@ namespace IISHF.Core.Interfaces
 
         IPublishedContent? GetTournamentTeamByName(string teamName, IPublishedContent tournament);
 
+        IPublishedContent? GetTournamentTeamById(int id, IPublishedContent tournament);
+
         Task UpdateGameWithResults(UpdateTeamScores model, IPublishedContent tournament);
 
         Task CreateEventGame(CreateScheduleGames model, IPublishedContent tournament);
 
-        Task UpdateTeamColours(string colourHex, string fieldName, IPublishedContent team);
+        Task UpdateTeamProperties(string propertyValue, string fieldName, IPublishedContent team);
 
         Task SetTeamInformationSubmissionDate(IPublishedContent team);
 

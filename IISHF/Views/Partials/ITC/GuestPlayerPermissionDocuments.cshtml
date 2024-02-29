@@ -1,0 +1,58 @@
+﻿@using IISHF.Helpers
+@model IISHF.Core.Models.PermissionLetters
+
+<div class="container">
+    <div class="row">
+        @{
+            foreach (var document in Model.Permissionletters)
+            {
+                var file = document.Value<IPublishedContent>("permissionDocument");
+                var fileUrl = file?.Url();
+                var iconClass = FileIconHelper.GetIcon(fileUrl);
+                var playerName = Model.Players.FirstOrDefault(x => x.Value<string>("licenseNumber") == document.Name);
+
+                    <div class="col-6 col-sm-4 col-md-2 col-lg-2 text-center mb-3">
+                        <a class="dropdown-item" href="@fileUrl" target="_blank">
+                            <i class="@iconClass fa-6x p-1"></i>
+                        </a>
+                        <div class="text-wrap">
+                            @if (playerName != null)
+                        {
+                                <span>Permission letter for roster member:<br />@playerName.Name</span>
+                        }
+                        else
+                        {
+                                <span>Permission letter for license:<br />@document.Name</span>
+                        }
+                        </div>
+                        <button class="btn btn-danger w-100" onclick="deletePermissionLetter(@document.Id, @file.Id, @document.Parent.Id)">Delete</button>
+                    </div>
+            }
+        }
+    </div>
+</div>
+
+<script>
+
+    function deletePermissionLetter(id, fileId, teamId) {
+
+        var tournamentId = $("#eventSelect").val();
+        $.ajax({
+            url: `/api/events/itc/guest-permission-letters/document/${id}/media/${fileId}`,
+            type: 'DELETE',
+            success: function (data) {
+                // Remove the row from the table
+                $.get('/umbraco/surface/events/GetPermissionDocuments', { tournamentId: tournamentId, teamId: teamId }, function (data) {
+                    $('#documents').html(response);
+                });
+            },
+            error: function (xhr, status, error) {
+                console.error("Error: " + error);
+                // Show alert that something went wrong
+            }
+        });
+
+
+    }
+
+</script>

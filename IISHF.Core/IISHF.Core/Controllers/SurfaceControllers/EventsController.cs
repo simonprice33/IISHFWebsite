@@ -1,4 +1,6 @@
-﻿using IISHF.Core.Models;
+﻿using IISHF.Core.Interfaces;
+using IISHF.Core.Models;
+using Lucene.Net.Index;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Cache;
@@ -16,6 +18,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
     public class EventsController : SurfaceController
     {
         private readonly IPublishedContentQuery _contentQuery;
+        private readonly ITournamentService _tournamentService;
 
         public EventsController(
             IUmbracoContextAccessor umbracoContextAccessor,
@@ -23,7 +26,8 @@ namespace IISHF.Core.Controllers.SurfaceControllers
             ServiceContext services, AppCaches appCaches,
             IProfilingLogger profilingLogger,
             IPublishedUrlProvider publishedUrlProvider,
-            IPublishedContentQuery contentQuery)
+            IPublishedContentQuery contentQuery,
+            ITournamentService tournamentService)
             : base(umbracoContextAccessor,
                 databaseFactory,
                 services,
@@ -32,6 +36,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
                 publishedUrlProvider)
         {
             _contentQuery = contentQuery;
+            _tournamentService = tournamentService;
         }
 
         [HttpGet]
@@ -181,6 +186,36 @@ namespace IISHF.Core.Controllers.SurfaceControllers
 
 
             return PartialView("~/Views/Partials/Events/PlayerStatistics.cshtml", model);
+        }
+
+        [HttpGet]
+        public IActionResult GetPermissionDocuments(int tournamentId, int teamId)
+        {
+            var tournament = _tournamentService.GetTournament(tournamentId);
+
+            if(tournament == null)
+            {
+                return PartialView("~/Views/Partials/ITC/GuestPlayerPermissionDocuments.cshtml", new PermissionLetters());
+
+            }
+
+            var team = _tournamentService.GetTournamentTeamById(teamId, tournament);
+
+            if (team == null)
+            {
+                return PartialView("~/Views/Partials/ITC/GuestPlayerPermissionDocuments.cshtml", new PermissionLetters());
+            }
+
+            var rosterMembers = team?.Children().Where(x => x.ContentType.Alias == "roster").ToList() ?? new List<IPublishedContent>();
+            var players = rosterMembers.Where(x => !x.Value<bool>("isBenchOfficial")).ToList();
+
+            var documents = new PermissionLetters
+            {
+                Permissionletters = team.Children().Where(x => x.ContentType.Alias == "guestPlayerPermission").ToList(),
+                Players = players,
+            };
+
+            return PartialView("~/Views/Partials/ITC/GuestPlayerPermissionDocuments.cshtml", documents);
         }
 
         [HttpGet]

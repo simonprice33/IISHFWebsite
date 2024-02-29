@@ -4,13 +4,17 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Web;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Filters;
 using IMediaService = IISHF.Core.Interfaces.IMediaService;
+using Microsoft.AspNetCore.Mvc;
 
 namespace IISHF.Core.Controllers.ApiControllers
 {
@@ -285,8 +289,11 @@ namespace IISHF.Core.Controllers.ApiControllers
             }
 
             // update jersey colours for event team
-            await _tournamentService.UpdateTeamColours(string.IsNullOrWhiteSpace(model.JerseyOne) ? "#000000" : model.JerseyOne, "jerseyOneColour", team);
-            await _tournamentService.UpdateTeamColours(string.IsNullOrWhiteSpace(model.JerseyTwo) ? "#ffffff" : model.JerseyTwo, "jerseyTwoColour", team);
+            await _tournamentService.UpdateTeamProperties(string.IsNullOrWhiteSpace(model.JerseyOne) ? "#000000" : model.JerseyOne, "jerseyOneColour", team);
+            await _tournamentService.UpdateTeamProperties(string.IsNullOrWhiteSpace(model.JerseyTwo) ? "#ffffff" : model.JerseyTwo, "jerseyTwoColour", team);
+
+            await _tournamentService.UpdateTeamProperties(model.TeamSignatory, "teamSignatory", team);
+            await _tournamentService.UpdateTeamProperties(model.IssuingCountry, "countryIso3", team);
 
             var result = await _rosterService.UpsertRosterMembers(model, team);
 
@@ -295,7 +302,7 @@ namespace IISHF.Core.Controllers.ApiControllers
                 ItcRosterMembers = result.ItcRosterMembers,
                 JerseyOneColour = model.JerseyOne,
                 JerseyTwoColour = model.JerseyTwo,
-                SubmittedDate = model.SubmitToHost ? DateTime.UtcNow : null
+                TeamId = team.Id
             };
 
             if (model.SubmitToHost)
@@ -306,8 +313,40 @@ namespace IISHF.Core.Controllers.ApiControllers
                 await _tournamentService.NotifyNmaApprover(tournament, nmaTeam, team);
             }
 
-            var json = JsonSerializer.Serialize(result);
+            var json = JsonSerializer.Serialize(responseModel);
             return Ok(json);
+        }
+
+        [HttpPost("itc/guest-permission-letters/tournament/{tournamentId}/team/{teamId}")]
+        [UmbracoMemberAuthorize]
+        public async Task<IActionResult> PostPersmisssionLetters([FromRoute] int tournamentId, [FromRoute] int teamId, [FromForm] IFormCollection formCollection)
+        {
+
+            var files = formCollection.Files;
+            var lables = formCollection.Keys.ToList();
+
+            var tournament = _tournamentService.GetTournament(tournamentId);
+
+            if (tournament == null)
+            {
+                return NotFound();
+            }
+
+            var team = _tournamentService.GetTournamentTeamById(teamId, tournament);
+
+            if(team == null)
+            {
+                return NotFound();
+            }
+
+            for (var i = 0; i < files.Count; i++)
+            {
+                var file = files[i];
+                var label = lables[i];
+                var content = await _teamService.AddPlayerPermissionDocumentToTeam(file, label, team);
+            }
+
+            return NoContent();
         }
 
         [HttpPut("team-information-submission")]
@@ -361,8 +400,8 @@ namespace IISHF.Core.Controllers.ApiControllers
             }
 
             // update jersey colours for event team
-            await _tournamentService.UpdateTeamColours(model.JerseyOne, "jerseyOneColour", team);
-            await _tournamentService.UpdateTeamColours(model.JerseyTwo, "jerseyTwoColour", team);
+            await _tournamentService.UpdateTeamProperties(model.JerseyOne, "jerseyOneColour", team);
+            await _tournamentService.UpdateTeamProperties(model.JerseyTwo, "jerseyTwoColour", team);
 
             // Re-get nma team object and return saved \ published information
             nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
@@ -398,6 +437,14 @@ namespace IISHF.Core.Controllers.ApiControllers
             }
 
             return Ok(responseModel);
+        }
+
+        [HttpDelete]
+        [Route("itc/guest-permission-letters/document/{id}/media/{mediaId}")]
+        public async Task<IActionResult> DeletePermissionDocument(int id, int mediaId)
+        {
+
+            return NoContent();
         }
 
 

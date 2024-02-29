@@ -1032,9 +1032,9 @@
             }
 
             var formData = {
-                "EventYear": parseInt(year, 10), // Assuming you have an input for EventYear
-                "TitleEvent": $('#shortCode').val(), // Assuming you have an input for TitleEvent
-                "isChampionship": document.getElementById('isChampionship').checked, // Assuming you have a checkbox for IsChampionship
+                "EventYear": parseInt(year, 10), 
+                "TitleEvent": $('#shortCode').val(), 
+                "isChampionship": document.getElementById('isChampionship').checked, 
                 "ItcRosterMembers": [],
                 "TeamName": $('#teamName').val(),
                 "JerseyOne": $('#colourOne').val(),
@@ -1045,7 +1045,7 @@
 
             var processRow = function (currentRow, isBench) {
                 var $currentRow = $(currentRow); // Convert to jQuery object
-                var rosterId = $currentRow.data('id');
+                var rosterId = $currentRow.attr('data-id');
                 var license = currentRow.querySelector("td:nth-child(1) span span").textContent.trim();
                 var role = currentRow.querySelector("td:nth-child(2) span span").textContent.trim();
                 var firstName = currentRow.querySelector("td:nth-child(3) span span").textContent.trim();

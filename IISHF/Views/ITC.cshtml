@@ -1,6 +1,8 @@
 ﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.ITC>
 @using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
 @using System.Globalization
+@using IISHF.Core.Models
+@using IISHF.Helpers
 @using Umbraco.Cms.Core.Security
 @inject IMemberManager MemberManager
 @{
@@ -114,11 +116,11 @@
                 <span class="nav-link mb-3 p-3 shadow" id="v-pills-players-tab">
                     <select id="eventSelect" class="form-control">
                         @{
-                                                                            <option value="">Select Event for @DateTime.Now.Year.ToString()</option>
+                                                <option value="">Select Event for @DateTime.Now.Year.ToString()</option>
 
                             foreach (var iishfEvent in allEvents)
                             {
-                                                                                <option value="@iishfEvent.Id">@iishfEvent.EventName</option>
+                                                    <option value="@iishfEvent.Id">@iishfEvent.EventName</option>
                             }
                         }
                     </select>
@@ -134,9 +136,11 @@
                 <a class="nav-link mb-3 p-3 shadow" id="v-pills-bench-tab" data-bs-toggle="pill" href="#v-pills-bench" role="tab" aria-controls="v-bench-bench" aria-selected="true">
                     <span class="font-weight-bold small text-uppercase">Bench Officials</span>
                 </a>
-                <a class="nav-link mb-3 p-3 shadow" id="v-pills-guest-tab" data-bs-toggle="pill" href="#v-pills-guest" role="tab" aria-controls="v-guest" aria-selected="true">
-                    <span class="font-weight-bold small text-uppercase">Guest Permission Letters</span>
-                </a>
+                        <a class="nav-link mb-3 p-3 shadow" id="v-pills-guest-tab" data-bs-toggle="pill" href="#v-pills-guest" role="tab" aria-controls="v-guest" aria-selected="true">
+                            <span class="font-weight-bold small text-uppercase">Guest Player Permission Letters</span>
+                        </a>                        
+
+                
                 <a class="nav-link mb-3 p-3 shadow" id="v-pills-submit-tab" data-bs-toggle="pill" href="#v-pills-submit" role="tab" aria-controls="v-submit-submit" aria-selected="true">
                     <span class="font-weight-bold small text-uppercase">Validate and Submit</span>
                 </a>
@@ -182,16 +186,16 @@
                                     {
                                         if (country.ISO3 == team?.Value<string>("countryIso3"))
                                         {
-                                                                                            <option selected="true" value="@country.ISO3">@country.Country</option>
+                                                                <option selected="true" value="@country.ISO3">@country.Country</option>
                                         }
                                         else
                                         {
-                                                                                            <option value="@country.ISO3">@country.Country</option>
+                                                                <option value="@country.ISO3">@country.Country</option>
                                         }
                                         if (countries.ToList().IndexOf(country) == lastPriorityCountryIndex && !addedSeparator)
                                         {
                                             // Add the separator
-                                                                                            <option disabled>──────────</option>
+                                                                                                            <option disabled>──────────</option>
                                             addedSeparator = true; // Ensure the separator is only added once
                                         }
                                     }
@@ -235,9 +239,9 @@
                                     <th>Gender</th>
                                     
                                     @{
-                                        if (!selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase))
+                                        if (selectedTournament != null && !selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase))
                                         {
-                                                                                <th>Is Guest</th>                                            
+                                                            <th>Is Guest</th>                                            
                                         }
                                     }
 
@@ -282,13 +286,13 @@
                                         @{
                                             if (!selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase))
                                             {
-                                                                                    <td>
-                                                                                        @if (@players[i].Value<bool>("isGuest"))
+                                                                                                    <td>
+                                                                                                        @if (@players[i].Value<bool>("isGuest"))
                                                     {
-                                                                                            <span><i class="fas fa-check"></i></span>
+                                                                                                            <span><i class="fas fa-check"></i></span>
                                                         
                                                     }
-                                                                                    </td>                                            
+                                                                                                    </td>                                            
                                             }
                                         }
                                         <td>
@@ -334,11 +338,11 @@
                                     </td>
                                     <td>
 
-                                        <span>@players[i].Value("firstName")</span>
+                                        <span>@benchOfficials[i].Value("firstName")</span>
                                     </td>
                                     <td>
 
-                                        <span>@players[i].Value("lastName")</span>
+                                        <span>@benchOfficials[i].Value("lastName")</span>
                                     </td>
                                     <td>
                                         @{
@@ -374,7 +378,23 @@
                         <h3 class="text-center">When supplying a permission letter, please provide license number in the text box that will show under the file preview. </h3>
                     </div>
 
-                    <form action="/upload-multiple-files" class="dropzone" id="multipleFilesDropzone"></form>
+                    <form action="/upload-multiple-files" class="dropzone mb-3" id="multipleFilesDropzone"></form>
+                    
+                    <div id="documents">
+                        @{
+                            if(team != null 
+                               && selectedTournament != null 
+                               && !selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase)
+                               && team.Children().Any(x => x.ContentType.Alias == "guestPlayerPermission"))
+                            {
+                                                @await Html.PartialAsync("Partials/ITC/GuestPlayerPermissionDocuments.cshtml", new PermissionLetters()
+                                       {
+                                           Permissionletters = team.Children().Where(x => x.ContentType.Alias == "guestPlayerPermission").ToList(),
+                                           Players = players
+                                       });
+                            }
+                        }
+                    </div>
 
                 </div>
                 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-submit" role="tabpanel" aria-labelledby="v-pills-submit-tab">
@@ -520,7 +540,7 @@
 
         var teamName = $("#teamName").val()
 
-        var url = `/api/events/itc/team/tournament/${@selectedTournament.Id}/team/${teamName}/roster-member/${rosterId}`
+        var url = `/api/events/itc/team/tournament/${eventSelectValue}/team/${teamName}/roster-member/${rosterId}`
         var encodedUrl = encodeURI(url);
         $.ajax({
             url: encodedUrl,
@@ -614,6 +634,7 @@
         var jerseyNumbers = [];
         var roles = [];
         var guests = []
+        
 
         // Clear any previous error indicators
         $('#formRows tr').removeClass('table-danger');
@@ -667,7 +688,7 @@
 
         var roleArray = roles.map(item => item.role);
 
-        var guestPlayers  
+        var guestFiles = uploadFilesWithLabels();
 
         var netminderCount = roleArray.filter(x => x === "Netminder");
         var captainCount = roleArray.filter(x => x === "Captain");
@@ -676,17 +697,31 @@
         var teamName = $("#teamName").val()
 
         if (!isTitleEvent && guests.length > 1 && (!teamName.includes("select") || !teamName.includes("combination"))) {
-    allErrors.push({
-        name: "Guest player allowance exceeded",
-        errors: "At International class B events, it is possible for a team to take one guest player. For more information, please refer to Regulation's 17.7 and 17.8"
-    });
-}
+            allErrors.push({
+                name: "Guest player allowance exceeded",
+                errors: "At International class B events, it is possible for a team to take one guest player. For more information, please refer to Regulation's 17.7 and 17.8"
+            });
+        }
 
-        if (!isTitleEvent && guests.length > 1) {a
+        if (!isTitleEvent && guests.length > 1 && guestFiles.length != guests.length) {
+            allErrors.push({
+                name: "Guest player missing permission letters",
+                errors: "All guest players and players on a select \ combination team need a signed letter of authority from their club \ team giving permission allowing them to play in a class B event. Please refer to Regulation's 17.7 and 17.8"
+            });
+        }
 
-        if (roleArray.length < 8) { 
+        var playerCount = $('#formRows tr').length;
+
+        if (playerCount <= 7) { 
             allErrors.push({
                 name: "Minimum roster count not met",
+                errors: "For international matches the minimum number that shall be registered is 8 (7 outfield players and 1 goalkeeper). These players must be kitted up and be on the players bench or on the pitch for the first game. For more information please refer to Rules of the Game Rule 4.2.2"
+            });
+        }
+
+        if (netminderCount.length < 1 && !isTitleEvent) {
+            allErrors.push({
+                name: "Minimum netminder count not met",
                 errors: "For international matches the minimum number that shall be registered is 8 (7 outfield players and 1 goalkeeper). These players must be kitted up and be on the players bench or on the pitch for the first game. For more information please refer to Rules of the Game Rule 4.2.2"
             });
         }
@@ -768,18 +803,20 @@
         return isValid;
     }
 
-    function GetFilesWithLabels() {
-    var myDropzone = Dropzone.forElement("#my-awesome-dropzone");
-    var files = myDropzone.getAcceptedFiles();
-    var filesAndLabels = [];
+    function uploadFilesWithLabels() {
+        var myDropzone = Dropzone.forElement("#multipleFilesDropzone");
+        var files = myDropzone.getAcceptedFiles();
+        var filesAndLabels = [];
+    
+        files.forEach(function(file) {
+            var label = $(file.previewElement).find("input[name='fileLabel']").val();
+            filesAndLabels.push({file: file, label: label});
+        });
+    
+        // sendFilesAndLabelsAjax(filesAndLabels);
 
-    files.forEach(function(file) {
-        var label = $(file.previewElement).find("input[name='fileLabel']").val();
-        filesAndLabels.push({file: file, label: label});
-    });
-
-    sendFilesAndLabelsAjax(filesAndLabels);
-}
+        return filesAndLabels;
+    }
 
     function validateAge(dateOfBirth, ageGroup, isFemale) {
         // Parse the date of birth to a Date object
@@ -905,7 +942,8 @@
 
         // Clear any previous error indicators
         $('#formRowsBench tr').removeClass('table-danger');
-        $('#submissionErrors').empty().hide();
+        $('#submissionErrors').empty();
+        $('#submissionErrors').hide();
         // Collect all license and jersey numbers
         $('#formRowsBench tr').each(function (index) {
             var currentRow = $(this);
@@ -978,10 +1016,10 @@
 
     function displayValidationErrors(errors) {
         var errorContainer = $('#submissionErrors');
-        errorContainer.empty();
+        $('#submissionErrors').hide();
 
+        errorContainer.empty();
         if (errors) {
-            errorContainer.show();
             var errorList = $('<ul></ul>');
 
             if (Array.isArray(errors)) {
@@ -1010,12 +1048,19 @@
             }
 
             errorContainer.append(errorList);
+            if (errors.length > 0) { 
+            errorContainer.show();
+            }
+            
+
         } else {
             errorContainer.hide();
         }
     }
 
     function validateForms() {
+        $('#submissionErrors').hide();
+
         allErrors = [];
         licenseNumbers = [];
         benchOfficialLicenseNumbers = []
@@ -1085,6 +1130,10 @@
             success: function (result) {
                 console.log("Sending results to update row ids");
                 updateRowIds(result);
+
+                // ToDo titleEventCheck
+                // only needed if not title event
+                UploadFiles(result.TeamId)
             },
             error: function (result) {
                 console.log(result);
@@ -1092,10 +1141,55 @@
         });
     }
 
+    function UploadFiles(teamId) {
+    
+        var tournamentId = $("#eventSelect").val();
+        // Create a FormData object
+            var formData = new FormData();
+
+             var dropzone = Dropzone.forElement("#multipleFilesDropzone");
+       var files = dropzone.getAcceptedFiles();
+       var formData = new FormData(); // Make sure you have initialized FormData.
+       
+       files.forEach(function(file, index) {
+           // First, get the label for the current file
+           var label = $(file.previewElement).find("input[name='fileLabel']").val();
+       
+           // Now use the label when appending the file to formData
+           formData.append('files[' + index + ']', file);
+           formData.append('labels[' + label + ']', label);
+       });
+
+    // Perform the AJAX request
+    $.ajax({
+        url: `/api/events/itc/guest-permission-letters/tournament/${tournamentId}/team/${teamId}`, // Replace with your actual endpoint
+        type: 'POST',
+        data: formData,
+        processData: false, // Important: Don't process files
+        contentType: false, // Important: Don't set contentType
+        success: function(response) {
+            console.log('Success:', response);
+            // Optionally, clear the Dropzone for the next batch of files
+            dropzone.removeAllFiles(true);
+
+            $.get('/umbraco/surface/events/GetPermissionDocuments', { tournamentId: tournamentId, teamId: teamId }, function (data) {
+                     $('#documents').html(response);
+                });
+
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', error);
+        }
+    });
+    
+    }
+
     function updateRowIds(updatedRoster) {
             console.log("updating row ids")
-            updatedRoster.itcRosterMembers.forEach(function (member) {
-                if (member.Id !== 0) {
+            updatedRoster.ItcRosterMembers.forEach(function (member) {
+                debugger
+                if (member.id !== 0) {
+                    console.log(member)
                     // Construct the jQuery selector to find the row with matching license number and last name
                     $("#data-table tbody tr").each(function () {
                         var firstName = $(this).find('td:nth-child(3) span span').text().trim();
@@ -1138,20 +1232,24 @@
 
         var formData = {
             "EventId": $("#eventSelect").val(),
-            "EventYear": year, // Assuming you have an input for EventYear
-            "TitleEvent": $('#shortCode').val(), // Assuming you have an input for TitleEvent
-            "isChampionship": document.getElementById('isChampionship').checked, // Assuming you have a checkbox for IsChampionship
+            "EventYear": year, 
+            "TitleEvent": $('#shortCode').val(), 
+            "isChampionship": document.getElementById('isChampionship').checked, 
             "ItcRosterMembers": [],
-            "TeamName": $('#teamName').val(), // Assuming you have an input for TeamName
+            "TeamName": $('#teamName').val(), 
             "JerseyOne": $('#colourOne').val(),
             "JerseyTwo": $('#colourTwo').val(),
-            "SubmitToHost": !isDraft
+            "SubmitToHost": !isDraft,
+            "TeamSignatory" : $("#teamSignatory").val(),
+            "IssuingCountry" : $("#issuingCountry").val()
         };
 
         var processRow = function (currentRow, isBench) {
 
+            debugger;
+
             var $currentRow = $(currentRow); // Convert to jQuery object
-            var rosterId = $currentRow.data('id');
+            var rosterId = $currentRow.attr('data-id');
             var license = currentRow.querySelector("td:nth-child(1) span span").textContent.trim();
             var role = currentRow.querySelector("td:nth-child(2) span span").textContent.trim();
             var firstName = currentRow.querySelector("td:nth-child(3) span span").textContent.trim();
@@ -1206,7 +1304,7 @@
         });
 
         document.querySelectorAll('#formRowsBench tr').forEach(function (row) {
-            debugger
+            
             processRow(row, true);
         });
 
@@ -1647,7 +1745,17 @@
             var selectedValue = $(this).val();
             $.get('/umbraco/surface/events/GetEventInformation', { id: selectedValue }, function (data) {
                 $('#eventInformation').html(data);
+                 var sanction = $("#sanction").text();
+        var classification = sanction.charAt(0).toUpperCase(); // Get the first character and convert to uppercase
+        var isTitleEvent = classification === "A";
+            if (isTitleEvent) {
+                $("#v-pills-guest-tab").hide()
+            } else { 
+                $("#v-pills-guest-tab").show()
+            }
             });
+
+            
         });
 
    
@@ -1732,28 +1840,28 @@
          @{
              if (selectedTournament != null && @selectedTournament.Id > 0)
              {
-                                                                 <text>
-                                                                                                    var selectedValue = @selectedTournament.Id;
-                                                                $('#eventSelect').val(selectedValue).change();
-                                                                $('#eventSelect').prop('disabled', true);
+                <text>
+                    var selectedValue = @selectedTournament.Id;
+                    $('#eventSelect').val(selectedValue).change();
+                    $('#eventSelect').prop('disabled', true);
 
-                                                            </text>
+                </text>
              }
 
              if (!string.IsNullOrWhiteSpace(team?.Value<string>("countryIso3")))
              {
-                                                                 <text>
-                                                                    $('#issuingCountry').prop('disabled', true);
-                                                            </text>
+                 <text>
+                    $('#issuingCountry').prop('disabled', true);
+                </text>
 
              }
 
              if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyOneColour")))
              {
-                                                                 <text>
-                                                     setTimeout(function () { 
-                                                     $('#colourOne').val('@(team?.Value<string>("jerseyOneColour"))').change();}, 500)
-                                                            </text>
+                <text>
+                    setTimeout(function () { 
+                    $('#colourOne').val('@(team?.Value<string>("jerseyOneColour"))').change();}, 500)
+                </text>
 
              }
 
