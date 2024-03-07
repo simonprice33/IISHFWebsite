@@ -15,6 +15,9 @@ using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Filters;
 using IMediaService = IISHF.Core.Interfaces.IMediaService;
 using Microsoft.AspNetCore.Mvc;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using IISHF.Core.Models.ServiceBusMessage;
+using Lucene.Net.Index;
 
 namespace IISHF.Core.Controllers.ApiControllers
 {
@@ -31,6 +34,7 @@ namespace IISHF.Core.Controllers.ApiControllers
         private readonly IEventResultsService _eventResultsService;
         private readonly IMediaService _mediaService;
         private readonly ITeamService _teamService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<EventsController> _logger;
         private readonly JsonSerializerOptions _options;
 
@@ -44,6 +48,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             IEventResultsService eventResultsService,
             IMediaService mediaService,
             ITeamService teamService,
+            IHttpContextAccessor httpContextAccessor,
             ILogger<EventsController> logger)
         {
             _contentQuery = contentQuery;
@@ -55,6 +60,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             _eventResultsService = eventResultsService;
             _mediaService = mediaService;
             _teamService = teamService;
+            _httpContextAccessor = httpContextAccessor;
             _logger = logger;
 
             _options = new JsonSerializerOptions
@@ -317,6 +323,79 @@ namespace IISHF.Core.Controllers.ApiControllers
             return Ok(json);
         }
 
+        [HttpPut("itc/unsubmit/tournament/{tournamentId}/team/{teamKey}")]
+        [UmbracoMemberAuthorize]
+        public async Task<IActionResult> UnsubmitItc(int tournamentId, Guid teamKey)
+        {
+            var tournament = _tournamentService.GetTournament(tournamentId);
+
+            if (tournament == null)
+            {
+                return NotFound();
+            }
+
+            var team = _tournamentService.GetTournamentTeamByKey(teamKey, tournament);
+
+            if (team == null && tournament.Value<string>("sanctionNUmber").StartsWith('A'))
+            {
+                return NotFound();
+
+            }
+
+            await _tournamentService.UnsubmitItc(team);
+            await _tournamentService.CopyItc(team);
+
+            return NoContent();
+        }
+
+        [HttpPut("itc/approve/{approver}/tournament/{tournamentId}/team/{teamName}")]
+        [HttpPut("itc/approve/tournament/{tournamentId}/team/{teamName}")]
+        [UmbracoMemberAuthorize]
+        public async Task<IActionResult> NmaApprove(int tournamentId, string teamName, [FromBody] ITCRosterMemberpproval model, string approver = "")
+        {
+            var setAsApproved = model.RosterApprovals.All(x => x.Approved);
+            var isNma = approver == "nma";
+            if (!string.IsNullOrWhiteSpace(approver) && !setAsApproved)
+            {
+                return BadRequest("Not all roster members approved");
+            }
+
+            var tournament = _tournamentService.GetTournament(tournamentId);
+
+            if (tournament == null)
+            {
+                return NotFound();
+            }
+
+            var team = _tournamentService.GetTournamentTeamByName(teamName, tournament);
+
+            if (team == null)
+            {
+                return NotFound();
+            }
+
+            await _tournamentService.SetNmaCheckValue(model.RosterApprovals, isNma);
+
+            if (isNma && setAsApproved)
+            {
+                await _tournamentService.SetTeamItcNmaApprovalDate(team);
+            }
+
+            if (!isNma && setAsApproved)
+            {
+                await _tournamentService.SetTeamItcIISHFApprovalDate(team);
+
+            }
+
+            if (!isNma && !setAsApproved)
+            {
+                await _tournamentService.ResetNmaApproval(team);
+                await _tournamentService.SetItcRejectionReason(team);
+            }
+
+            return NoContent();
+        }
+
         [HttpPost("itc/guest-permission-letters/tournament/{tournamentId}/team/{teamId}")]
         [UmbracoMemberAuthorize]
         public async Task<IActionResult> PostPersmisssionLetters([FromRoute] int tournamentId, [FromRoute] int teamId, [FromForm] IFormCollection formCollection)
@@ -334,7 +413,7 @@ namespace IISHF.Core.Controllers.ApiControllers
 
             var team = _tournamentService.GetTournamentTeamById(teamId, tournament);
 
-            if(team == null)
+            if (team == null)
             {
                 return NotFound();
             }
@@ -440,9 +519,10 @@ namespace IISHF.Core.Controllers.ApiControllers
         }
 
         [HttpDelete]
-        [Route("itc/guest-permission-letters/document/{id}/media/{mediaId}")]
-        public async Task<IActionResult> DeletePermissionDocument(int id, int mediaId)
+        [Route("itc/guest-permission-letters/document/{contentId}/media/{mediaId}")]
+        public async Task<IActionResult> DeletePermissionDocument(int contentId, int mediaId)
         {
+            await _teamService.DeleteMedia(contentId, mediaId);
 
             return NoContent();
         }
@@ -528,6 +608,8 @@ namespace IISHF.Core.Controllers.ApiControllers
         [Route("team-submission/team/titel-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/sponsor/{sponsorId}/media/{mediaId}")]
         public async Task<IActionResult> DeleteSponsorImage(string titleEvent, bool isChampionship, int eventYear, string teamName, int sponsorId, int mediaId)
         {
+
+            // ToDo : Refactor tournament and team out and refine the url
             // Check we have the tournament
             var tournament = _tournamentService.GetTournament(
                 isChampionship,
@@ -550,7 +632,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             }
 
             // Check roster member belongs to this team
-            await _teamService.DeleteSponsor(sponsorId, mediaId, team);
+            await _teamService.DeleteMedia(sponsorId, mediaId);
 
             return NoContent();
         }
@@ -564,6 +646,7 @@ namespace IISHF.Core.Controllers.ApiControllers
                 .Where(x => x.Name.Contains(searchText, StringComparison.InvariantCultureIgnoreCase))
                 .Select(x => new
                 {
+                    Id = x.Id,
                     Key = x.Key,
                     Name = x.Name,
                 })

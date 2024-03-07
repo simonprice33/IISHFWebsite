@@ -23,5 +23,7 @@ namespace IISHF.Core.Models
         public string? ConfirmPassword { get; set; } = string.Empty;
 
         public List<EventInvitation> Invitations { get; set; }
+        
+        public IEnumerable<ITCApproval> Approvals { get; set; }
     }
 }

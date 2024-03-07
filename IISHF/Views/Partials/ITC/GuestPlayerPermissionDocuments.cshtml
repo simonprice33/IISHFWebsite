@@ -43,7 +43,7 @@
             success: function (data) {
                 // Remove the row from the table
                 $.get('/umbraco/surface/events/GetPermissionDocuments', { tournamentId: tournamentId, teamId: teamId }, function (data) {
-                    $('#documents').html(response);
+                    $('#documents').html(data);
                 });
             },
             error: function (xhr, status, error) {

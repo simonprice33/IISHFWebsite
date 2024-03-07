@@ -5,11 +5,14 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using NPoco;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Infrastructure.Examine;
 using IMediaService = Umbraco.Cms.Core.Services.IMediaService;
 
 namespace IISHF.Core.Services
@@ -128,6 +131,12 @@ namespace IISHF.Core.Services
             return team;
         }
 
+        public IPublishedContent? GetTournamentTeamByKey(Guid key, IPublishedContent tournament)
+        {
+            var team = tournament.Children().FirstOrDefault(x => x.Key == key);
+            return team;
+        }
+
         public Task UpdateGameWithResults(UpdateTeamScores model, IPublishedContent tournament)
         {
             foreach (var finalScore in model.Scores)
@@ -232,6 +241,54 @@ namespace IISHF.Core.Services
             _contentService.SaveAndPublish(tournamentTeam);
         }
 
+        public async Task UnsubmitItc(IPublishedContent team)
+        {
+            await Task.Run(async () =>
+            {
+                var tournamentTeam = _contentService.GetById(team.Id);
+                if (tournamentTeam == null)
+                {
+                    return;
+                }
+
+                tournamentTeam.SetValue("iTCSubmissionDate", null);
+                tournamentTeam.SetValue("iTCSubmitted", false);
+                tournamentTeam.SetValue("iTCSubmittedBy", null);    
+                _contentService.SaveAndPublish(tournamentTeam);
+
+            });
+        }
+
+        public async Task CopyItc(IPublishedContent team, bool rejected = false)
+        {
+            await Task.Run(async () =>
+            {
+                var lable = rejected ? "rejected" : "revision";
+                var tournamentTeam = _contentService.GetById(team.Id);
+                var newContent = _contentService.Copy(tournamentTeam, tournamentTeam.ParentId, true, true);
+                newContent.Name = $"{team.Name} - {lable}  - {DateTime.Now.ToString("yyyyMMdd-HHmmss")}";
+                _contentService.Save(newContent);
+            });
+        }
+
+        public async Task SetNmaCheckValue(IEnumerable<RosterApproval> rosterMembers, bool isNma)
+        {
+            await Task.Run(async () =>
+            {
+
+                var propertyName = isNma ? "nmaCheck" : "iishfCheck";
+                foreach (var rosterMember in rosterMembers)
+                {
+
+
+                    var rosterMemberContent = _contentService.GetById(rosterMember.Id);
+                    rosterMemberContent.SetValue(propertyName, rosterMember.Approved);
+                    rosterMemberContent.SetValue("comments", rosterMember.Comments);
+                    _contentService.SaveAndPublish(rosterMemberContent);
+                }
+            });
+        }
+
         public async Task SetTeamItcNmaApprovalDate(IPublishedContent team)
         {
             var user = await _memberManager.GetCurrentMemberAsync();
@@ -269,8 +326,8 @@ namespace IISHF.Core.Services
 
             var udi = Udi.Create(Constants.UdiEntityType.Member, user.Key);
 
-            tournamentTeam.SetValue("nMAApprovedDate", DateTime.UtcNow);
-            tournamentTeam.SetValue("iTCNMAApprover", udi);
+            tournamentTeam.SetValue("iISHFApprovedDate", DateTime.UtcNow);
+            tournamentTeam.SetValue("iISHFITCApprover", udi);
             tournamentTeam.SetValue("iTCApproved", true);
             _contentService.SaveAndPublish(tournamentTeam);
         }
@@ -431,7 +488,23 @@ namespace IISHF.Core.Services
                 return;
             }
 
-            var nma = nmaTeam.Parent.Parent.Parent;
+
+
+            IPublishedContent nma = null;
+
+            if (nmaTeam != null)
+            {
+                nma = nmaTeam.Parent.Parent.Parent;
+            }
+            else
+            {
+                 nma = _contentQuery.ContentAtRoot()
+                    .DescendantsOrSelfOfType("nationalMemberAssociations")
+                    .FirstOrDefault()
+                    .Children()
+                    .FirstOrDefault(x => x.Value<string>("iSO3") == team.Value<string>("countryIso3"));
+            }
+
 
             var itcApprovers = _memberService.GetMembersByPropertyValue("nMAITCApprover", true)
                 .Where(x => x.GetValue<string>("nationalMemberAssosiciation") == nma.Name)
@@ -445,7 +518,7 @@ namespace IISHF.Core.Services
             var protocol = _httpContextAccessor.HttpContext.Request.Scheme;
             var baseUrl = _httpContextAccessor.HttpContext.Request.Host;
             var route = $"itc";
-            var queryString = $"team={nmaTeam.Key.ToString()}";
+            var queryString = $"team={team.Key.ToString()}";
 
             var serviceBusMessage = new SubmittedITCInformation
             {
@@ -462,6 +535,91 @@ namespace IISHF.Core.Services
         public Task NotifyIISHFApprover(IPublishedContent tournament, IPublishedContent nmaTeam, IPublishedContent team)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<RejectedRosterMembersModel> GetRejectedRosterMembers(int[] playerIds)
+        {
+            return await Task.Run(async () =>
+            {
+                var rosterMembers = new List<RejectedRosterMember>();
+
+                foreach (var playerId in playerIds)
+                {
+                    var content = GetById(playerId);
+
+                    var rosterMember = new RejectedRosterMember
+                    {
+                        Id = playerId,
+                        LicenseNumber = content.Value<string>("licenseNumber"),
+                        Name = content.Value<string>("playerName"),
+                        Reason = content.Value<string>("comments")
+                    };
+
+                    rosterMembers.Add(rosterMember);
+
+                }
+
+                return new RejectedRosterMembersModel
+                {
+                    RejectedRosterMembers = rosterMembers
+                };
+
+            });
+        }
+
+        public async Task SetItcRejectionReason(IPublishedContent team)
+        {
+            await Task.Run(async () =>
+            {
+                var updatedTeam = GetById(team.Id);
+
+                var rosterMembers = team.Children().Where(x => x.ContentType.Alias == "roster").Where(x => !string.IsNullOrWhiteSpace(x.Value<string>("comments"))).ToList();
+
+                var comments = new List<string>();
+
+                var commentsStart = "<ul>";
+                var commentsEnd = "<ul>";
+
+                foreach (var rosterMember in rosterMembers)
+                {
+                    
+                    comments.Add($"<li>{rosterMember.Value<string>("playerName")} - {rosterMember.Value<string>("comments")}</li>");
+                }
+
+                var teamContent = _contentService.GetById(team.Id);
+                teamContent.SetValue("iTCRejectionReason", $"{commentsStart}{string.Join(Environment.NewLine, comments)}{commentsEnd}");
+                _contentService.SaveAndPublish(teamContent);
+
+            });
+        }
+
+        public async Task ResetNmaApproval(IPublishedContent team)
+        {
+            await Task.Run(async () =>
+            {
+                await CopyItc(team, true);
+
+                var tournamentTeam = _contentService.GetById(team.Id);
+                if (tournamentTeam == null)
+                {
+                    return;
+                }
+
+                tournamentTeam.SetValue("iTCSubmissionDate", null);
+                tournamentTeam.SetValue("iTCSubmitted", false);
+                tournamentTeam.SetValue("iTCSubmittedBy", null);
+
+                tournamentTeam.SetValue("nMAApprovedDate", null);
+                tournamentTeam.SetValue("iTCNMAApprover", null);
+
+                tournamentTeam.SetValue("iTCApproved", false);
+                _contentService.SaveAndPublish(tournamentTeam);
+            });
+        }
+
+        public IPublishedContent GetById(int id)
+        {
+            return _contentQuery.Content(id);
         }
 
         private List<IPublishedContent> GetEventTeams(int year, int tournamentId, int teamId)

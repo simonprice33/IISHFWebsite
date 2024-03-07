@@ -16,6 +16,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
     public class AccountController : SurfaceController
     {
         private readonly IInvitationService _invitationService;
+        private readonly IApprovals _approvals;
         private readonly IMemberManager _memberManager;
 
         public AccountController(
@@ -26,10 +27,12 @@ namespace IISHF.Core.Controllers.SurfaceControllers
             IProfilingLogger profilingLogger,
             IPublishedUrlProvider publishedUrlProvider,
             IInvitationService invitationService,
+            IApprovals approvals,
             IMemberManager memberManager)
             : base(umbracoContextAccessor, databaseFactory, services, appCaches, profilingLogger, publishedUrlProvider)
         {
             _invitationService = invitationService;
+            _approvals = approvals;
             _memberManager = memberManager;
         }
 
@@ -46,17 +49,20 @@ namespace IISHF.Core.Controllers.SurfaceControllers
 
             var invitations = _invitationService.GetInvitation(member.Email);
 
+            var approvals = await _approvals.GetApprovalsAsync();
+
             var model = new AccountViewModel
             {
                 Email = member.Email,
                 Name = member.Name,
                 Username = member.Email,
-                Invitations = invitations
+                Invitations = invitations,
+                Approvals = approvals
             };
 
             return PartialView("~/Views/Partials/Members/MyAccount.cshtml", model);
         }
-
+        
         [HttpPost]
         public IActionResult HandleUpdateDetails(AccountViewModel model)
         {

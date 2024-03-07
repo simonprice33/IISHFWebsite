@@ -44,6 +44,7 @@ namespace IISHF
 
             services.AddScoped<IHttpClient, HttpClient>();
             services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IApprovals, ApprovalService>();
             services.AddScoped<ITournamentService, TournamentService>();
             services.AddScoped<IEventResultsService, EventResultsService>();
             services.AddScoped<IMediaService, MediaService>();

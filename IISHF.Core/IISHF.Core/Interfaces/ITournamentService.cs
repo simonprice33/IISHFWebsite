@@ -17,6 +17,8 @@ namespace IISHF.Core.Interfaces
         IPublishedContent? GetTournamentTeamByName(string teamName, IPublishedContent tournament);
 
         IPublishedContent? GetTournamentTeamById(int id, IPublishedContent tournament);
+        
+        IPublishedContent? GetTournamentTeamByKey(Guid key, IPublishedContent tournament);
 
         Task UpdateGameWithResults(UpdateTeamScores model, IPublishedContent tournament);
 
@@ -37,5 +39,17 @@ namespace IISHF.Core.Interfaces
         Task NotifyNmaApprover(IPublishedContent tournament, IPublishedContent nmaTeam, IPublishedContent team);
 
         Task NotifyIISHFApprover(IPublishedContent tournament, IPublishedContent nmaTeam, IPublishedContent team);
+
+        Task UnsubmitItc(IPublishedContent team);
+
+        Task CopyItc(IPublishedContent team, bool rejected = false);
+
+        Task SetNmaCheckValue(IEnumerable<RosterApproval> rosterMembers, bool isNma);
+
+        Task<RejectedRosterMembersModel> GetRejectedRosterMembers(int[] playerIds);
+        
+        Task ResetNmaApproval(IPublishedContent team);
+
+        Task SetItcRejectionReason(IPublishedContent team);
     }
 }

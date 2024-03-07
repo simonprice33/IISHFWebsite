@@ -1,0 +1,103 @@
+﻿@model IEnumerable<IISHF.Core.Models.ITCApproval>
+@using Umbraco.Cms.Core.Security
+@using Umbraco.Cms.Web.Common.Security
+@inject IMemberManager MemberManager
+
+@{
+    // Check if the user is logged in
+    var isLoggedIn = User.Identity.IsAuthenticated;
+    MemberIdentityUser user = null;
+
+    if (isLoggedIn)
+    {
+        // Retrieve user details
+        user = await MemberManager.GetCurrentMemberAsync();
+    }
+}
+
+<div id="myInvitations" class="col-12 col-sm-12 col-md-12 col-lg-12 mb-3">
+    <div class="tab-content" id="v-pills-tabContent">
+        <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-team" role="tabpanel" aria-labelledby="v-pills-team-tab">
+            <div class="col-12">
+
+                <h2 class="mb-3 text-center">ITC's for Approval</h2>
+                <div class="table-responsive">
+                    <div class="flex-table">
+                        <!-- Header -->
+                        <div class="flex-table-header">
+                            <div class="flex-cell">Event Name</div>
+                            <div class="flex-cell">Event Dates</div>
+                            <div class="flex-cell">ITC Submission Date</div>
+                            <div class="flex-cell">ITC Submitted By</div>
+                            <div class="flex-cell">ITC NMA Approval Date</div>
+                            <div class="flex-cell">ITC NMA Approver</div>
+                            <div class="flex-cell">ITC IISHF Approval Date</div>
+                            <div class="flex-cell">ITC IISHF Approver</div>
+                            <div class="flex-cell"></div>
+                        </div>
+                        <!-- Body -->
+                        <div class="flex-table-body">
+                            @foreach (var invitation in Model)
+                            {
+                                <div class="flex-row">
+                                    <div class="flex-cell">@invitation.EventName</div>
+                                    <div class="flex-cell">@invitation.EventStartDate.ToString("dd.MM.yyyy") - @invitation.EventEndDate.ToString("dd.MM.yyyy")</div>
+                                    <div class="flex-cell">
+                                        
+                                        @{
+                                            string itcSubmittedDate = "Pending Submission";
+                                            if (@invitation.ITCSubmittedDate != DateTime.MinValue && invitation.IISHFApproveDate != DateTime.Parse("1/1/1753"))
+                                            {
+                                                itcSubmittedDate = invitation.ITCSubmittedDate.Value.ToString("dd.MM.yyyy");
+                                            }
+                                        }
+                                        @itcSubmittedDate
+                                    </div>
+                                    <div class="flex-cell">@invitation.ITCSubmittedBy</div>
+                                    <div class="flex-cell">
+                                        @{
+                                            string date = "Pending NMA Approval";
+                                            if (invitation.NMAApproveDate != DateTime.MinValue && invitation.NMAApproveDate != DateTime.Parse("1/1/1753"))
+                                            {
+                                                date = invitation.NMAApproveDate.Value.ToString("dd.MM.yyyy");
+                                            }
+                                        }
+                                        @date
+                                    </div>
+                                    <div class="flex-cell">@invitation.NMAApprover</div>
+                                    <div class="flex-cell">
+                                        @{
+                                            string iishfApproveDate = "Pending IISHF Approval";
+                                            if (invitation.IISHFApproveDate != DateTime.MinValue && invitation.IISHFApproveDate != DateTime.Parse("1/1/1753"))
+                                            {
+                                                iishfApproveDate = invitation.IISHFApproveDate.Value.ToString("dd.MM.yyyy");
+                                            }
+                                        }
+                                        @iishfApproveDate
+                                    
+                                        </div>
+                                    <div class="flex-cell">@invitation.IISHFApprover</div>
+                                    <div class="flex-cell">
+                                        @{
+                                            if (invitation.CanApprove)
+                                            {
+                                                var link = $"/itc?team={invitation.EventTeamId}&approver={user.Key}";
+                                                <a href="@link" class="btn btn-custom-save w-100">Review</a>
+                                            }
+                                            else
+                                            {
+                                                <span class="btn btn-custom-save">No action required</span>
+                                            }
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,15 +1,28 @@
-﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.ITC>
+﻿@inherits UmbracoViewPage<ContentModels.ITC>
 @using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@using Umbraco.Cms.Core.Security
+@using Umbraco.Cms.Core.Services
 @using System.Globalization
 @using IISHF.Core.Models
-@using IISHF.Helpers
-@using Umbraco.Cms.Core.Security
 @inject IMemberManager MemberManager
+@inject IMemberService MemberService
 @{
     Layout = "Main.cshtml";
     var id = Model.Id;
     IPublishedContent? team = null;
     IPublishedContent? selectedTournament = null;
+    var isSubmitted = false;
+
+    var isLoggedIn = User.Identity.IsAuthenticated;
+    MemberIdentityUser user = null;
+    var isNmaApprover = false;
+    var isIsshfApprover = false;
+
+    if (!isLoggedIn)
+    {
+        // ToDo - Redirect to login pag as a fail safe
+        // User should already be authenticated at this point.
+    }
 
     Guid.TryParse(Context.Request.Query["team"].ToString(), out var teamInformationKey);
     if (teamInformationKey != Guid.Empty)
@@ -17,9 +30,16 @@
         // build itc information from team information for event
         team = Umbraco.Content(teamInformationKey);
         selectedTournament = Umbraco.Content(team.Parent.Id);
+        isSubmitted = team.Value<bool>("iTCSubmitted");
     }
 
+
     bool.TryParse(Context.Request.Query["create-new"], out var createNewItc);
+
+    if (createNewItc)
+    {
+        isSubmitted = false;
+    }
 
     var rosterMembers = team?.Children().Where(x => x.ContentType.Alias == "roster").ToList() ?? new List<IPublishedContent>();
     var players = rosterMembers.Where(x => !x.Value<bool>("isBenchOfficial")).ToList();
@@ -57,16 +77,14 @@
         .Concat(championships.Where(x => x != null).ToList())
         .ToList().Select(x => new
         {
-            EventName = x.Parent.Name,
-            Id = x.Id
+            EventName = x.Parent.Name, x.Id
         }).ToList();
 
 
     foreach (var nonTitleEvent in nonTitle)
     {
-        allEvents.Add(new {EventName = nonTitleEvent.Name, Id = nonTitleEvent.Id});
+        allEvents.Add(new { EventName = nonTitleEvent.Name, nonTitleEvent.Id });
     }
-
 
     string[] priorityCountries = { "United Kingdom", "Germany", "Switzerland", "Austria", "Denmark", "Ukraine" };
 
@@ -83,17 +101,46 @@
         .OrderBy(x => Array.IndexOf(priorityCountries, x.Country) == -1 ? int.MaxValue : Array.IndexOf(priorityCountries.OrderBy(x => x).ToArray(), x.Country))
         .ThenBy(x => x.Country);
 
-    // Check if the user is logged in
-    var isLoggedIn = User.Identity.IsAuthenticated;
-    MemberIdentityUser user = null;
+    // Retrieve user details
+    user = await MemberManager.GetCurrentMemberAsync();
+    Guid.TryParse(Context.Request.Query["approver"], out var approver);
+    var member = MemberService.GetById(int.Parse(user.Id));
 
-    if (isLoggedIn)
+    if (approver != Guid.Empty && team != null)
     {
-        // Retrieve user details
-        user = await MemberManager.GetCurrentMemberAsync();
+        isNmaApprover = member.GetValue<bool>("nMAITCApprover");
+
+        isIsshfApprover = member.GetValue<bool>("iISHFITCApprover");
+
+        var userMatchesKey = user.Key.Equals(approver);
+
+        var nma = Umbraco.Content(team.Value<Guid>("nmaKey"));
+
+        var approverIsWithNma = nma.Children()
+            .Where(x => x.ContentType.Alias == "nMAContact")
+            .Any(x => x.Value<string>("nMAContactEmail") == member.Email);
+
+        if (!userMatchesKey && !approverIsWithNma)
+        {
+            isNmaApprover = false;
+            // Redirect to an forbidden page
+        }
     }
 
-
+    if (team != null)
+    {
+        var nmaTeam = Umbraco.Content(team.Value<Guid>("nMATeamKey"));
+        var userIsWithTeam = user.Email == nmaTeam.Value<string>("teamContactEmail"); // user is team contact
+        var userIsClubContact = user.Email == null;
+        if (!userIsWithTeam && !isNmaApprover && !isIsshfApprover)
+        {
+            players.Clear();
+            benchOfficials.Clear();
+            team = null;
+            selectedTournament = null;
+            isSubmitted = false;
+        }
+    }
 }
 
 <div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
@@ -107,306 +154,504 @@
 </div>
 
 <div class="container custom-container mt-5 mb-5">
-    <div class="row">
+<div class="row">
 
-        <div class="col-md-3">
-            <!-- Tabs nav -->
-            <div class="nav flex-column nav-pills nav-pills-custom" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+<div class="col-md-3">
+    <!-- Tabs nav -->
+    <div class="nav flex-column nav-pills nav-pills-custom" id="v-pills-tab" role="tablist" aria-orientation="vertical">
 
-                <span class="nav-link mb-3 p-3 shadow" id="v-pills-players-tab">
-                    <select id="eventSelect" class="form-control">
-                        @{
-                                                <option value="">Select Event for @DateTime.Now.Year.ToString()</option>
+        <span class="nav-link mb-3 p-3 shadow" id="v-pills-players-tab">
+            <select id="eventSelect" class="form-control">
+                @{
+                                <option value="">Select Event for @DateTime.Now.Year.ToString()</option>
 
-                            foreach (var iishfEvent in allEvents)
-                            {
-                                                    <option value="@iishfEvent.Id">@iishfEvent.EventName</option>
-                            }
-                        }
-                    </select>
+                    foreach (var iishfEvent in allEvents)
+                    {
+                                    <option value="@iishfEvent.Id">@iishfEvent.EventName</option>
+                    }
+                }
+            </select>
 
-                    <div id="eventInformation"></div>
-                </span>
-                <a class="nav-link mb-3 p-3 shadow active" id="v-pills-team-tab" data-bs-toggle="pill" href="#v-pills-team" role="tab" aria-controls="v-players-team" aria-selected="true">
-                    <span class="font-weight-bold small text-uppercase">Team Information</span>
-                </a>
-                <a class="nav-link mb-3 p-3 shadow" id="v-pills-players-tab" data-bs-toggle="pill" href="#v-pills-players" role="tab" aria-controls="v-players-players" aria-selected="true">
-                    <span class="font-weight-bold small text-uppercase">Players</span>
-                </a>
-                <a class="nav-link mb-3 p-3 shadow" id="v-pills-bench-tab" data-bs-toggle="pill" href="#v-pills-bench" role="tab" aria-controls="v-bench-bench" aria-selected="true">
-                    <span class="font-weight-bold small text-uppercase">Bench Officials</span>
-                </a>
-                        <a class="nav-link mb-3 p-3 shadow" id="v-pills-guest-tab" data-bs-toggle="pill" href="#v-pills-guest" role="tab" aria-controls="v-guest" aria-selected="true">
-                            <span class="font-weight-bold small text-uppercase">Guest Player Permission Letters</span>
-                        </a>                        
+            <div id="eventInformation"></div>
+        </span>
+        <a class="nav-link mb-3 p-3 shadow active" id="v-pills-team-tab" data-bs-toggle="pill" href="#v-pills-team" role="tab" aria-controls="v-players-team" aria-selected="true">
+            <span class="font-weight-bold small text-uppercase">Team Information</span>
+        </a>
+        <a class="nav-link mb-3 p-3 shadow" id="v-pills-players-tab" data-bs-toggle="pill" href="#v-pills-players" role="tab" aria-controls="v-players-players" aria-selected="true">
+            <span class="font-weight-bold small text-uppercase">Players</span>
+            @{
+                if (isNmaApprover || isIsshfApprover)
+                {
+                                <div id="counterId1">0 of X approved</div>
+                }
+            }
+        </a>
+        <a class="nav-link mb-3 p-3 shadow" id="v-pills-bench-tab" data-bs-toggle="pill" href="#v-pills-bench" role="tab" aria-controls="v-bench-bench" aria-selected="true">
+            <span class="font-weight-bold small text-uppercase">Bench Officials</span>
+            @{
+                if (isNmaApprover || isIsshfApprover)
+                {
+                                <div id="counterId2">0 of X approved</div>
+                }
+            }
+        </a>
+        <a class="nav-link mb-3 p-3 shadow" id="v-pills-guest-tab" data-bs-toggle="pill" href="#v-pills-guest" role="tab" aria-controls="v-guest" aria-selected="true">
+            <span class="font-weight-bold small text-uppercase">Guest Player Permission Letters</span>
+        </a>
 
-                
-                <a class="nav-link mb-3 p-3 shadow" id="v-pills-submit-tab" data-bs-toggle="pill" href="#v-pills-submit" role="tab" aria-controls="v-submit-submit" aria-selected="true">
-                    <span class="font-weight-bold small text-uppercase">Validate and Submit</span>
-                </a>
-            </div>
+        <a class="nav-link mb-3 p-3 shadow" id="v-pills-submit-tab" data-bs-toggle="pill" href="#v-pills-submit" role="tab" aria-controls="v-submit-submit" aria-selected="true">
+            <span class="font-weight-bold small text-uppercase">Validate and Submit</span>
+        </a>
+    </div>
+
+</div>
+<div class="col-md-9">
+<!-- Tabs content -->
+<div class="tab-content" id="v-pills-tabContent">
+<div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-team" role="tabpanel" aria-labelledby="v-pills-team-tab">
+    <div class="row form-group">
+        <label for="teamName" class="col-12 col-md-4 col-form-label">Team Name:</label>
+        <div class="col-12 col-md-8" style="position: relative;">
+            @{
+                var teamName = team?.Name ?? string.Empty;
+            }
+            <input type="text" class="form-control" placeholder="Team Name" id="teamName" value="@teamName"/>
+            <div id="suggestionsContainer"></div>
+
 
         </div>
-        <div class="col-md-9">
-            <!-- Tabs content -->
-            <div class="tab-content" id="v-pills-tabContent">
-                <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-team" role="tabpanel" aria-labelledby="v-pills-team-tab">
-                    <div class="row form-group">
-                        <label for="teamName" class="col-12 col-md-4 col-form-label">Team Name:</label>
-                        <div class="col-12 col-md-8" style="position: relative;">
-                            @{
-                                var teamName = @team?.Name ?? string.Empty;
-                            }
-                            <input type="text" class="form-control" placeholder="Team Name" id="teamName" value="@teamName"/>
-                            <div id="suggestionsContainer"></div>
+    </div>
+    <div class="row form-group">
+        <label for="teamSignatory" class="col-12 col-md-4 col-form-label">Team Signatory:</label>
+        <div class="col-12 col-md-8">
+            @{
+                var teamSignatory = team?.Value<string>("teamSignatory") ?? string.Empty;
+            }
+            <input type="text" class="form-control" placeholder="Team Signatory" id="teamSignatory" value="@teamSignatory"/>
+        </div>
+    </div>
+    <div class="row form-group">
+        <label for="issuingCountry" class="col-12 col-md-4 col-form-label">Issuing Country:</label>
+        <div class="col-12 col-md-8">
+            <select class="form-control" id="issuingCountry" name="issuingCountry">
+                <option value="">Nationality</option>
+                @{
+                    var addedSeparator = false; // Flag to check if separator has been added
+                    // This will get the index of last priority country in the sorted list
+                    var lastPriorityCountryIndex = countries.ToList().FindLastIndex(c => priorityCountries.Contains(c.Country));
 
-
-                        </div>
-                    </div>
-                    <div class="row form-group">
-                        <label for="teamSignatory" class="col-12 col-md-4 col-form-label">Team Signatory:</label>
-                        <div class="col-12 col-md-8">
-                            @{
-                                var teamSignatory = team?.Value<string>("teamSignatory") ?? string.Empty;
-                            }
-                            <input type="text" class="form-control" placeholder="Team Signatory" id="teamSignatory" value="@teamSignatory" />
-                        </div>
-                    </div>
-                    <div class="row form-group">
-                        <label for="issuingCountry" class="col-12 col-md-4 col-form-label">Issuing Country:</label>
-                        <div class="col-12 col-md-8">
-                            <select class="form-control" id="issuingCountry" name="issuingCountry">
-                                <option value="">Nationality</option>
-                                @{
-                                    bool addedSeparator = false; // Flag to check if separator has been added
-                                                                 // This will get the index of last priority country in the sorted list
-                                    var lastPriorityCountryIndex = countries.ToList().FindLastIndex(c => priorityCountries.Contains(c.Country));
-
-                                    foreach (var country in countries)
-                                    {
-                                        if (country.ISO3 == team?.Value<string>("countryIso3"))
-                                        {
-                                                                <option selected="true" value="@country.ISO3">@country.Country</option>
-                                        }
-                                        else
-                                        {
-                                                                <option value="@country.ISO3">@country.Country</option>
-                                        }
-                                        if (countries.ToList().IndexOf(country) == lastPriorityCountryIndex && !addedSeparator)
-                                        {
-                                            // Add the separator
-                                                                                                            <option disabled>──────────</option>
-                                            addedSeparator = true; // Ensure the separator is only added once
-                                        }
-                                    }
-                                }
-
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row form-group">
-                        <label for="colourOne" class="col-12 col-md-4 col-form-label">First Jersey Colour:</label>
-                        <div class="col-12 col-md-4">
-                            <div class="input-group mb-3">
-                                <div id="colorPicker" class="input-group-prepend color-picker-container"></div>
-                                <input type="text" class="form-control" placeholder="Team colour" id="colourOne" aria-label="Team colour in hex" aria-describedby="colorPickerAddon">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row form-group">
-                        <label for="jerseyTwoColour" class="col-12 col-sm-4 col-md-4 col-form-label">Second Jersey Colour:</label>
-                        <div class="col-12 col-md-4">
-                            <div class="input-group mb-3">
-                                <div id="colorPicker2" class="input-group-prepend color-picker-container"></div>
-                                <input type="text" class="form-control" placeholder="Team colour" id="colourTwo" aria-label="Team colour in hex" aria-describedby="colorPickerAddon">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-players" role="tabpanel" aria-labelledby="v-pills-players-tab">
-                    <div class="table-responsive">
-                        <table id="data-table" class="table table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
-                            <thead>
-                                <tr>
-                                    <th style="width: 150px">License</th>
-                                    <th>Role</th>
-                                    <th>First Name</th>
-                                    <th>Last Name</th>
-                                    <th class="text-center" style="width: 50px">Jersey Number</th>
-                                    <th>Date of Birth</th>
-                                    <th>Nationality</th>
-                                    <th>Gender</th>
-                                    
-                                    @{
-                                        if (selectedTournament != null && !selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase))
-                                        {
-                                                            <th>Is Guest</th>                                            
-                                        }
-                                    }
-
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="formRows">
-                                @for (int i = 0; i < players.Count(); i++)
-                                {
-                                    <tr data-id="@players[i].Id">
-                                        <td>
-                                            <span>@players[i].Value("licenseNumber")</span>
-                                        </td>
-                                        <td>
-
-                                            <span>@players[i].Value("role")</span>
-                                        </td>
-                                        <td>
-
-                                            <span>@players[i].Value("firstName")</span>
-                                        </td>
-                                        <td>
-
-                                            <span>@players[i].Value("lastName")</span>
-                                        </td>
-                                        <td>
-                                            <span>@players[i].Value("jerseyNumber")</span>
-                                        </td>
-                                        <td>
-                                            @{
-                                                var dob = players[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
-                                            }
-                                            <span>@dob</span>
-                                        </td>
-                                        <td>
-                                            <span>@players[i].Value("nationality")</span>
-                                        </td>
-                                        <td>
-
-                                            <span>@players[i].Value("gender")</span>
-                                        </td>
-                                        @{
-                                            if (!selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase))
-                                            {
-                                                                                                    <td>
-                                                                                                        @if (@players[i].Value<bool>("isGuest"))
-                                                    {
-                                                                                                            <span><i class="fas fa-check"></i></span>
-                                                        
-                                                    }
-                                                                                                    </td>                                            
-                                            }
-                                        }
-                                        <td>
-                                            <button type="button" class="btn btn-danger delete-btn" onclick="event.stopPropagation(); deleteRow(this);">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                    <button id="addRowButton" type="button">Add Row</button>
-                   
-
-                </div>
-
-                <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-bench" role="tabpanel" aria-labelledby="v-pills-bench-tab">
-                    <table id="benchOfficials" class="table table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
-                        <thead>
-                            <tr>
-                                <th style="width: 150px">License</th>
-                                <th>Role</th>
-                                <th>First Name</th>
-                                <th>Last Name</th>
-                                <th>Date of Birth</th>
-                                <th>Nationality</th>
-                                <th>Gender</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="formRowsBench">
-                            @for (int i = 0; i < benchOfficials.Count(); i++)
-                            {
-                                <tr data-id="@benchOfficials[i].Id">
-                                    <td>
-                                        <span>@benchOfficials[i].Value("licenseNumber")</span>
-                                    </td>
-                                    <td>
-                                        <span>@benchOfficials[i].Value("role")</span>
-
-                                    </td>
-                                    <td>
-
-                                        <span>@benchOfficials[i].Value("firstName")</span>
-                                    </td>
-                                    <td>
-
-                                        <span>@benchOfficials[i].Value("lastName")</span>
-                                    </td>
-                                    <td>
-                                        @{
-                                            var dob = benchOfficials[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
-                                        }
-                                        <span>@dob</span>
-                                    </td>
-                                    <td>
-                                        <span>@benchOfficials[i].Value("nationality")</span>
-                                    </td>
-                                    <td>
-                                        <span>@benchOfficials[i].Value("gender")</span>
-                                    </td>
-                                    <td>
-                                        <button type="button" class="btn btn-danger" onclick="deleteRow(this)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-
-                    <div id="addBenchOfficialButtonErrors" class="alert alert-danger" role="alert">
-                        <h3>Cannot add more than 8 bench officials</h3>
-                    </div>
-                    <button id="addBenchOfficialButton" type="button">Add Row</button>
-
-                </div>
-                <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-guest" role="tabpanel" aria-labelledby="v-pills-guest-tab">
-                    
-                    <div id="logo warning" class="alert alert-warning" role="alert">
-                        <h3 class="text-center">When supplying a permission letter, please provide license number in the text box that will show under the file preview. </h3>
-                    </div>
-
-                    <form action="/upload-multiple-files" class="dropzone mb-3" id="multipleFilesDropzone"></form>
-                    
-                    <div id="documents">
-                        @{
-                            if(team != null 
-                               && selectedTournament != null 
-                               && !selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase)
-                               && team.Children().Any(x => x.ContentType.Alias == "guestPlayerPermission"))
-                            {
-                                                @await Html.PartialAsync("Partials/ITC/GuestPlayerPermissionDocuments.cshtml", new PermissionLetters()
-                                       {
-                                           Permissionletters = team.Children().Where(x => x.ContentType.Alias == "guestPlayerPermission").ToList(),
-                                           Players = players
-                                       });
-                            }
+                    foreach (var country in countries)
+                    {
+                        if (country.ISO3 == team?.Value<string>("countryIso3"))
+                        {
+                                        <option selected="true" value="@country.ISO3">@country.Country</option>
                         }
-                    </div>
+                        else
+                        {
+                                        <option value="@country.ISO3">@country.Country</option>
+                        }
+                        if (countries.ToList().IndexOf(country) == lastPriorityCountryIndex && !addedSeparator)
+                        {
+                            // Add the separator
+                                        <option disabled>──────────</option>
+                            addedSeparator = true; // Ensure the separator is only added once
+                        }
+                    }
+                }
 
-                </div>
-                <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-submit" role="tabpanel" aria-labelledby="v-pills-submit-tab">
-                    <button class="btn btn-warning" type="submit" onclick="validateForms()">Validate</button>
-                    <button class="btn btn-light" onclick="submit(true)">Save Draft</button>
-                    <button class="btn btn-secondary" onclick="submit(false)">Submit</button>
-                    <div id="submissionErrors" class="alert alert-danger mb-3" role="alert">
-                    </div>
-                </div>
+            </select>
+        </div>
+    </div>
+    <div class="row form-group">
+        <label for="colourOne" class="col-12 col-md-4 col-form-label">First Jersey Colour:</label>
+        <div class="col-12 col-md-4">
+            <div class="input-group mb-3">
+                <div id="colorPicker" class="input-group-prepend color-picker-container"></div>
+                <input type="text" class="form-control" placeholder="Team colour" id="colourOne" aria-label="Team colour in hex" aria-describedby="colorPickerAddon">
             </div>
         </div>
     </div>
+    <div class="row form-group">
+        <label for="jerseyTwoColour" class="col-12 col-sm-4 col-md-4 col-form-label">Second Jersey Colour:</label>
+        <div class="col-12 col-md-4">
+            <div class="input-group mb-3">
+                <div id="colorPicker2" class="input-group-prepend color-picker-container"></div>
+                <input type="text" class="form-control" placeholder="Team colour" id="colourTwo" aria-label="Team colour in hex" aria-describedby="colorPickerAddon">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-players" role="tabpanel" aria-labelledby="v-pills-players-tab">
+    <div class="table-responsive">
+        <table id="data-table" class="table table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
+            <thead>
+            <tr>
+                <th style="width: 150px">License</th>
+                <th>Role</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th class="text-center" style="width: 50px">Jersey Number</th>
+                <th>Date of Birth</th>
+                <th>Nationality</th>
+                <th>Gender</th>
+
+                @{
+                    if (selectedTournament != null && !selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                                    <th>Is Guest</th>
+                    }
+                }
+
+                @* To Do -  remove submitted check as action wil always be here for writer and approver *@
+                @{
+                    if (!isSubmitted)
+                    {
+                                    <th></th>
+                    }
+
+                    if (isNmaApprover)
+                    {
+                                    <th>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="checkAllPlayers">
+                                            <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                                        </div>
+                                    </th>
+                    }
+                    if (isIsshfApprover)
+                    {
+                                    <th class="text-center">
+
+                                        NMA Check
+                                    </th>
+                                    <th>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="checkAllPlayers">
+                                            <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                                        </div>
+                                    </th>
+                    }
+                }
+            </tr>
+            </thead>
+            <tbody id="formRows">
+            @for (var i = 0; i < players.Count(); i++)
+            {
+                <tr data-id="@players[i].Id">
+                    <td>
+                        <span>@players[i].Value("licenseNumber")</span>
+                    </td>
+                    <td>
+
+                        <span>@players[i].Value("role")</span>
+                    </td>
+                    <td>
+
+                        <span>@players[i].Value("firstName")</span>
+                    </td>
+                    <td>
+
+                        <span>@players[i].Value("lastName")</span>
+                    </td>
+                    <td>
+                        <span>@players[i].Value("jerseyNumber")</span>
+                    </td>
+                    <td>
+                        @{
+                            var dob = players[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
+                        }
+                        <span>@dob</span>
+                    </td>
+                    <td>
+                        <span>@players[i].Value("nationality")</span>
+                    </td>
+                    <td>
+
+                        <span>@players[i].Value("gender")</span>
+                    </td>
+                    @{
+                        if (!selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase))
+                        {
+                                        <td>
+                                            @if (players[i].Value<bool>("isGuest"))
+                                {
+                                                <span>
+                                                    <i class="fas fa-check"></i>
+                                                </span>
+                                }
+                                        </td>
+                        }
+                    }
+                    @{
+                        if (!isSubmitted)
+                        {
+                                        <td>
+                                            <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); deleteRow(this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                        }
+                        if (isNmaApprover)
+                        {
+                            var checkId = $"player-id-{players[i].Id}";
+                            var nmaCheckedState = players[i].Value<bool>("nmaCheck") ? "checked" : "";
+                                        <td>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" @nmaCheckedState data-id="@players[i].Id" type="checkbox" id="@checkId">
+                                                <label class="form-check-label" for="@checkId"></label>
+                                            </div>
+
+                                        </td>
+                        }
+
+                                    @if (isIsshfApprover)
+                        {
+                            var checkId = $"player-id-{players[i].Id}";
+                            var iishfCheckedState = players[i].Value<bool>("iISHFCheck") ? "checked" : "";
+                            var nmaCheckedState = players[i].Value<bool>("nmaCheck");
+                                        <td class="text-center">
+                                            @{
+                                    if (nmaCheckedState)
+                                    {
+                                                                <span>
+                                                                    <i class="fas fa-check"></i>
+                                                                </span>
+                                    }
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" @iishfCheckedState data-id="@players[i].Id" type="checkbox" id="@checkId">
+                                                <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                                            </div>
+
+                                        </td>
+                        }
+                    }
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    @{
+        if (!isSubmitted)
+        {
+                        <button id="addRowButton" type="button">Add Row</button>
+        }
+    }
+
+</div>
+
+<div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-bench" role="tabpanel" aria-labelledby="v-pills-bench-tab">
+    <table id="benchOfficials" class="table table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
+        <thead>
+        <tr>
+            <th style="width: 150px">License</th>
+            <th>Role</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Date of Birth</th>
+            <th>Nationality</th>
+            <th>Gender</th>
+            @{
+                if (!isSubmitted)
+                {
+                                <th></th>
+                }
+
+
+                if (isNmaApprover)
+                {
+                                <th>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="checkAllOfficials">
+                                        <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                                    </div>
+                                </th>
+                }
+                if (isIsshfApprover)
+                {
+                                <th class="text-center">
+
+                                    NMA Check
+                                </th>
+                                <th>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="checkAllOfficials">
+                                        <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                                    </div>
+                                </th>
+                }
+
+            }
+        </tr>
+        </thead>
+        <tbody id="formRowsBench">
+        @for (var i = 0; i < benchOfficials.Count(); i++)
+        {
+            <tr data-id="@benchOfficials[i].Id">
+                <td>
+                    <span>@benchOfficials[i].Value("licenseNumber")</span>
+                </td>
+                <td>
+                    <span>@benchOfficials[i].Value("role")</span>
+
+                </td>
+                <td>
+
+                    <span>@benchOfficials[i].Value("firstName")</span>
+                </td>
+                <td>
+
+                    <span>@benchOfficials[i].Value("lastName")</span>
+                </td>
+                <td>
+                    @{
+                        var dob = benchOfficials[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
+                    }
+                    <span>@dob</span>
+                </td>
+                <td>
+                    <span>@benchOfficials[i].Value("nationality")</span>
+                </td>
+                <td>
+                    <span>@benchOfficials[i].Value("gender")</span>
+                </td>
+                @{
+                    if (!isSubmitted)
+                    {
+                                    <td>
+                                        <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); deleteRow(this)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                    }
+
+                    if (isNmaApprover)
+                    {
+                        var checkId = $"player-id-{benchOfficials[i].Id}";
+                        var nmaCheckedState = benchOfficials[i].Value<bool>("nmaCheck") ? "checked" : "";
+                                    <td>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" @nmaCheckedState data-id="@benchOfficials[i].Id" type="checkbox" id="@checkId">
+                                            <label class="form-check-label" for="@checkId"></label>
+                                        </div>
+
+                                    </td>
+                    }
+
+                                @if (isIsshfApprover)
+                    {
+                        var checkId = $"player-id-{benchOfficials[i].Id}";
+                        var iishfCheckedState = benchOfficials[i].Value<bool>("iISHFCheck") ? "checked" : "";
+                        var nmaCheckedState = benchOfficials[i].Value<bool>("nmaCheck");
+                                    <td class="text-center">
+                                        @{
+                                if (nmaCheckedState)
+                                {
+                                                            <span>
+                                                                <i class="fas fa-check"></i>
+                                                            </span>
+                                }
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" @iishfCheckedState data-id="@benchOfficials[i].Id" type="checkbox" id="@checkId">
+                                            <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                                        </div>
+
+                                    </td>
+                    }
+                }
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    <div id="addBenchOfficialButtonErrors" class="alert alert-danger" role="alert">
+        <h3>Cannot add more than 8 bench officials</h3>
+    </div>
+
+    @{
+        if (!isSubmitted)
+        {
+                        <button id="addBenchOfficialButton" type="button">Add Row</button>
+        }
+    }
+
+</div>
+<div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-guest" role="tabpanel" aria-labelledby="v-pills-guest-tab">
+
+    <div id="logo warning" class="alert alert-warning" role="alert">
+        <h3 class="text-center">When supplying a permission letter, please provide license number in the text box that will show under the file preview. </h3>
+    </div>
+
+    <form action="/upload-multiple-files" class="dropzone mb-3" id="multipleFilesDropzone"></form>
+
+    <div id="documents">
+        @{
+            if (team != null
+                && selectedTournament != null
+                && !selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase)
+                && team.Children().Any(x => x.ContentType.Alias == "guestPlayerPermission"))
+            {
+                            @await Html.PartialAsync("Partials/ITC/GuestPlayerPermissionDocuments.cshtml", new PermissionLetters
+                       {
+                           Permissionletters = team.Children().Where(x => x.ContentType.Alias == "guestPlayerPermission").ToList(),
+                           Players = players
+                       })
+                ;
+            }
+        }
+    </div>
+
+</div>
+<div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-submit" role="tabpanel" aria-labelledby="v-pills-submit-tab">
+
+
+    <div class="button-container">
+        @{
+            if (!isSubmitted)
+            {
+                            <button class="btn btn-light m-1" type="submit" onclick="validateForms()">Validate</button>
+                            <button class="btn btn-custom-draft m-1" onclick="submit(true)">Save Draft</button>
+                            <button class="btn btn-custom-save m-1" onclick="submit(false)">Submit</button>
+            }
+
+            if (isNmaApprover && !isNmaApprover)
+            {
+            }
+
+            if (isNmaApprover)
+            {
+                            <button class="btn btn-danger m-1">Reject with reasons</button>
+                            <button id="nmaApprove" class="btn btn-custom-save m-1" data-approver="nma">Approve and send to IISHF</button>
+            }
+
+            if (isIsshfApprover)
+            {
+                            <button id="rejectWithReasons"class="btn btn-danger m-1">Reject with reasons</button>
+                            <button id="iishfApprove" class="btn btn-custom-save m-1" data-approver="nma">Approve ITC</button>
+            }
+
+            if (isNmaApprover || isIsshfApprover)
+            {
+                            <div class="col-12" id="reasons"></div>
+            }
+        }
+        </>
+       
+
+    </div>
+    <!-- Existing content -->
+    <div id="submissionErrors" class="alert alert-danger mb-3" role="alert">
+
+    </div>
+</div>
+</div>
+</div>
 </div>
 
 @*Change name to first name and last name*@
@@ -471,7 +716,7 @@
                             <!-- Add other gender options here -->
                         </select>
                     </div>
-                    
+
                     <div class="form-group mt-2">
                         <label for="isGuest">Is Guest:</label>
                         <!-- Label and select for Gender -->
@@ -491,7 +736,7 @@
 
 <script>
 
-    var countries = @Html.Raw(Json.Serialize(@countries));
+    var countries = @Html.Raw(Json.Serialize(countries));
     $("#submissionErrors").hide();
 
     var deletedLicenseNumbers = [];
@@ -1048,9 +1293,11 @@
             }
 
             errorContainer.append(errorList);
-            if (errors.length > 0) { 
-            errorContainer.show();
-            }
+            if (errors.length > 0) {
+             $("#submissionErrors").removeClass('alert-success')   
+                 $("#submissionErrors").addClass('alert-danger')   
+                errorContainer.show();
+            } 
             
 
         } else {
@@ -1107,7 +1354,12 @@
             return false
         }
         if (allErrors.length === 0) {
-            $('#submissionErrors').slideUp();
+
+             $("#submissionErrors").removeClass('alert-danger')   
+             $("#submissionErrors").addClass('alert-success')   
+             $('#submissionErrors').append("<h2 class='text-center'>ITC is valid and can be submitted</h2>")
+             $('#submissionErrors').show();
+             setTimeout(function () { $('#submissionErrors').slideUp();}, 20000)
         }
         return true
     }
@@ -1134,6 +1386,10 @@
                 // ToDo titleEventCheck
                 // only needed if not title event
                 UploadFiles(result.TeamId)
+
+                if (!isDraft) { 
+                window.location = '/my-account'
+                }
             },
             error: function (result) {
                 console.log(result);
@@ -1173,7 +1429,7 @@
             dropzone.removeAllFiles(true);
 
             $.get('/umbraco/surface/events/GetPermissionDocuments', { tournamentId: tournamentId, teamId: teamId }, function (data) {
-                     $('#documents').html(response);
+                     $('#documents').html(data);
                 });
 
         },
@@ -1187,7 +1443,6 @@
     function updateRowIds(updatedRoster) {
             console.log("updating row ids")
             updatedRoster.ItcRosterMembers.forEach(function (member) {
-                debugger
                 if (member.id !== 0) {
                     console.log(member)
                     // Construct the jQuery selector to find the row with matching license number and last name
@@ -1241,12 +1496,12 @@
             "JerseyTwo": $('#colourTwo').val(),
             "SubmitToHost": !isDraft,
             "TeamSignatory" : $("#teamSignatory").val(),
-            "IssuingCountry" : $("#issuingCountry").val()
+            "IssuingCountry" : $("#issuingCountry").val(),
+            "nmaTeamId": $("#teamName").attr('data-id'),
+            "nmaTeamKey": $("#teamName").attr('data-key'),
         };
 
         var processRow = function (currentRow, isBench) {
-
-            debugger;
 
             var $currentRow = $(currentRow); // Convert to jQuery object
             var rosterId = $currentRow.attr('data-id');
@@ -1533,10 +1788,216 @@
 
     Dropzone.autoDiscover = false; // Prevent auto initialization
 
-
     $(document).ready(function () {
 
-        var currentRow = null;
+       var currentRow = null;
+        // Function to update the counter text
+    function updateCounter(tableId, counterId) {
+        var checkedCount = $(tableId + ' .form-check-input:checked').not('#checkAllPlayers, #checkAllOfficials').length;
+        var totalCount = $(tableId + ' .form-check-input').not('#checkAllPlayers, #checkAllOfficials').length;
+        $(counterId).text(checkedCount + ' of ' + totalCount + ' approved');
+
+        var checkboxClass = "form-check-input";
+
+      $(tableId + ' .' + checkboxClass).change(function() {
+    var memberId = $(this).data('id'); // Get the member ID from the data-id attribute
+    var divId = 'rejected-player-' + memberId; // Construct the div ID
+    var $div = $('#' + divId); // Get the div by ID
+
+    // Check if the div exists
+    if ($div.length > 0) {
+        // If the checkbox is checked, hide the div; otherwise, show the div
+        if ($(this).is(':checked')) {
+            $div.hide(); // Hide the div if the checkbox is checked
+        } else {
+            $div.show(); // Show the div if the checkbox is unchecked
+        }
+    }
+
+    // Calculate the total number of checkboxes and how many are checked
+    var totalCount = $(tableId + ' .' + checkboxClass).length;
+    var checkedCount = $(tableId + ' .' + checkboxClass + ':checked').length;
+
+    // Check or uncheck the master checkbox based on whether all individual checkboxes are checked
+    var allChecked = totalCount === checkedCount;
+    $('#masterCheck').prop('checked', allChecked); // Make sure '#masterCheck' matches your master checkbox ID
+});
+    }
+
+    // Function to toggle checkboxes in a specified table
+    function toggleCheckboxes(masterCheckboxId, tableId, counterId) {
+        // Event handler for the master checkbox
+        $(masterCheckboxId).change(function() {
+            $(tableId + ' .form-check-input').not(masterCheckboxId).prop('checked', this.checked).trigger('change');
+        });
+
+        // Event handler for individual checkboxes
+        $(tableId + ' .form-check-input').not(masterCheckboxId).change(function() {
+            // Update the master checkbox state
+            var allChecked = $(tableId + ' .form-check-input').not(masterCheckboxId).length === $(tableId + ' .form-check-input:checked').not(masterCheckboxId).length;
+            $(masterCheckboxId).prop('checked', allChecked);
+            // Update the counter
+            updateCounter(tableId, counterId);
+        });
+
+        // Initialize the counter on page load
+        updateCounter(tableId, counterId);
+    }
+
+    // Apply the function to the first table and counter
+    toggleCheckboxes('#checkAllPlayers', '#data-table', '#counterId1');
+    // Apply the function to the second table and counter
+    toggleCheckboxes('#checkAllOfficials', '#benchOfficials', '#counterId2');
+
+       // Check the checkbox's state on page load
+    updateCheckboxAppearance();
+
+    $('#rejectWithReasons').on('click', function () { 
+
+        $('#submissionErrors').hide();
+        $('#submissionErrors').empty()
+
+        var notCheckedPlayerIds = [];
+
+        $('.form-check-input[data-id]').each(function() {
+            if (!$(this).is(':checked')) {
+                var playerId = $(this).data('id');
+                notCheckedPlayerIds.push(playerId);
+            }
+        });
+
+        if (notCheckedPlayerIds.length > 0) {
+            // Serialize the array into a query string format that ASP.NET can bind to an array
+            var queryString = $.param({ 'playerIds': notCheckedPlayerIds }, true);
+
+            // Send the AJAX request
+            GetRejectionReasons(queryString)
+        } else {
+            console.log("All players have been checked.");
+        }
+
+    })
+
+        function GetRejectionReasons(queryString) {
+
+            // Send the AJAX request
+            $.ajax({
+                url: '/umbraco/surface/events/GetRejectReasons?' + queryString, // Note: Query string is appended to the URL
+                type: 'GET',
+                success: function(response) {
+                $("#reasons").hide()
+
+                    // Handle the successful response here
+                    $("#reasons").html(response);
+                     $("#reasons").slideDown()
+                },
+                error: function(xhr) {
+                    // Handle error here
+                    console.error("Error: " + xhr.statusText);
+                }
+            });
+        }
+
+   $('#nmaApprove,  #iishfApprove').on('click', function() {
+           $('#submissionErrors').hide();
+            $('#submissionErrors').empty()
+
+       var id = this.id; 
+       var identifier = id.split('Approve')[0]; 
+        var approvedRosterMembers = []; // Initialize an empty array to store player data
+        var notApprovedRosterMembers = []
+
+        // Iterate through each checkbox in the table that has a 'data-id' attribute
+        $('.form-check-input[data-id]').each(function() {
+            var playerId = $(this).data('id'); // Get the data-id attribute
+            var isApproved = $(this).prop('checked'); // Get the checked state
+
+            if (!isApproved) {
+                // Navigate to the parent row of the unchecked checkbox
+                var $row = $(this).closest('tr');
+
+                // Find the first name and last name in the specified columns (index 2 and 3)
+                var firstName = $row.find('td:eq(2) span span').text().trim();
+                var lastName = $row.find('td:eq(3) span span').text().trim();
+                notApprovedRosterMembers.push({
+                    id: playerId,
+                    name : `${firstName} ${lastName}`
+                })
+
+                // Log the information
+                console.log(`Player not approved: ${firstName} ${lastName}, ID: ${playerId}`);
+            }
+
+            // Add the player data to the array
+            approvedRosterMembers.push({
+                id: playerId,
+                approved: isApproved
+            });
+        });
+
+       if (notApprovedRosterMembers.length > 0) { 
+       
+           var html = '<div>'
+           notApprovedRosterMembers.forEach(function (rosterMember, idx) {
+
+           html += '<li>'
+               html += `${rosterMember.name} has not been approved. Please approve roster member or reject with reasons.`
+           html += '</li>'
+
+           })
+           html += '</div>'
+           $('#submissionErrors').append(html)
+           $('#submissionErrors').slideDown();
+           return;
+       }
+
+        // At this point, approvedPlayers contains the data you want
+        console.log(approvedRosterMembers); // Log it to the console or do something else with it
+
+        // Ajax call here to approve roster members
+        // On success <a href="#"></a>
+
+         var tournamentId = $("#eventSelect").val();
+          var teamName = $("#teamName").val()
+
+          var url = `/api/events/itc/approve/${identifier}/tournament/${tournamentId}/team/${teamName}`
+          var encodedUrl = encodeURI(url);
+
+       var json = {
+       RosterApprovals : approvedRosterMembers}
+
+         $.ajax({
+            type: "PUT",
+            url: encodedUrl,
+            data: JSON.stringify(json),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+
+                window.location = "/my-account";
+            },
+            error: function (result) {
+                console.log(result);
+            }
+        });
+
+       
+    });
+
+    // Event listener for changes to the checkbox
+    $('#flexSwitchCheckDefault').change(function() {
+        updateCheckboxAppearance();
+    });
+
+    function updateCheckboxAppearance() {
+        if($('#flexSwitchCheckDefault').is(':checked')) {
+            // Checkbox is checked, remove the custom class
+            $('#flexSwitchCheckDefault').removeClass('unchecked-state');
+        } else {
+            // Checkbox is unchecked, add the custom class
+            $('#flexSwitchCheckDefault').addClass('unchecked-state');
+        }
+    }
 
         $('#teamName').on('input', function () {
 
@@ -1557,6 +2018,7 @@
                             $('#suggestionsContainer').append(suggestionItem);
                             suggestionItem.on('click', function () {
                                 $('#teamName').val(item.name); // Set the name in the input field
+                                $('#teamName').attr('data-id', item.id); // Set the key as a data attribute on the input
                                 $('#teamName').attr('data-key', item.key); // Set the key as a data attribute on the input
                                 $('#suggestionsContainer').empty();
                             });
@@ -1571,32 +2033,6 @@
         $('#data-table').on('click', '.btn-danger', function (event) {
             event.stopPropagation(); // Prevent click event from bubbling up to the row
             deleteRow(this); // Call your deleteRow function
-        });
-
-        $("#benchOfficials tbody").on("click", "tr", function () {
-            currentMode = 'editBenchOfficial';
-            currentRow = $(this);
-
-            // Clear existing role options and add options for bench officials
-            var rolesForBenchOfficial = [
-                "Head Coach",
-                "Assistant Coach",
-                "Bench Staff",
-                "Training Staff",
-                "Equipment Manager",
-                "Physio",
-                "Photographer"
-            ];
-            var $roleSelect = $('#edit-form #role');
-            $roleSelect.empty(); // Remove existing options
-            rolesForBenchOfficial.forEach(function (role) {
-                $roleSelect.append($('<option>', { value: role, text: role }));
-            });
-            // Optionally, add a default option
-            $roleSelect.prepend($('<option>', { value: '', text: 'Select Role' }).attr('selected', 'selected'));
-            populateModalForBenchOfficial(currentRow);
-
-            $('#editModal').modal('show');
         });
 
         $('#addRowButton').on('click', function () {
@@ -1676,7 +2112,48 @@
             $roleSelect.prepend($('<option>', { value: '', text: 'Select Role' }).attr('selected', 'selected'));
 
             populateModalFromRow(currentRow);
-            $('#editModal').modal('show');
+            @{
+                if (!isSubmitted)
+                {
+                                <text>
+                                                                                        $('#editModal').modal('show');
+                                                                                    </text>
+                }
+            }
+            
+        });
+
+        $("#benchOfficials tbody").on("click", "tr", function () {
+            currentMode = 'editBenchOfficial';
+            currentRow = $(this);
+
+            // Clear existing role options and add options for bench officials
+            var rolesForBenchOfficial = [
+                "Head Coach",
+                "Assistant Coach",
+                "Bench Staff",
+                "Training Staff",
+                "Equipment Manager",
+                "Physio",
+                "Photographer"
+            ];
+            var $roleSelect = $('#edit-form #role');
+            $roleSelect.empty(); // Remove existing options
+            rolesForBenchOfficial.forEach(function (role) {
+                $roleSelect.append($('<option>', { value: role, text: role }));
+            });
+            // Optionally, add a default option
+            $roleSelect.prepend($('<option>', { value: '', text: 'Select Role' }).attr('selected', 'selected'));
+            populateModalForBenchOfficial(currentRow);
+
+             @{
+                 if (!isSubmitted)
+                 {
+                                 <text>
+                                                                                        $('#editModal').modal('show');
+                                                                                    </text>
+                 }
+             }
         });
 
         $("#saveChanges").on("click", function () {
@@ -1758,9 +2235,7 @@
             
         });
 
-   
-
-                const pickr = Pickr.create({
+        const pickr = Pickr.create({
                 el: '#colorPicker',
                 theme: 'classic', // or 'monolith', or 'nano'
 
@@ -1838,44 +2313,53 @@
         });
 
          @{
-             if (selectedTournament != null && @selectedTournament.Id > 0)
+             if (selectedTournament != null && selectedTournament.Id > 0)
              {
-                <text>
-                    var selectedValue = @selectedTournament.Id;
-                    $('#eventSelect').val(selectedValue).change();
-                    $('#eventSelect').prop('disabled', true);
+                             <text>
+                                                                                        var selectedValue = @selectedTournament.Id;
+                                                                                        $('#eventSelect').val(selectedValue).change();
+                                                                                        $('#eventSelect').prop('disabled', true);
 
-                </text>
+                                                                                    </text>
              }
 
              if (!string.IsNullOrWhiteSpace(team?.Value<string>("countryIso3")))
              {
-                 <text>
-                    $('#issuingCountry').prop('disabled', true);
-                </text>
-
+                             <text>
+                                                                                       
+                                                                                    </text>
              }
 
              if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyOneColour")))
              {
-                <text>
-                    setTimeout(function () { 
-                    $('#colourOne').val('@(team?.Value<string>("jerseyOneColour"))').change();}, 500)
-                </text>
-
+                             <text>
+                                                                                        setTimeout(function () { 
+                                                                                        $('#colourOne').val('@(team?.Value<string>("jerseyOneColour"))').change();}, 500)
+                                                                                    </text>
              }
 
              if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyTwoColour")))
              {
-                <text>
-                    setTimeout(function(){
-                    $('#colourTwo').val('@(team?.Value<string>("jerseyTwoColour"))').change();}, 500)
+                             <text>
+                                                                                        setTimeout(function(){
+                                                                                        $('#colourTwo').val('@(team?.Value<string>("jerseyTwoColour"))').change();}, 500)
 
-                </text>
+                                                                                    </text>
+             }
 
+             if (isSubmitted)
+             {
+                             <text>
+                                                                                 $('#teamName').prop('disabled', true);
+                                                                                 $('#teamSignatory').prop('disabled', true);
+                                                                                 $('#issuingCountry').prop('disabled', true);
+
+                                                                                 $('.input-group.mb-3').find('button, input').prop('disabled', true);
+
+                                                                             </text>
              }
          }
-         
+
          if ($("#multipleFilesDropzone").length) {
     var multipleFilesDropzone = new Dropzone("#multipleFilesDropzone", {
         url: "#", // This will be ignored because autoProcessQueue is false
@@ -1889,21 +2373,45 @@
 
             // Event listener for when a file is added
             this.on("addedfile", function(file) {
-    var labelInput = document.createElement("input");
-    labelInput.setAttribute("type", "text");
-    labelInput.setAttribute("name", "fileLabel");
-    labelInput.setAttribute("class", "file-label-input form-control"); // Add class name for styling
-    labelInput.setAttribute("placeholder", "License Number");
-    file.previewElement.appendChild(labelInput);
-});
+                var labelInput = document.createElement("input");
+                labelInput.setAttribute("type", "text");
+                labelInput.setAttribute("name", "fileLabel");
+                labelInput.setAttribute("class", "file-label-input form-control"); // Add class name for styling
+                labelInput.setAttribute("placeholder", "License Number");
+                file.previewElement.appendChild(labelInput);
+            });
 
-            document.getElementById("multipleFilesDropzone").appendChild(submitButton);
         }
     });
-}
 
+     var queryParams = new URLSearchParams(window.location.search);
 
+        var hasTeam = queryParams.has('team') && queryParams.get('team') !== '';
         
+        var hasCreateNew = queryParams.has('create-new') && queryParams.get('create-new') !== '';
+
+        if(hasTeam && hasCreateNew) {
+
+             var tournamentId = $("#eventSelect").val();
+             var key = queryParams.get('team');
+
+            $.ajax({
+            url: `/api/events/itc/unsubmit/tournament/${tournamentId}/team/${key}`,
+            type: 'PUT',
+            success: function (data) {
+                // Remove the row from the table
+                // $.get('/umbraco/surface/events/GetPermissionDocuments', { tournamentId: tournamentId, teamId: teamId }, function (data) {
+                //     $('#documents').html(data);
+                // });
+            },
+            error: function (xhr, status, error) {
+                console.error("Error: " + error);
+                // Show alert that something went wrong
+            }
+        });
+        } 
+}
+       
     });
 
 

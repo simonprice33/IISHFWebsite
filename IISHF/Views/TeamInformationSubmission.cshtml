@@ -1084,11 +1084,11 @@
                 }
 
                 formData.ItcRosterMembers.push({
-                    "Id": rosterId,
+                    "Id": parseInt(rosterId, 10),
                     "License": license,
                     "FirstName": firstName,
                     "LastName": lastName,
-                    "JerseyNumber": jerseyNumber,
+                    "JerseyNumber": parseInt(jerseyNumber, 10),
                     "Role": role,
                     "IsBenchOfficial": isBench,
                     "DateOfBirth": formattedDate,
@@ -1549,6 +1549,8 @@
             <text>
                 $('.input-group.mb-3').find('button, input').prop('disabled', true);
                 $('#teamHistory').summernote('disable');
+                 $('#teamName').prop('disabled', true);
+                 $('#teamSignatory').prop('disabled', true);
 
             </text>
         }

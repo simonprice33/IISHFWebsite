@@ -29,3 +29,84 @@
         background-color: #B25716;
         color: white; /* Change this to desired text color */
     }
+
+
+/* Custom Submit Button Styles */
+.btn-custom-validate {
+    background-color: lightsalmon;
+    border: none;
+    color: black; /* Change this to desired text color */
+    transition: background-color 0.3s ease; /* Smooth transition on hover */
+}
+
+    .btn-custom-validate:hover {
+        background-color: salmon;
+        color: black; /* Change this to desired text color */
+    }
+
+/* Custom Submit Button Styles */
+.btn-custom-draft {
+    background-color: lightskyblue;
+    border: none;
+    color: black; /* Change this to desired text color */
+    transition: background-color 0.3s ease; /* Smooth transition on hover */
+}
+
+    .btn-custom-draft:hover {
+        background-color: deepskyblue;
+        color: black; /* Change this to desired text color */
+    }
+/* Custom Submit Button Styles */
+.btn-custom-save {
+    background-color: #0095DA;
+    border: none;
+    color: white; /* Change this to desired text color */
+    transition: background-color 0.3s ease; /* Smooth transition on hover */
+}
+
+    .btn-custom-save:hover {
+        background-color: #0077AE;
+        color: white; /* Change this to desired text color */
+    }
+
+/* Flexbox layout for button container */
+.button-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap; /* This will allow buttons to wrap onto the next line if the container is too narrow */
+    gap: 10px; /* This adds some space between the buttons when they wrap */
+}
+
+/* Media query for screens that are 768px wide or less */
+@media (max-width: 768px) {
+    .button-container {
+        flex-direction: column;
+        align-items: center; /* This will align the buttons centrally in the flex container */
+    }
+}
+
+/* Flexbox layout for button container */
+.button-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap; /* This will allow buttons to wrap onto the next line if the container is too narrow */
+    gap: 5px; /* This adds some space between the buttons when they wrap */
+}
+
+/* Button styling */
+.btn-block {
+    width: auto; /* Default width for non-mobile view */
+    margin-bottom: 5px; /* Add space below each button */
+}
+
+/* Media query for screens that are 768px wide or less */
+@media (max-width: 768px) {
+    .button-container {
+        flex-direction: column;
+        align-items: stretch; /* This will make the buttons stretch to fill the container */
+    }
+
+    .btn-block {
+        width: 100%; /* Full width buttons on mobile */
+    }
+}

@@ -312,3 +312,31 @@
     margin-top: 10px;
 }
 
+/* Unchecked state styles */
+.form-check-input:not(:checked) {
+    border-color: red; /* Red border for the switch */
+    background-color: lightpink; /* Blue background for the switch */
+}
+
+    .form-check-input:not(:checked)::before {
+        background-color: red; /* Red background for the switch handle (spot) */
+    }
+
+/* Checked state styles */
+.form-check-input:checked {
+    background-color: #0095DA; /* Blue background for the switch */
+    border-color: #0095DA; /* Blue border for the switch */
+}
+
+    .form-check-input:checked::before {
+        background-color: #fff; /* White color for the switch handle (spot) to make it stand out */
+    }
+
+/* Optional: Change the box shadow to a matching color when the switch is focused */
+.form-check-input:not(:checked):focus {
+    box-shadow: 0 0 0 .25rem rgba(255, 0, 0, .5); /* Red glow effect for unchecked state */
+}
+
+.form-check-input:checked:focus {
+    box-shadow: 0 0 0 .25rem rgba(0, 149, 218, .5); /* Blue glow effect for checked state */
+}

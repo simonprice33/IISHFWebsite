@@ -279,6 +279,14 @@ namespace IISHF.Core.Controllers.SurfaceControllers
 
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetRejectReasons(int[] playerIds)
+        {
+            var rosterMembers = await _tournamentService.GetRejectedRosterMembers(playerIds);
+
+            return PartialView("~/Views/Partials/ITC/RejectedRostermemberReason.cshtml", rosterMembers);
+        }
+
         private static List<IPublishedContent> FilterData(int year, string titleEvent, List<IPublishedContent> rootContent)
         {
             var eventTeams = rootContent.Where(x =>

@@ -21,6 +21,7 @@
         public DateTime EventStartDate { get; set; }
 
         public DateTime EventEndDate { get; set; }
+
         public bool TeamInformationRequired { get; set; }
     }
 }

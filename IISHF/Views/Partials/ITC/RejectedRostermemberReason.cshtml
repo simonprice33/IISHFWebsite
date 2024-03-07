@@ -1,0 +1,122 @@
+﻿@model IISHF.Core.Models.RejectedRosterMembersModel
+
+<div class="row">
+    @foreach (var member in Model.RejectedRosterMembers)
+    {
+        var divId = $"rejected-player-{@member.Id}";
+        <div class="col-12 col-12-12 col-md-6 col-lg-6" id="@divId">
+            <!-- This ensures a full width for each member, breaking onto a new line -->
+                <div>
+                    <!-- Row for License Number and Name -->
+                    <div>
+                        <label>License Number:</label>
+                        <span>@member.LicenseNumber</span>
+                    </div>
+                    <div>
+                        <label>Name:</label>
+                        <span>@member.Name</span>
+                    </div>
+                </div>
+            <div >
+                <!-- Row for Reason input -->
+                <div>
+                    @{
+                        var id = $"reason-{member.Id}"; 
+                    }
+                    <textarea name="reason" id="@id" class="form-control mb-3" rows="4" value="@member.Reason" data-license-number="@member.LicenseNumber" placeholder="Rejection reason(s)"></textarea>
+                </div>
+            </div>
+            <hr />
+        </div>
+    }
+</div>
+    <div class="button-container">
+        <button id="reject"class="btn btn-danger m-1">Reject with reasons</button> 
+        <button id="cancel" class="btn btn-custom-save m-1" data-approver="nma">Cancel rejection</button>
+    </div>
+
+<script>
+
+    $(document).ready(function () { 
+    
+        $("#rejectWithReasons").hide();
+        if ($("#nmaApprove")) {
+        $("#nmaApprove").hide();
+        }
+        if ($("#iishfApprove")) {
+            $("#iishfApprove").hide();
+        }
+
+        $("#cancel").on('click', function () {
+            
+
+            $("#reasons").slideUp()
+            $("#reasons").html('')
+
+            setTimeout(function () {
+                $("#rejectWithReasons").show();
+                if ($("#nmaApprove")) {
+                    $("#nmaApprove").show();
+                }
+                if ($("#iishfApprove")) {
+                    $("#iishfApprove").show();
+                }
+            }, 500)
+        
+        })
+
+        $('#reject').on('click', function () {
+
+            var approvedRosterMembers = []; // Initialize an empty array to store player data
+
+            // Iterate through each checkbox in the table that has a 'data-id' attribute
+            $('.form-check-input[data-id]').each(function () {
+                var playerId = $(this).data('id'); // Get the data-id attribute
+                var isApproved = $(this).prop('checked'); // Get the checked state
+                var reason = "";
+                if (!isApproved) {
+                   
+                    reason = $("#reason-" + playerId).val();
+                }
+
+                // Add the player data to the array
+                approvedRosterMembers.push({
+                    id: playerId,
+                    approved: isApproved,
+                    comments: reason
+                });
+            });
+
+            console.log(JSON.stringify(approvedRosterMembers))
+
+            var tournamentId = $("#eventSelect").val();
+            var teamName = $("#teamName").val()
+
+            var url = `/api/events/itc/approve/tournament/${tournamentId}/team/${teamName}`
+            var encodedUrl = encodeURI(url);
+
+            var json = {
+                RosterApprovals: approvedRosterMembers
+            }
+
+            $.ajax({
+                type: "PUT",
+                url: encodedUrl,
+                data: JSON.stringify(json),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (result) {
+
+                    window.location = "/my-account";
+                },
+                error: function (result) {
+                    console.log(result);
+                }
+            });
+
+        })
+
+    })
+
+</script>
+
