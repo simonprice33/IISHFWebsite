@@ -1,5 +1,6 @@
 ﻿using IISHF.Core.Interfaces;
 using IISHF.Core.Models;
+using IISHF.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -55,7 +56,18 @@ namespace IISHF.Core.Controllers.SurfaceControllers
         [HttpGet]
         public ActionResult RenderRegister()
         {
-            var model = new RegisterViewModel();
+            string userType = _httpContextAccessor?.HttpContext?.Request?.Query["type"].ToString();
+            string converted = string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(userType))
+            {
+                converted = userType.DecodeBase64MultipleTimes();
+            }
+
+            var model = new RegisterViewModel()
+            {
+                InvitedAccountType = "test value"
+            };
             return PartialView("~/Views/Partials/Members/Register.cshtml", model);
         }
 
@@ -64,11 +76,23 @@ namespace IISHF.Core.Controllers.SurfaceControllers
         {
             var member = _userService.GetMembersByPropertyValue(token.ToString(), "emailVerificationToken");
 
+
+
             if (member != null)
             {
                 try
                 {
-                    var key = _userService.GetVerificationKey(member, token);
+
+                    // ToDo - If Member is NMA User or Team Administrator 
+                    // Trigger password reset 
+                    // Do not send the email 
+                    // redirect to password set page
+
+                    //// Might not need this as will be setting these values in registation page 
+                    //var redirect = member.GetValue<bool>("isNMA") || member.GetValue<bool>("teamAdministrator") ||
+                    //               member.GetValue<bool>("isIISHF");
+
+                    var key = _userService.GetVerificationKey(member, token, false);
                     TempData["status"] = "OK";
                     return RedirectToUmbracoPage(key);
                 }

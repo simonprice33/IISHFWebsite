@@ -27,5 +27,16 @@ namespace IISHF.Core.Models
         [Required(ErrorMessage = "Please enter a password confirmation")]
         [EqualTo(nameof(Password), ErrorMessage = "Passwords do not match")]
         public string ConfirmPassword { get; set; }
+
+        public string InvitedAccountType { get; set; }
+
+        public string NationalMemberAssociation { get; set; }
+
+        public string ClubName { get; set; }
+
+
+        public string[] AgeGroups { get; set; }
+        
+        public bool PrimaryClubContact { get; set; }
     }
 }

@@ -50,7 +50,7 @@ namespace IISHF.Core.Services
                             foreach (var evt in titleEvents)
                             {
                                 var team = evt.Children().Where(x => x.ContentType.Alias == "team")
-                                    .FirstOrDefault(x => x.Name == teams.Name);
+                                    .FirstOrDefault(x => x.Name == teams.Name || teams.Name.Contains(x.Name));
 
                                 var requiredByDate = team.Value<DateTime>("teamSubmissionRequiredBy");
 

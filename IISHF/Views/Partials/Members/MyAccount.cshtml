@@ -1,5 +1,21 @@
 ﻿@inherits UmbracoViewPage<IISHF.Core.Models.AccountViewModel>
+@using Umbraco.Cms.Core.Security
+@using Umbraco.Cms.Core.Services
+@using Umbraco.Cms.Web.Common.Security
 @model IISHF.Core.Models.AccountViewModel
+@inject IMemberManager MemberManager
+@inject IMemberService MemberService
+@{
+    
+
+   var user = await MemberManager.GetCurrentMemberAsync();
+    var member = MemberService.GetById(int.Parse(user.Id));
+
+    var isNmaApprover = member.GetValue<bool>("nMAITCApprover");
+
+    var isIsshfApprover = member.GetValue<bool>("iISHFITCApprover");
+    var isTeamAdministrator = member.GetValue<bool>("teamAdministrator");
+}
 
 <div class="container custom-container mt-5">
     <div class="row">
@@ -7,8 +23,19 @@
         @await Html.PartialAsync("UserInformation.cshtml", Model)
         @await Html.PartialAsync("Notifications.cshtml", null)
 
-        @await Html.PartialAsync("Invitations.cshtml", Model.Invitations)
-        @await Html.PartialAsync("Approvals.cshtml", Model.Approvals)
+        @{
+            if (isTeamAdministrator)
+            {
+                @await Html.PartialAsync("Invitations.cshtml", Model.Invitations)
+            }
+        }
+
+        @{
+            if (isNmaApprover || isIsshfApprover)
+            {
+                @await Html.PartialAsync("Approvals.cshtml", Model.Approvals)
+            }
+        }
     </div>
 </div>
 

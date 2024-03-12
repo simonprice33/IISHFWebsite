@@ -12,6 +12,8 @@ using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Services;
 using Microsoft.Azure.Amqp.Encoding;
 using Umbraco.Cms.Core.Models;
+using Lucene.Net.Index;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace IISHF.Core.Services
 {
@@ -71,13 +73,21 @@ namespace IISHF.Core.Services
                 nmaReportingYearPublishedContent = await GetPublishedContentByKey(nmaReportingYearContent.Key);
             }
 
+            var exists = nmaReportingYearPublishedContent.Children().FirstOrDefault(x => x.Name.Trim() == club.ClubName.Trim());
+
+            if (exists != null)
+            {
+                var exception = new Exception("Club with this name already exists");
+                _logger.LogError(exception, "Club {clubName} already exists", club.ClubName.Trim());
+                throw exception;
+            }
 
             // ToDo
             // Search previous 2 years for same club and copy information forward for club only.
             // Will do similar when adding club teams
 
-            var nmaContent = _contentService.Create(club.ClubName, nmaReportingYearPublishedContent.Key, "club");
-            nmaContent.SetValue("clubName", club.ClubName);
+            var nmaContent = _contentService.Create(club.ClubName.Trim(), nmaReportingYearPublishedContent.Key, "club");
+            nmaContent.SetValue("clubName", club.ClubName.Trim());
             _contentService.SaveAndPublish(nmaContent);
 
             return nmaContent;
@@ -92,23 +102,44 @@ namespace IISHF.Core.Services
             {
                 var teams = property.GetValue(club) as IEnumerable<ClubTeam>;
                 var ageGroup = property.Name;
+
+                if (ageGroup == "Men")
+                {
+                    ageGroup = "Senior";
+                }
+
+                if (ageGroup == "Women")
+                {
+                    ageGroup = "Senior Women";
+                }
+
+                var ageGroupContent = _contentService.Create(ageGroup, nmaClubContent.Key, "ageGroup");
+                _contentService.SaveAndPublish(ageGroupContent);
+
                 if (teams != null)
                 {
                     foreach (var team in teams)
                     {
-                        // check team doesnt already exist by name in club
 
-                        var exists = await GetPublishedContentByKey(nmaClubContent.Key);
 
-                        if (exists != null)
-                        {
-                            continue;
-                        }
+                        ////if (exists != null)
+                        ////{
+                        ////    var exception = new Exception("Team with this name already exists");
+                        ////    _logger.LogError(exception, "Team {teamName} already exists", team.TeamName.Trim());
+                        ////    continue;
+                        ////}
 
-                        var nmaContent = _contentService.Create(team.TeamName, nmaClubContent.Key, "clubTeam");
-                        nmaContent.SetValue("teamName", club.ClubName);
+                        var nmaContent = _contentService.Create(team.TeamName.Trim(), ageGroupContent.Key, "clubTeam");
+                        nmaContent.SetValue("teamName", team.TeamName.Trim());
                         nmaContent.SetValue("ageGroup", ageGroup);
                         _contentService.SaveAndPublish(nmaContent);
+
+                        // ToDO
+                        // Check it team exists in previous two years reporting and copy information over. 
+                        // Copy logos 
+                        // Copy team information
+                        // copy contact information. 
+
                     }
                 }
             }

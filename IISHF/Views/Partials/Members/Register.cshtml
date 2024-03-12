@@ -1,5 +1,6 @@
 ﻿@inherits UmbracoViewPage<IISHF.Core.Models.RegisterViewModel>
 @using IISHF.Core.Controllers.SurfaceControllers
+@using IISHF.Extensions
 @model IISHF.Core.Models.RegisterViewModel
 
 @{
@@ -8,6 +9,8 @@
             .FirstOrDefault(x => x.Name == "Home")!.Children()?
             .FirstOrDefault(x => x.Name == "Register");
 
+    var userType = Context.Request.Query["type"].ToString();
+    var converted = userType.DecodeBase64MultipleTimes();
 
         var heroImageObj = registerContent.Value<IPublishedContent>("heroImage");
         var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
@@ -58,6 +61,8 @@
                         @Html.ValidationMessageFor(m => m.ConfirmPassword, null, new { @class = "text-danger" })
                     </div>
 
+                    @Html.HiddenFor(x => x.InvitedAccountType)
+
                     <input type="submit" value="Register"/>
                 }
             </div>            
@@ -65,3 +70,10 @@
 
     </div>
 </div>
+
+<script>
+    $(document).ready(function() {
+        // Set the value of the InvitedAccountType hidden field
+        $('#InvitedAccountType').val('@converted');
+    });
+</script>

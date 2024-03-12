@@ -163,11 +163,11 @@
         <span class="nav-link mb-3 p-3 shadow" id="v-pills-players-tab">
             <select id="eventSelect" class="form-control">
                 @{
-                                <option value="">Select Event for @DateTime.Now.Year.ToString()</option>
+                    <option value="">Select Event for @DateTime.Now.Year.ToString()</option>
 
                     foreach (var iishfEvent in allEvents)
                     {
-                                    <option value="@iishfEvent.Id">@iishfEvent.EventName</option>
+                        <option value="@iishfEvent.Id">@iishfEvent.EventName</option>
                     }
                 }
             </select>
@@ -182,7 +182,7 @@
             @{
                 if (isNmaApprover || isIsshfApprover)
                 {
-                                <div id="counterId1">0 of X approved</div>
+                    <div id="counterId1">0 of X approved</div>
                 }
             }
         </a>
@@ -191,7 +191,7 @@
             @{
                 if (isNmaApprover || isIsshfApprover)
                 {
-                                <div id="counterId2">0 of X approved</div>
+                    <div id="counterId2">0 of X approved</div>
                 }
             }
         </a>
@@ -209,77 +209,80 @@
 <!-- Tabs content -->
 <div class="tab-content" id="v-pills-tabContent">
 <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-team" role="tabpanel" aria-labelledby="v-pills-team-tab">
-    <div class="row form-group">
-        <label for="teamName" class="col-12 col-md-4 col-form-label">Team Name:</label>
-        <div class="col-12 col-md-8" style="position: relative;">
-            @{
-                var teamName = team?.Name ?? string.Empty;
-            }
-            <input type="text" class="form-control" placeholder="Team Name" id="teamName" value="@teamName"/>
-            <div id="suggestionsContainer"></div>
+    
+<!-- To Do - Reorder form content to disable name entry until event and issuing country selected -->
+
+<div class="row form-group">
+    <label for="teamName" class="col-12 col-md-4 col-form-label">Team Name:</label>
+    <div class="col-12 col-md-8" style="position: relative;">
+        @{
+            var teamName = team?.Name ?? string.Empty;
+        }
+        <input type="text" class="form-control" placeholder="Team Name" id="teamName" value="@teamName"/>
+        <div id="suggestionsContainer"></div>
 
 
-        </div>
     </div>
-    <div class="row form-group">
-        <label for="teamSignatory" class="col-12 col-md-4 col-form-label">Team Signatory:</label>
-        <div class="col-12 col-md-8">
-            @{
-                var teamSignatory = team?.Value<string>("teamSignatory") ?? string.Empty;
-            }
-            <input type="text" class="form-control" placeholder="Team Signatory" id="teamSignatory" value="@teamSignatory"/>
-        </div>
+</div>
+<div class="row form-group">
+    <label for="teamSignatory" class="col-12 col-md-4 col-form-label">Team Signatory:</label>
+    <div class="col-12 col-md-8">
+        @{
+            var teamSignatory = team?.Value<string>("teamSignatory") ?? string.Empty;
+        }
+        <input type="text" class="form-control" placeholder="Team Signatory" id="teamSignatory" value="@teamSignatory"/>
     </div>
-    <div class="row form-group">
-        <label for="issuingCountry" class="col-12 col-md-4 col-form-label">Issuing Country:</label>
-        <div class="col-12 col-md-8">
-            <select class="form-control" id="issuingCountry" name="issuingCountry">
-                <option value="">Nationality</option>
-                @{
-                    var addedSeparator = false; // Flag to check if separator has been added
-                    // This will get the index of last priority country in the sorted list
-                    var lastPriorityCountryIndex = countries.ToList().FindLastIndex(c => priorityCountries.Contains(c.Country));
+</div>
+<div class="row form-group">
+    <label for="issuingCountry" class="col-12 col-md-4 col-form-label">Issuing Country:</label>
+    <div class="col-12 col-md-8">
+        <select class="form-control" id="issuingCountry" name="issuingCountry">
+            <option value="">Nationality</option>
+            @{
+                var addedSeparator = false; // Flag to check if separator has been added
+                // This will get the index of last priority country in the sorted list
+                var lastPriorityCountryIndex = countries.ToList().FindLastIndex(c => priorityCountries.Contains(c.Country));
 
-                    foreach (var country in countries)
+                foreach (var country in countries)
+                {
+                    if (country.ISO3 == team?.Value<string>("countryIso3"))
                     {
-                        if (country.ISO3 == team?.Value<string>("countryIso3"))
-                        {
-                                        <option selected="true" value="@country.ISO3">@country.Country</option>
-                        }
-                        else
-                        {
-                                        <option value="@country.ISO3">@country.Country</option>
-                        }
-                        if (countries.ToList().IndexOf(country) == lastPriorityCountryIndex && !addedSeparator)
-                        {
-                            // Add the separator
-                                        <option disabled>──────────</option>
-                            addedSeparator = true; // Ensure the separator is only added once
-                        }
+                        <option selected="true" value="@country.ISO3">@country.Country</option>
+                    }
+                    else
+                    {
+                        <option value="@country.ISO3">@country.Country</option>
+                    }
+                    if (countries.ToList().IndexOf(country) == lastPriorityCountryIndex && !addedSeparator)
+                    {
+                        // Add the separator
+                        <option disabled>──────────</option>
+                        addedSeparator = true; // Ensure the separator is only added once
                     }
                 }
+            }
 
-            </select>
+        </select>
+    </div>
+</div>
+<div class="row form-group">
+    <label for="colourOne" class="col-12 col-md-4 col-form-label">First Jersey Colour:</label>
+    <div class="col-12 col-md-4">
+        <div class="input-group mb-3">
+            <div id="colorPicker" class="input-group-prepend color-picker-container"></div>
+            <input type="text" class="form-control" placeholder="Team colour" id="colourOne" aria-label="Team colour in hex" aria-describedby="colorPickerAddon">
         </div>
     </div>
-    <div class="row form-group">
-        <label for="colourOne" class="col-12 col-md-4 col-form-label">First Jersey Colour:</label>
-        <div class="col-12 col-md-4">
-            <div class="input-group mb-3">
-                <div id="colorPicker" class="input-group-prepend color-picker-container"></div>
-                <input type="text" class="form-control" placeholder="Team colour" id="colourOne" aria-label="Team colour in hex" aria-describedby="colorPickerAddon">
-            </div>
+</div>
+<div class="row form-group">
+    <label for="jerseyTwoColour" class="col-12 col-sm-4 col-md-4 col-form-label">Second Jersey Colour:</label>
+    <div class="col-12 col-md-4">
+        <div class="input-group mb-3">
+            <div id="colorPicker2" class="input-group-prepend color-picker-container"></div>
+            <input type="text" class="form-control" placeholder="Team colour" id="colourTwo" aria-label="Team colour in hex" aria-describedby="colorPickerAddon">
         </div>
     </div>
-    <div class="row form-group">
-        <label for="jerseyTwoColour" class="col-12 col-sm-4 col-md-4 col-form-label">Second Jersey Colour:</label>
-        <div class="col-12 col-md-4">
-            <div class="input-group mb-3">
-                <div id="colorPicker2" class="input-group-prepend color-picker-container"></div>
-                <input type="text" class="form-control" placeholder="Team colour" id="colourTwo" aria-label="Team colour in hex" aria-describedby="colorPickerAddon">
-            </div>
-        </div>
-    </div>
+</div>
 </div>
 
 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-players" role="tabpanel" aria-labelledby="v-pills-players-tab">
@@ -299,7 +302,7 @@
                 @{
                     if (selectedTournament != null && !selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase))
                     {
-                                    <th>Is Guest</th>
+                        <th>Is Guest</th>
                     }
                 }
 
@@ -307,30 +310,30 @@
                 @{
                     if (!isSubmitted)
                     {
-                                    <th></th>
+                        <th></th>
                     }
 
                     if (isNmaApprover)
                     {
-                                    <th>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="checkAllPlayers">
-                                            <label class="form-check-label" for="flexSwitchCheckDefault"></label>
-                                        </div>
-                                    </th>
+                        <th>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="checkAllPlayers">
+                                <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                            </div>
+                        </th>
                     }
                     if (isIsshfApprover)
                     {
-                                    <th class="text-center">
+                        <th class="text-center">
 
-                                        NMA Check
-                                    </th>
-                                    <th>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="checkAllPlayers">
-                                            <label class="form-check-label" for="flexSwitchCheckDefault"></label>
-                                        </div>
-                                    </th>
+                            NMA Check
+                        </th>
+                        <th>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="checkAllPlayers">
+                                <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                            </div>
+                        </th>
                     }
                 }
             </tr>
@@ -373,60 +376,60 @@
                     @{
                         if (!selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase))
                         {
-                                        <td>
-                                            @if (players[i].Value<bool>("isGuest"))
+                            <td>
+                                @if (players[i].Value<bool>("isGuest"))
                                 {
-                                                <span>
-                                                    <i class="fas fa-check"></i>
-                                                </span>
+                                    <span>
+                                        <i class="fas fa-check"></i>
+                                    </span>
                                 }
-                                        </td>
+                            </td>
                         }
                     }
                     @{
                         if (!isSubmitted)
                         {
-                                        <td>
-                                            <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); deleteRow(this)">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </td>
+                            <td>
+                                <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); deleteRow(this)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
                         }
                         if (isNmaApprover)
                         {
                             var checkId = $"player-id-{players[i].Id}";
                             var nmaCheckedState = players[i].Value<bool>("nmaCheck") ? "checked" : "";
-                                        <td>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" @nmaCheckedState data-id="@players[i].Id" type="checkbox" id="@checkId">
-                                                <label class="form-check-label" for="@checkId"></label>
-                                            </div>
+                            <td>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" @nmaCheckedState data-id="@players[i].Id" type="checkbox" id="@checkId">
+                                    <label class="form-check-label" for="@checkId"></label>
+                                </div>
 
-                                        </td>
+                            </td>
                         }
 
-                                    @if (isIsshfApprover)
+                        @if (isIsshfApprover)
                         {
                             var checkId = $"player-id-{players[i].Id}";
                             var iishfCheckedState = players[i].Value<bool>("iISHFCheck") ? "checked" : "";
                             var nmaCheckedState = players[i].Value<bool>("nmaCheck");
-                                        <td class="text-center">
-                                            @{
+                            <td class="text-center">
+                                @{
                                     if (nmaCheckedState)
                                     {
-                                                                <span>
-                                                                    <i class="fas fa-check"></i>
-                                                                </span>
+                                        <span>
+                                            <i class="fas fa-check"></i>
+                                        </span>
                                     }
-                                            }
-                                        </td>
-                                        <td>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" @iishfCheckedState data-id="@players[i].Id" type="checkbox" id="@checkId">
-                                                <label class="form-check-label" for="flexSwitchCheckDefault"></label>
-                                            </div>
+                                }
+                            </td>
+                            <td>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" @iishfCheckedState data-id="@players[i].Id" type="checkbox" id="@checkId">
+                                    <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                                </div>
 
-                                        </td>
+                            </td>
                         }
                     }
                 </tr>
@@ -437,7 +440,8 @@
     @{
         if (!isSubmitted)
         {
-                        <button id="addRowButton" type="button">Add Row</button>
+            <button class="btn btn-custom-draft" id="addRowButton" type="button"><i class="fa-duotone fa-user-plus"></i> Add player</button>
+            
         }
     }
 
@@ -457,31 +461,31 @@
             @{
                 if (!isSubmitted)
                 {
-                                <th></th>
+                    <th></th>
                 }
 
 
                 if (isNmaApprover)
                 {
-                                <th>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="checkAllOfficials">
-                                        <label class="form-check-label" for="flexSwitchCheckDefault"></label>
-                                    </div>
-                                </th>
+                    <th>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="checkAllOfficials">
+                            <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                        </div>
+                    </th>
                 }
                 if (isIsshfApprover)
                 {
-                                <th class="text-center">
+                    <th class="text-center">
 
-                                    NMA Check
-                                </th>
-                                <th>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="checkAllOfficials">
-                                        <label class="form-check-label" for="flexSwitchCheckDefault"></label>
-                                    </div>
-                                </th>
+                        NMA Check
+                    </th>
+                    <th>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="checkAllOfficials">
+                            <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                        </div>
+                    </th>
                 }
 
             }
@@ -521,48 +525,48 @@
                 @{
                     if (!isSubmitted)
                     {
-                                    <td>
-                                        <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); deleteRow(this)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
+                        <td>
+                            <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); deleteRow(this)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
                     }
 
                     if (isNmaApprover)
                     {
                         var checkId = $"player-id-{benchOfficials[i].Id}";
                         var nmaCheckedState = benchOfficials[i].Value<bool>("nmaCheck") ? "checked" : "";
-                                    <td>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" @nmaCheckedState data-id="@benchOfficials[i].Id" type="checkbox" id="@checkId">
-                                            <label class="form-check-label" for="@checkId"></label>
-                                        </div>
+                        <td>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" @nmaCheckedState data-id="@benchOfficials[i].Id" type="checkbox" id="@checkId">
+                                <label class="form-check-label" for="@checkId"></label>
+                            </div>
 
-                                    </td>
+                        </td>
                     }
 
-                                @if (isIsshfApprover)
+                    @if (isIsshfApprover)
                     {
                         var checkId = $"player-id-{benchOfficials[i].Id}";
                         var iishfCheckedState = benchOfficials[i].Value<bool>("iISHFCheck") ? "checked" : "";
                         var nmaCheckedState = benchOfficials[i].Value<bool>("nmaCheck");
-                                    <td class="text-center">
-                                        @{
+                        <td class="text-center">
+                            @{
                                 if (nmaCheckedState)
                                 {
-                                                            <span>
-                                                                <i class="fas fa-check"></i>
-                                                            </span>
+                                    <span>
+                                        <i class="fas fa-check"></i>
+                                    </span>
                                 }
-                                        }
-                                    </td>
-                                    <td>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" @iishfCheckedState data-id="@benchOfficials[i].Id" type="checkbox" id="@checkId">
-                                            <label class="form-check-label" for="flexSwitchCheckDefault"></label>
-                                        </div>
+                            }
+                        </td>
+                        <td>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" @iishfCheckedState data-id="@benchOfficials[i].Id" type="checkbox" id="@checkId">
+                                <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                            </div>
 
-                                    </td>
+                        </td>
                     }
                 }
             </tr>
@@ -577,7 +581,8 @@
     @{
         if (!isSubmitted)
         {
-                        <button id="addBenchOfficialButton" type="button">Add Row</button>
+            <button class="btn btn-custom-draft" id="addBenchOfficialButton" type="button"><i class="fa-duotone fa-user-plus"> </i> Add official</button>
+
         }
     }
 
@@ -597,7 +602,7 @@
                 && !selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase)
                 && team.Children().Any(x => x.ContentType.Alias == "guestPlayerPermission"))
             {
-                            @await Html.PartialAsync("Partials/ITC/GuestPlayerPermissionDocuments.cshtml", new PermissionLetters
+                @await Html.PartialAsync("Partials/ITC/GuestPlayerPermissionDocuments.cshtml", new PermissionLetters
                        {
                            Permissionletters = team.Children().Where(x => x.ContentType.Alias == "guestPlayerPermission").ToList(),
                            Players = players
@@ -611,44 +616,45 @@
 <div class="tab-pane fade shadow rounded bg-white show p-5" id="v-pills-submit" role="tabpanel" aria-labelledby="v-pills-submit-tab">
 
 
-    <div class="button-container">
-        @{
-            if (!isSubmitted)
-            {
-                            <button class="btn btn-light m-1" type="submit" onclick="validateForms()">Validate</button>
-                            <button class="btn btn-custom-draft m-1" onclick="submit(true)">Save Draft</button>
-                            <button class="btn btn-custom-save m-1" onclick="submit(false)">Submit</button>
-            }
-
-            if (isNmaApprover && !isNmaApprover)
-            {
-            }
-
-            if (isNmaApprover)
-            {
-                            <button class="btn btn-danger m-1">Reject with reasons</button>
-                            <button id="nmaApprove" class="btn btn-custom-save m-1" data-approver="nma">Approve and send to IISHF</button>
-            }
-
-            if (isIsshfApprover)
-            {
-                            <button id="rejectWithReasons"class="btn btn-danger m-1">Reject with reasons</button>
-                            <button id="iishfApprove" class="btn btn-custom-save m-1" data-approver="nma">Approve ITC</button>
-            }
-
-            if (isNmaApprover || isIsshfApprover)
-            {
-                            <div class="col-12" id="reasons"></div>
-            }
+<div class="button-container">
+    @{
+        if (!isSubmitted)
+        {
+            <button class="btn btn-light m-1" type="submit" onclick="validateForms()">Validate</button>
+            <button class="btn btn-custom-draft m-1" onclick="submit(true)">Save Draft</button>
+            <button class="btn btn-custom-save m-1" onclick="submit(false)">Submit</button>
         }
-        </>
+
+        if (isNmaApprover && !isNmaApprover)
+        {
+        }
+
+        if (isNmaApprover)
+        {
+            <button class="btn btn-danger m-1">Reject with reasons</button>
+            <button id="nmaApprove" class="btn btn-custom-save m-1" data-approver="nma">Approve and send to IISHF</button>
+        }
+
+        if (isIsshfApprover)
+        {
+            <button id="rejectWithReasons"class="btn btn-danger m-1">Reject with reasons</button>
+            <button id="iishfApprove" class="btn btn-custom-save m-1" data-approver="nma">Approve ITC</button>
+        }
+
+        if (isNmaApprover || isIsshfApprover)
+        {
+            <div class="col-12" id="reasons"></div>
+        }
+    }
+    </>
        
 
-    </div>
-    <!-- Existing content -->
-    <div id="submissionErrors" class="alert alert-danger mb-3" role="alert">
+</div>
+<!-- Existing content -->
+<div id="submissionErrors" class="alert alert-danger mb-3" role="alert">
 
-    </div>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -1999,36 +2005,86 @@
         }
     }
 
-        $('#teamName').on('input', function () {
+    $('body').on('input', '#teamName', function() {
 
-            var query = $(this).val();
-            console.log(query)
-            if (query.length >= 3) { // Trigger search when 3 or more characters are typed
-                $.ajax({
-                    url: '/api/events/search',
-                    type: 'GET',
-                    data: { searchText: query },
-                    success: function (data) {
+         if ($('#teamName').is('select')) {
+        // If #teamName is a select, exit the function early
+        return;
+    }
 
-                        console.log(data)
-                        $('#suggestionsContainer').empty();
-                        data.forEach(function (item) {
-                            // Include item.key in the data-key attribute
-                            var suggestionItem = $('<div class="suggestion-item" data-key="' + item.key + '">' + item.name + '</div>');
-                            $('#suggestionsContainer').append(suggestionItem);
-                            suggestionItem.on('click', function () {
-                                $('#teamName').val(item.name); // Set the name in the input field
-                                $('#teamName').attr('data-id', item.id); // Set the key as a data attribute on the input
-                                $('#teamName').attr('data-key', item.key); // Set the key as a data attribute on the input
-                                $('#suggestionsContainer').empty();
-                            });
-                        });
-                    }
-                });
-            } else {
+
+    var query = $(this).val();
+    var selectedAgeGroup = $('#ageGroup').text();
+
+    console.log(selectedAgeGroup);
+    console.log(query);
+    
+    if (query.length >= 3) { // Trigger search when 3 or more characters are typed
+        $.ajax({
+            url: '/api/events/search',
+            type: 'GET',
+            data: { searchText: query, ageGroup: selectedAgeGroup },
+            success: function(data) {
+                console.log(data);
                 $('#suggestionsContainer').empty();
+                data.forEach(function(item) {
+                    var suggestionItem = $('<div class="suggestion-item" data-key="' + item.key + '">' + item.name + '</div>');
+                    $('#suggestionsContainer').append(suggestionItem);
+
+                    console.log(item)
+
+                    suggestionItem.on('click', function() {
+                        $('#teamName').val(item.name); // Set the name in the input field
+                        $('#teamName').attr('data-id', item.id); // Set the id as a data attribute on the input
+                        $('#teamName').attr('data-key', item.key); // Set the key as a data attribute on the input
+                        $('#issuingCountry').val(item.country)
+                        $('#suggestionsContainer').empty();
+                    });
+                });
             }
         });
+    } else {
+        $('#suggestionsContainer').empty();
+    }
+});
+
+
+
+        // $('#teamName').on('input', function () {
+
+        //     var query = $(this).val();
+
+        //     var selectedAgeGroup = $('#ageGroup').text();
+
+        //     console.log(selectedAgeGroup)
+
+        //     console.log(query)
+        //     if (query.length >= 3) { // Trigger search when 3 or more characters are typed
+        //         $.ajax({
+        //             url: '/api/events/search',
+        //             type: 'GET',
+        //             data: { searchText: query, ageGroup : selectedAgeGroup},
+        //             success: function (data) {
+
+        //                 console.log(data)
+        //                 $('#suggestionsContainer').empty();
+        //                 data.forEach(function (item) {
+        //                     // Include item.key in the data-key attribute
+        //                     var suggestionItem = $('<div class="suggestion-item" data-key="' + item.key + '">' + item.name + '</div>');
+        //                     $('#suggestionsContainer').append(suggestionItem);
+        //                     suggestionItem.on('click', function () {
+        //                         $('#teamName').val(item.name); // Set the name in the input field
+        //                         $('#teamName').attr('data-id', item.id); // Set the key as a data attribute on the input
+        //                         $('#teamName').attr('data-key', item.key); // Set the key as a data attribute on the input
+        //                         $('#suggestionsContainer').empty();
+        //                     });
+        //                 });
+        //             }
+        //         });
+        //     } else {
+        //         $('#suggestionsContainer').empty();
+        //     }
+        // });
 
         $('#data-table').on('click', '.btn-danger', function (event) {
             event.stopPropagation(); // Prevent click event from bubbling up to the row

@@ -639,16 +639,29 @@ namespace IISHF.Core.Controllers.ApiControllers
 
         [HttpGet]
         [Route("search")]
-        public async Task<IActionResult> Search(string searchText)
+        public async Task<IActionResult> Search(string searchText = "", string ageGroup = "")
         {
+            if (string.IsNullOrWhiteSpace(ageGroup))
+            {
+                var json = new
+                {
+                    Id = 0,
+                    Key = Guid.Empty,
+                    Name = "Event Selection required"
+                };
+
+                return Ok(new List<object> { json });
+            }
+
             var teams = _contentQuery.ContentAtRoot()
                 .DescendantsOrSelfOfType("clubTeam")
-                .Where(x => x.Name.Contains(searchText, StringComparison.InvariantCultureIgnoreCase))
+                .Where(x => x.Value<string>("ageGroup") == ageGroup && x.Name.Contains(searchText, StringComparison.InvariantCultureIgnoreCase))
                 .Select(x => new
                 {
                     Id = x.Id,
                     Key = x.Key,
                     Name = x.Name,
+                    Country = x.Parent.Parent.Parent.Parent.Value<string>("iSO3")
                 })
                 .ToList();
             _logger.LogInformation(searchText);

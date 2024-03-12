@@ -56,20 +56,28 @@
                                                 // If the number does not start with '00', leave it as is or handle accordingly
                                                 modifiedNumber = telephone;
                                             }
-                                            <div class="form-group">
-                                                <i class="fa-duotone fa-square-phone-flip"></i>
-                                                @modifiedNumber
-                                            </div>
+                                            if (!string.IsNullOrWhiteSpace(telephone))
+                                            {
+                                                <div class="form-group">
+                                                    <i class="fa-duotone fa-square-phone-flip"></i>
+                                                    @modifiedNumber
+                                                </div>
+                                            }
                                         }
                                     }
                                     <div class="form-group">
-                                        <i class="fa-regular fa-at"></i>
                                         @{
                                             var email = string.IsNullOrWhiteSpace(contact.Value<string>("nMAContactEmail"))
-                                            ? parent.Value<string>("email")
-                                            : contact.Value<string>("nMAContactEmail");
+                                                    ? parent.Value<string>("email")
+                                                    : contact.Value<string>("nMAContactEmail");
+
+                                            if (!string.IsNullOrWhiteSpace(email))
+                                            {
+                                                <i class="fa-regular fa-at"></i>
+                                                <a href="mailto:@email">@email</a>
+                                            }
                                         }
-                                        <a href="mailto:@email">@email</a>
+                                        
                                     </div>
                                 </div>
                             </div>
@@ -89,21 +97,44 @@
                     foreach (var club in reportedClubs)
                     {
                         var logo = club.Value<IPublishedContent>("clubLogo");
+                        var clubContact = club.Value<string>("primaryClubContact");
+                        var telephone = club.Value<string>("primaryClubContactPhone");
+                        var email = club.Value<string>("primaryClubContactEmail");
+
                         <div class="col-12 col-sm-12 col-md-3 col-lg-3 mb-3">
                             <div class="card">
                                 <div class="card-body">
-                                    <img class="card-img-top img img-fluid" src="@logo.Url()" alt="Card image cap">
-                                    <h5 class="card-title">@club.Name</h5>
-                                    <h6 class="card-subtitle mb-2 text-muted">Primary Club Contact Information</h6>
-                                    <div class="form-group">
-                                        <i class="fa-regular fa-at"></i>
-                                        @{
-                                            var clubContact = club.Value<string>("primaryClubContact");
+                                    @{
+                                        if (@logo?.Url() != null)
+                                        {
+                                            <img class="card-img-top img img-fluid" src="" alt="Card image cap">
                                         }
-                                        @clubContact
+                                    }
+                                    <h5 class="card-title">@club.Name</h5>
+                                    
+                                    
+                                    @{
+                                        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(telephone))
+                                        {
+                                            <h6 class="card-subtitle mb-2 text-muted">Contact information not supplied</h6>
+                                        }
+                                        else
+                                        {
+                                            <h6 class="card-subtitle mb-2 text-muted">Primary Club Contact Information</h6>
+                                        }
+                                    }
+
+                                    <div class="form-group">
+                                        
+                                        @{
+                                            if (!string.IsNullOrWhiteSpace(clubContact))
+                                            {
+                                                <i class="fa-regular fa-at"></i>
+                                                @clubContact
+                                            }
+                                        }
                                     </div>
                                     @{
-                                        var telephone = club.Value<string>("primaryClubContactPhone");
                                         string modifiedNumber;
                                         if (telephone.StartsWith("00"))
                                         {
@@ -115,19 +146,26 @@
                                             modifiedNumber = telephone;
                                         }
 
-                                        var telephoneLink = $"tel:{modifiedNumber}";
-                                        <div class="form-group">
-                                            <i class="fa-duotone fa-square-phone-flip"></i>
-                                            <a href="@telephoneLink">@modifiedNumber</a>
-                                        </div>
+                                        if (!string.IsNullOrWhiteSpace(telephone))
+                                        {
+                                            var telephoneLink = $"tel:{modifiedNumber}";
+                                            <div class="form-group">
+                                                <i class="fa-duotone fa-square-phone-flip"></i>
+                                                <a href="@telephoneLink">@modifiedNumber</a>
+                                            </div>
+                                        }
                                     }
                                     <div class="form-group">
-                                        <i class="fa-regular fa-at"></i>
+                                       
                                         @{
-                                            var email = club.Value<string>("primaryClubContactEmail");
                                             var emailLink = $"mailto:{@email}";
+                                            if (!string.IsNullOrWhiteSpace(email))
+                                            {
+                                                <i class="fa-regular fa-at"></i>
+                                                <a href="@emailLink">@email</a>
+                                            }
                                         }
-                                        <a href="@emailLink">@email</a>
+                                       
                                     </div>
                                 </div>
                             </div>

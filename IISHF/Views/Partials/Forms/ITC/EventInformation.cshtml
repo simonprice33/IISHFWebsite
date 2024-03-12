@@ -7,52 +7,52 @@
     @{
         if (@Model == null)
         {
-            <div class="row">
-                <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                <div class="row">
+                    <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                    </div>
                 </div>
-            </div>
         }
         else
         {
-            <div class="row">
-                <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                    <strong>Event Reference</strong>
-                    <p id="sanction">@Model.SanctionNumber</p>
-                    <input id="isChampionship" type="hidden" value="@Model.IsChampionship" />
+                <div class="row">
+                    <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                        <strong>Event Reference</strong>
+                        <p id="sanction">@Model.SanctionNumber</p>
+                        <input id="isChampionship" type="hidden" value="@Model.IsChampionship" />
 
+                    </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                    <strong>Age Group</strong>
-                    <p id="ageGroup">@Model.AgeGroup</p>
-                    <input id="shortCode" type="hidden" value="@Model.ShortCode" />
+                <div class="row">
+                    <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                        <strong>Age Group</strong>
+                        <p id="ageGroup">@Model.AgeGroup</p>
+                        <input id="shortCode" type="hidden" value="@Model.ShortCode" />
+                    </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                    <strong>Start and End Date</strong>
-                    <p class=""><span id="startDate">@Model.EventStartDate.ToString("dd.MM.yyyy")</span> - <span id="endDate">@Model.EventEndDate.ToString("dd.MM.yyyy")</span></p>
+                <div class="row">
+                    <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                        <strong>Start and End Date</strong>
+                        <p class=""><span id="startDate">@Model.EventStartDate.ToString("dd.MM.yyyy")</span> - <span id="endDate">@Model.EventEndDate.ToString("dd.MM.yyyy")</span></p>
+                    </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                    <strong>Hosting Club</strong>
-                    <p>@Model.HostingClub</p>
+                <div class="row">
+                    <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                        <strong>Hosting Club</strong>
+                        <p>@Model.HostingClub</p>
+                    </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                    <strong>Event Location</strong>
-                    <p>@Model.EvenLocation.Replace("\n", ", ").Replace(",,", ", ")</p>
+                <div class="row">
+                    <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                        <strong>Event Location</strong>
+                        <p>@Model.EvenLocation.Replace("\n", ", ").Replace(",,", ", ")</p>
+                    </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                    <strong>Event Country</strong>
-                    <p>@Model.HostingCountry</p>
+                <div class="row">
+                    <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                        <strong>Event Country</strong>
+                        <p>@Model.HostingCountry</p>
+                    </div>
                 </div>
-            </div>
         }
     }
 </div>
@@ -65,11 +65,15 @@
         @if (Model != null && Model.Teams != null && Model.SanctionNumber.StartsWith('A'))
         {
             <text>
-
+            
             var selectedTeamName = $("#teamName").val();
             console.log("Selected Team Name : " + selectedTeamName)
 
             var teams = @Html.Raw(Json.Serialize(Model.Teams));
+
+            var teamNames = teams.map(function(team) { return team; });
+            var isTeamNameInList = teamNames.includes(selectedTeamName);
+
             if (teams.length > 0) {
                 var selectHtml = '<select class="form-control" id="teamName">';
                 selectHtml += '<option value="">Select a Team</option>';
@@ -81,7 +85,10 @@
                 selectHtml += '</select>';
                 $('#teamName').replaceWith(selectHtml);
 
-                
+                // Bind change event to reset the selection
+                $('#eventSelect').on('change', function () {
+                    $('#teamName').val('');
+                });
 
             } else {
                 var textboxHtml = '<input type="text" class="form-control" placeholder="Team Name" id="teamName" />';
@@ -89,9 +96,10 @@
             }
 
             $('#teamName').val(selectedTeamName).change();
-            if(selectedTeamName !== ""){
-                $('#teamName').prop('disabled', true);
-            }
+
+            if(selectedTeamName !== "" && isTeamNameInList){
+        $('#teamName').prop('disabled', true);
+    }
             
             </text>
         }
@@ -100,11 +108,18 @@
             <text>
             var textboxHtml = '<input type="text" class="form-control" placeholder="Team Name" id="teamName" />';
             $('#teamName').replaceWith(textboxHtml);
+           
 
             </text>
         }
-
-       
+        else
+        {
+            <text>
+                     var textboxHtml = '<input type="text" class="form-control" placeholder="Team Name" id="teamName" />';
+                    $('#teamName').replaceWith(textboxHtml); 
+                    $('#teamName').val('')
+            </text>
+        }
 
         // Define the position for the new column based on zero-based index; 8th position for 9th column.
         var columnIndex = 8;

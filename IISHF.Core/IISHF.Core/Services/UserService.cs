@@ -69,6 +69,21 @@ namespace IISHF.Core.Services
 
             var token = Guid.NewGuid();
             newMember.SetValue("emailVerificationToken", token);
+            newMember.SetValue("isNMA", model.InvitedAccountType == "NMA");
+            newMember.SetValue("isIISHF", model.InvitedAccountType == "IISHF");
+            newMember.SetValue("teamAdministrator", model.InvitedAccountType == "Team Administrator");
+
+            if (model.InvitedAccountType == "NMA" || model.InvitedAccountType == "Team Administrator")
+            {
+                newMember.SetValue("nationalMemberAssosiciation", model.NationalMemberAssociation);
+            }
+
+            if (model.InvitedAccountType == "Team Administrator")
+            {
+                newMember.SetValue("clubName", model.ClubName);
+                newMember.SetValue("primaryClubContact", model.PrimaryClubContact);
+            }
+
             _services.MemberService.Save(newMember);
 
             await _emailService.SendRegistrationConfirmation(new Member()
@@ -85,7 +100,7 @@ namespace IISHF.Core.Services
             return newMember;
         }
 
-        public Guid GetVerificationKey(IMember member, Guid token)
+        public Guid GetVerificationKey(IMember member, Guid token, bool redirectToPasswordReset)
         {
             var verified = member.GetValue<bool>("emailVerified");
             if (verified)
