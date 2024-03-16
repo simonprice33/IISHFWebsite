@@ -22,6 +22,7 @@ namespace IISHF.Core.Controllers.ApiControllers
         private readonly IRosterService _rosterService;
         private readonly IEventResultsService _eventResultsService;
         private readonly IUserService _userService;
+        private readonly IUserInvitationService _userInvitationService;
         private readonly ILogger<EventsController> _logger;
 
         public AccountController(
@@ -33,6 +34,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             IRosterService rosterService,
             IEventResultsService eventResultsService,
             IUserService userService,
+            IUserInvitationService userInvitationService,
             ILogger<EventsController> logger)
         {
             _contentQuery = contentQuery;
@@ -43,6 +45,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             _rosterService = rosterService;
             _eventResultsService = eventResultsService;
             _userService = userService;
+            _userInvitationService = userInvitationService;
             _logger = logger;
         }
 
@@ -74,6 +77,15 @@ namespace IISHF.Core.Controllers.ApiControllers
             }
 
             return NoContent();
+        }
+
+        [HttpPost]
+        [Route("invite-user")]
+        public async Task<AcceptedResult> InviteUser(UserInvitationModel model)
+        {
+            await _userInvitationService.InviteUser(model);
+
+            return Accepted();
         }
     }
 }

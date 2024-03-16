@@ -6,6 +6,8 @@ using Microsoft.Extensions.Options;
 using SendGrid;
 using SendGrid.Helpers.Errors.Model;
 using SendGrid.Helpers.Mail;
+using Umbraco.Cms.Core.Models;
+using Member = IISHF.Core.Models.Member;
 
 namespace IISHF.Core.Services
 {
@@ -40,6 +42,28 @@ namespace IISHF.Core.Services
             {
                 ////new EmailAddress(_iishfOptions.SenderEmailAdddress),
                 new EmailAddress(member.EmailAddress),
+            };
+
+            await SendEmail(string.Empty, renderedEmail, sender, recipients, subject);
+        }
+
+        public async Task SendUserInvitation(IMember member, string email, string recipientName, Uri uri, string templateName, string subject)
+        {
+
+            var invitationObject = new
+            {
+                Name = recipientName,
+                Uri = uri,
+                MemberName = member.Name,
+            };
+
+            var renderedEmail = await GetHtmlTemplate(invitationObject, templateName);
+
+            var sender = new EmailAddress(_iishfOptions.NoReplyEmailAdddress, _iishfOptions.DisplayName);
+
+            var recipients = new List<EmailAddress>()
+            {
+                new EmailAddress(email),
             };
 
             await SendEmail(string.Empty, renderedEmail, sender, recipients, subject);

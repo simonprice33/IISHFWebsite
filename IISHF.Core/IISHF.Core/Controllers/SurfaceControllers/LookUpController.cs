@@ -1,0 +1,100 @@
+﻿using System.Text.Json;
+using IISHF.Core.Interfaces;
+using IISHF.Core.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Cache;
+using Umbraco.Cms.Core.Logging;
+using Umbraco.Cms.Core.Models.PublishedContent;
+using Umbraco.Cms.Core.Routing;
+using Umbraco.Cms.Core.Security;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Web;
+using Umbraco.Cms.Infrastructure.Persistence;
+using Umbraco.Cms.Web.Common.ActionsResults;
+using Umbraco.Cms.Web.Common.Filters;
+using Umbraco.Cms.Web.Common.Models;
+using Umbraco.Cms.Web.Common.Security;
+using Umbraco.Cms.Web.Website.Controllers;
+using IUserService = IISHF.Core.Interfaces.IUserService;
+
+namespace IISHF.Core.Controllers.SurfaceControllers
+{
+    public class LookUpController : SurfaceController
+    {
+        private readonly IPublishedContentQuery _contentQuery;
+        private readonly IMemberSignInManager _signInManager;
+        private readonly IMemberManager _memberManager;
+        private readonly IMemberService _memberService;
+        private readonly IUserService _userService;
+        private readonly ITwoFactorLoginService _twoFactorLoginService;
+        private readonly IEmailService _emailService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public LookUpController(
+            IPublishedContentQuery contentQuery,
+            IUmbracoContextAccessor umbracoContextAccessor,
+            IUmbracoDatabaseFactory databaseFactory,
+            ServiceContext services,
+            AppCaches appCaches,
+            IProfilingLogger profilingLogger,
+            IPublishedUrlProvider publishedUrlProvider,
+            IMemberSignInManager signInManager,
+            IMemberManager memberManager,
+            IMemberService memberService,
+            IUserService userService,
+            ITwoFactorLoginService twoFactorLoginService,
+            IEmailService emailService,
+            IHttpContextAccessor httpContextAccessor)
+            : base(umbracoContextAccessor, databaseFactory, services, appCaches, profilingLogger, publishedUrlProvider)
+        {
+            _contentQuery = contentQuery;
+            _signInManager = signInManager;
+            _memberManager = memberManager;
+            _memberService = memberService;
+            _userService = userService;
+            _twoFactorLoginService = twoFactorLoginService;
+            _emailService = emailService;
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetNmaInformation()
+        {
+            var nmaPublishedContent = GetContent("nationalMemberAssociation");
+
+            var responseObject = nmaPublishedContent.Select(x => new
+            {
+                x.Id,
+                x.Name,
+                x.Key
+            }).ToList();
+
+            return Ok(responseObject.OrderBy(x => x.Name));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetNmaClubs(Guid nmaKey, string searchText = "")
+        {
+            var clubs = GetContent("club")
+                .Where(x => x.Parent.Parent.Parent.Parent.Key == nmaKey && x.Name.Contains(searchText, StringComparison.InvariantCultureIgnoreCase))
+                .Select(x => new
+                {
+                    Id = x.Id,
+                    Key = x.Key,
+                    Name = x.Name,
+                })
+                .ToList();
+            return Ok(clubs);
+        }
+
+        private List<IPublishedContent> GetContent(string type)
+        {
+            var content = _contentQuery.ContentAtRoot()
+                .DescendantsOrSelfOfType(type)
+                .ToList();
+            return content;
+        }
+    }
+}

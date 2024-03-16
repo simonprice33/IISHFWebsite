@@ -55,6 +55,7 @@ namespace IISHF
             services.AddScoped<ITeamService, TeamService>();
             services.AddScoped<IMessageSender, ServiceBusMessagingService>();
             services.AddScoped<INMAService, NMAService>();
+            services.AddScoped<IUserInvitationService, UserInvitationService>();
 
             services.Configure<SendGridConfiguration>
                 (_config.GetSection("SendGridConfiguration"));

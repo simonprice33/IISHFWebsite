@@ -56,7 +56,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
         [HttpGet]
         public ActionResult RenderRegister()
         {
-            string userType = _httpContextAccessor?.HttpContext?.Request?.Query["type"].ToString();
+            string userType = _httpContextAccessor?.HttpContext?.Request?.Query["id"].ToString();
             string converted = string.Empty;
 
             if (!string.IsNullOrWhiteSpace(userType))
@@ -66,7 +66,6 @@ namespace IISHF.Core.Controllers.SurfaceControllers
 
             var model = new RegisterViewModel()
             {
-                InvitedAccountType = "test value"
             };
             return PartialView("~/Views/Partials/Members/Register.cshtml", model);
         }

@@ -2016,9 +2016,6 @@
     var query = $(this).val();
     var selectedAgeGroup = $('#ageGroup').text();
 
-    console.log(selectedAgeGroup);
-    console.log(query);
-    
     if (query.length >= 3) { // Trigger search when 3 or more characters are typed
         $.ajax({
             url: '/api/events/search',

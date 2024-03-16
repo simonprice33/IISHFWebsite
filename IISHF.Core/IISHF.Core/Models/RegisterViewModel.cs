@@ -28,15 +28,7 @@ namespace IISHF.Core.Models
         [EqualTo(nameof(Password), ErrorMessage = "Passwords do not match")]
         public string ConfirmPassword { get; set; }
 
-        public string InvitedAccountType { get; set; }
+        public Guid InvitationKey { get; set; }
 
-        public string NationalMemberAssociation { get; set; }
-
-        public string ClubName { get; set; }
-
-
-        public string[] AgeGroups { get; set; }
-        
-        public bool PrimaryClubContact { get; set; }
     }
 }

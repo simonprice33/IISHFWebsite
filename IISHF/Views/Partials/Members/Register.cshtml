@@ -9,8 +9,7 @@
             .FirstOrDefault(x => x.Name == "Home")!.Children()?
             .FirstOrDefault(x => x.Name == "Register");
 
-    var userType = Context.Request.Query["type"].ToString();
-    var converted = userType.DecodeBase64MultipleTimes();
+    var invitationId = Context.Request.Query["id"].ToString();
 
         var heroImageObj = registerContent.Value<IPublishedContent>("heroImage");
         var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
@@ -61,7 +60,7 @@
                         @Html.ValidationMessageFor(m => m.ConfirmPassword, null, new { @class = "text-danger" })
                     </div>
 
-                    @Html.HiddenFor(x => x.InvitedAccountType)
+                    @Html.HiddenFor(x => x.InvitationKey)
 
                     <input type="submit" value="Register"/>
                 }
@@ -74,6 +73,6 @@
 <script>
     $(document).ready(function() {
         // Set the value of the InvitedAccountType hidden field
-        $('#InvitedAccountType').val('@converted');
+        $('#InvitationKey').val('@invitationId');
     });
 </script>

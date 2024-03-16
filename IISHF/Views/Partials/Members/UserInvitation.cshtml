@@ -1,0 +1,387 @@
+﻿@using Umbraco.Cms.Core.Security
+@using Umbraco.Cms.Core.Services
+@inject IMemberManager MemberManager
+@inject IMemberService MemberService
+@{
+    var user = await MemberManager.GetCurrentMemberAsync();
+    var member = MemberService.GetById(int.Parse(user.Id));
+
+    var isNmaApprover = member.GetValue<bool>("nMAITCApprover");
+
+    var isIsshfApprover = member.GetValue<bool>("iISHFITCApprover");
+    var isTeamAdministrator = member.GetValue<bool>("teamAdministrator");
+
+    string invitationText = string.Empty;
+    if (isNmaApprover)
+    {
+        invitationText = "Club Contact";
+    }
+
+    if (isTeamAdministrator)
+    {
+        invitationText = "Team Administrator \\ Manager";
+    }
+
+    if (isIsshfApprover)
+    {
+        invitationText = "Site User";
+    }
+
+
+}
+
+<div id="userInvitation" class="col-12 col-sm-12 col-md-6 col-lg-6 mb-5">
+    <div class="col-12">
+        <div class="tab-content" id="v-pills-tabContent">
+            <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-team" role="tabpanel" aria-labelledby="v-pills-team-tab">
+                <h2 class="mb-3 text-center">Invite @invitationText</h2>
+
+                <div class="row">
+                    <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                        <div class="form-group">
+                            <label for="name">Name:</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="emailAddress">Email Address:</label>
+                            <input type="email" class="form-control" id="emailAddress" name="emailAddress" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12 col-sm-12 col-md-6 col-lg-6 mt-2">
+                        <div class="form-group ">
+                            <label>User Type:</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="roles" id="iishf" value="IISHF">
+                                <label class="form-check-label" for="iishf">IISHF User</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="roles" id="nma" value="National Member Association">
+                                <label class="form-check-label" for="nma">National Member Association User</label>
+                            </div>
+
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="roles" id="clubContact" value="Club Contact">
+                                <label class="form-check-label" for="clubContact">Club Contact</label>
+                            </div>
+
+
+
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="roles" id="teamContact" value="Team Contact">
+                                <label class="form-check-label" for="teamContact">Team Contact</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-sm-12 col-md-6 col-lg-6 mt-2">
+
+                        <div class="form-group" id="nationalMemberAssociationContainer" style="display:none">
+                            <label for="associationSelect">Select Association:</label>
+                            <select class="form-control" id="associationSelect" name="association">
+                                <option value="">Select National Member Association</option>
+
+                                <!-- Add more options as needed -->
+                            </select>
+                        </div>
+
+
+                        <div id="nmaRoles" style="display: none">
+                            <div class="form-group">
+                                <label>Roles:</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="roles[]" id="president" value="President">
+                                    <label class="form-check-label" for="president">President</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="roles[]" id="vicePresident" value="Vice President">
+                                    <label class="form-check-label" for="vicePresident">Vice President</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="roles[]" id="chair" value="Chair">
+                                    <label class="form-check-label" for="chair">Chair</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="roles[]" id="viceChair" value="Vice Chair">
+                                    <label class="form-check-label" for="viceChair">Vice Chair</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="roles[]" id="itcApprover" value="ITC Approver">
+                                    <label class="form-check-label" for="itcApprover">ITC Approver</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="roles[]" id="iishfLiaison" value="IISHF Liaison">
+                                    <label class="form-check-label" for="iishfLiaison">IISHF Liaison</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="roles[]" id="secretary" value="Secretary">
+                                    <label class="form-check-label" for="secretary">Secretary</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="roles[]" id="financialController" value="Financial Controller">
+                                    <label class="form-check-label" for="financialController">Financial Controller</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="roles[]" id="treasury" value="Treasury">
+                                    <label class="form-check-label" for="treasury">Treasury</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="roles[]" id="other" value="Other">
+                                    <label class="form-check-label" for="other">Other</label>
+                                </div>
+                            </div>
+                            <div class="form-group" id="otherRoleContainer" style="display:none">
+                                <label for="otherRole">Please specify:</label>
+                                <input type="text" class="form-control" id="otherRole" name="otherRole">
+                            </div>
+
+                            <div class="form-group" id="otherRoleContainer" style="display:none">
+                                <label for="otherRole">Please specify:</label>
+                                <input type="text" class="form-control" id="otherRole" name="otherRole">
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-2" id="clubNameContainer" style="position: relative; display:none">
+                            <label for="clubName">Club Name:</label>
+                            @* <input type="text" class="form-control" id="clubName" name="clubName"> *@
+                            <input type="text" class="form-control" id="clubName" name="clubName" required disabled>
+                            <div id="suggestionsContainer"></div>
+                        </div>
+
+                        <div class="form-group mt-2" id="teamOptions" style="display:none">
+                           
+
+                        </div>
+                    </div>
+                </div>
+
+
+                @{
+                    if (isIsshfApprover)
+                    {
+                    }
+                }
+                <button class="btn btn-custom-draft mt-3" id="btnSend" type="button"><i class="fa-duotone fa-user-plus"></i> Send invitation</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+
+        $('#associationSelect').change(function () {
+            var selectedValue = $(this).val();
+            // Check if a non-empty value is selected
+            if (selectedValue) {
+                $('#clubName').prop('disabled', false); // Enable clubName input
+            } else {
+                $('#clubName').prop('disabled', true); // Keep/Make clubName input disabled
+            }
+        });
+
+        function toggleAssociationOptions() {
+            var isNmaChecked = $('#nma').is(':checked');
+            var isClubContactChecked = $('#clubContact').is(':checked');
+            var isTeamContactChecked = $('#teamContact').is(':checked');
+
+            // Show association select if any of these checkboxes are checked
+            if (isNmaChecked || isClubContactChecked || isTeamContactChecked) {
+                $('#nationalMemberAssociationContainer').slideDown();
+            } else {
+                $('#nationalMemberAssociationContainer').slideUp();
+            }
+
+            // Specifically for NMA checkbox
+            if (isNmaChecked) {
+                $('#nmaRoles').slideDown();
+            } else {
+                $('#nmaRoles').slideUp();
+            }
+
+            // Show club name container if either Club Contact or Team Contact is checked
+            if (isClubContactChecked || isTeamContactChecked) {
+                $('#clubNameContainer').slideDown();
+            } else {
+                $('#clubNameContainer').slideUp();
+            }
+
+            if (isTeamContactChecked) {
+                $('#teamOptions').slideDown();
+            } else {
+                $('#teamOptions').slideUp();
+
+            }
+        }
+
+        // Change event handler for the checkboxes
+        $('#nma, #clubContact, #teamContact').change(function () {
+            toggleAssociationOptions();
+        });
+
+        $('#other').change(function () {
+            if (this.checked) {
+                $('#otherRoleContainer').slideDown();
+            } else {
+                $('#otherRoleContainer').slideUp();
+            }
+        });
+
+        // Populate the "Select Association" dropdown via AJAX
+        $.ajax({
+            url: '/umbraco/surface/lookup/GetNmaInformation',
+            type: 'GET',
+            success: function (response) {
+                $.each(response, function (index, item) {
+                    $('#associationSelect').append($('<option>', {
+                        value: item.key,
+                        text: item.name
+                    }));
+                });
+            },
+            error: function (xhr) {
+                console.error("Error: " + xhr.statusText);
+            }
+        });
+
+        // Initialize the correct states based on the current checkbox states
+        toggleAssociationOptions();
+
+        $('body').on('input', '#clubName', function () {
+
+            var query = $('#clubName').val();
+            var selectedNma = $('#associationSelect').val();
+            console.log("Query: ", query, "Selected NMA: ", selectedNma); // Debugging log
+
+            console.log(query)
+            if (query.length >= 3) { // Trigger search when 3 or more characters are typed
+                $.ajax({
+                    url: '/api/lookup/search-clubs',
+                    type: 'GET',
+                    data: { searchText: query, nmaKey: selectedNma },
+                    success: function (data) {
+
+                        console.log(data)
+                        $('#suggestionsContainer').empty();
+                        data.forEach(function (item) {
+
+                            $('#teamOptions').empty();
+
+                            // Include item.key in the data-key attribute
+                            var suggestionItem = $('<div class="suggestion-item" data-key="' + item.key + '">' + item.name + '</div>');
+                            $('#suggestionsContainer').append(suggestionItem);
+                            suggestionItem.on('click', function () {
+                                $('#clubName').val(item.name); // Set the name in the input field
+                                $('#clubName').attr('data-id', item.id); // Set the key as a data attribute on the input
+                                $('#clubName').attr('data-key', item.key); // Set the key as a data attribute on the input
+                                $('#suggestionsContainer').empty();
+
+                                getClubTeams(item.key)
+                                // ToDo - Get Club Teams and return a view
+                            });
+                        });
+                    }
+                });
+            } else {
+                $('#suggestionsContainer').empty();
+            }
+        });
+
+        function getClubTeams(clubKey) {
+            $.ajax({
+                url: '/api/lookup/search-club-teams-by-key',
+                type: 'GET',
+                data: { clubKey: clubKey },
+                success: function (data) {
+                    console.log(data);
+
+                    $('#teamOptions').empty();
+
+                    data.forEach(function (item) {
+                        var checkbox = $('<input>')
+                            .addClass('form-check-input') 
+                            .attr('type', 'checkbox')
+                            .attr('id', item.key) 
+                            .attr('name', 'teams[]') 
+                            .attr('value', item.key);
+
+                        var label = $('<label>')
+                            .addClass('form-check-label') 
+                            .attr('for', item.key) 
+                            .text(item.name + ' (' + item.ageGroup + ')');
+
+                        var container = $('<div>').addClass('form-check form-switch');
+
+                        container.append(checkbox).append(label);
+
+                        $('#teamOptions').append(container);
+                    });
+                }
+            });
+        }
+
+
+
+        $('#btnSend').on('click', function () {
+
+            var isIISHFChecked = $('#iishf').is(':checked');
+            var isNmaChecked = $('#nma').is(':checked');
+            var isClubContactChecked = $('#clubContact').is(':checked');
+            var isTeamContactChecked = $('#teamContact').is(':checked');
+            var selectedNma = $('#associationSelect').val();
+            var clubNameDataKey = $('#clubName').attr('data-key');
+            var name = $('#name').val();
+            var emailAddress = $('#emailAddress').val();
+
+            var selectedRoles = $('input[name="roles[]"]:checked').map(function () {
+                return this.value;
+            }).get();
+
+            var selectedteams = $('input[name="teams[]"]:checked').map(function () {
+                return this.value;
+            }).get();
+
+            console.log(selectedteams)
+
+            var json = {
+                name : name,
+                email : emailAddress,
+                isIISHF: isIISHFChecked,
+                isNma: isNmaChecked,
+                isClubContact: isClubContactChecked,
+                isTeamAdmin: selectedteams.length > 0,
+                nmaKey: selectedNma,
+                clubKey: clubNameDataKey,
+                nmaRoles: selectedRoles,
+                clubTeams : selectedteams
+            }
+
+            var jsonstring = JSON.stringify(json)
+
+            console.log(jsonstring)
+
+            $.ajax({
+                url: `/api/account/invite-user`,
+                type: 'POST',
+                data: jsonstring,
+                contentType: 'application/json',
+                success: function (data) {
+                    // Remove the row from the table
+                    // $.get('/umbraco/surface/events/GetPermissionDocuments', { tournamentId: tournamentId, teamId: teamId }, function (data) {
+                    //     $('#documents').html(data);
+                    // });
+                },
+                error: function (xhr, status, error) {
+                    console.error("Error: " + error);
+                    // Show alert that something went wrong
+                }
+            })
+        });
+        });
+
+</script>
+
+
+

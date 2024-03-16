@@ -340,3 +340,31 @@
 .form-check-input:checked:focus {
     box-shadow: 0 0 0 .25rem rgba(0, 149, 218, .5); /* Blue glow effect for checked state */
 }
+/* Ensures form-switch checkboxes within #userInvitation do not turn red when unchecked */
+#userInvitation .form-check-input {
+    /* Reset to default appearance settings */
+    background-color: #fff !important; /* Default background color */
+    border-color: #adb5bd !important; /* Default border color */
+    appearance: none !important; /* Reset custom appearances */
+}
+
+    #userInvitation .form-check-input:checked {
+        background-color: #0d6efd !important; /* Bootstrap default checked background color */
+        border-color: #0d6efd !important; /* Bootstrap default checked border color */
+    }
+
+    /* Focus states within #userInvitation to maintain visibility without red color */
+    #userInvitation .form-check-input:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important; /* Blue shadow for focus */
+    }
+
+    /* Specific overrides for unchecked states to avoid red appearance */
+    #userInvitation .form-check-input:not(:checked) {
+        border-color: #adb5bd !important; /* Revert to default or neutral border color */
+        background-color: #fff !important; /* Ensure background stays white or neutral */
+    }
+
+        /* Optionally, handle the focus state of unchecked inputs to avoid red glow */
+        #userInvitation .form-check-input:not(:checked):focus {
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important; /* Example: Adjust to a neutral or matching focus shadow */
+        }
