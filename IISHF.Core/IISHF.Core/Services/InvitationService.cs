@@ -185,6 +185,7 @@ namespace IISHF.Core.Services
                                 ITCStatus = itcState,
                                 ItcStatusChangeDate = itcStatusChangeDate == DateTime.MinValue ? null : itcStatusChangeDate,
                                 TeamInformationRequired = false,
+                                TeamInformationRequiredBy = requiredByDate,
                                 TeamInformationSubmitted = false,
                                 TeamInformationSubmittedDate = null,
                                 TeamSubmissionRequiredBy = null,

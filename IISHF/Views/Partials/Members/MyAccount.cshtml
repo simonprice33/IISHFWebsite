@@ -15,13 +15,26 @@
 
     var isIsshfApprover = member.GetValue<bool>("iISHFITCApprover");
     var isTeamAdministrator = member.GetValue<bool>("teamAdministrator");
+
+    var isNMA = member.GetValue<bool>("isNMA");
+
+    var isIISHF = member.GetValue<bool>("isIISHF");
+    var isClubContact = member.GetValue<bool>("isClubContact");
+
+    var canInvite = isIISHF || isIISHF || isClubContact;
+
 }
 
 <div class="container custom-container mt-5">
     <div class="row">
 
         @await Html.PartialAsync("UserInformation.cshtml", Model)
-        @await Html.PartialAsync("UserInvitation.cshtml", null)
+        @{
+            if (canInvite)
+            {
+                @await Html.PartialAsync("UserInvitation.cshtml", null)
+            }
+        }
         @* 
             <!-- Re-enable when using notification -->
         @await Html.PartialAsync("Notifications.cshtml", null) 

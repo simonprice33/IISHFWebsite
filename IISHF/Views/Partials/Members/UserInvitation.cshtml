@@ -6,28 +6,30 @@
     var user = await MemberManager.GetCurrentMemberAsync();
     var member = MemberService.GetById(int.Parse(user.Id));
 
-    var isNmaApprover = member.GetValue<bool>("nMAITCApprover");
+    var isNMA = member.GetValue<bool>("isNMA");
 
-    var isIsshfApprover = member.GetValue<bool>("iISHFITCApprover");
+    var isIISHF = member.GetValue<bool>("isIISHF");
+    var isClubContact = member.GetValue<bool>("isClubContact");
     var isTeamAdministrator = member.GetValue<bool>("teamAdministrator");
 
     string invitationText = string.Empty;
-    if (isNmaApprover)
-    {
-        invitationText = "Club Contact";
-    }
+    
 
-    if (isTeamAdministrator)
+    if (isClubContact)
     {
         invitationText = "Team Administrator \\ Manager";
     }
 
-    if (isIsshfApprover)
+    if (isNMA)
     {
-        invitationText = "Site User";
+        invitationText = "Club Contact";
     }
 
 
+    if (isIISHF)
+    {
+        invitationText = "Site User";
+    }
 }
 
 <div id="userInvitation" class="col-12 col-sm-12 col-md-6 col-lg-6 mb-5">
@@ -53,26 +55,41 @@
                     <div class="col-12 col-sm-12 col-md-6 col-lg-6 mt-2">
                         <div class="form-group ">
                             <label>User Type:</label>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" name="roles" id="iishf" value="IISHF">
-                                <label class="form-check-label" for="iishf">IISHF User</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" name="roles" id="nma" value="National Member Association">
-                                <label class="form-check-label" for="nma">National Member Association User</label>
-                            </div>
+                            @{
+                                if (isIISHF)
+                                {
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="roles" id="iishf" value="IISHF">
+                                        <label class="form-check-label" for="iishf">IISHF User</label>
+                                    </div>
+                                }
+                            }
+                            @{
+                                if (isNMA || isIISHF)
+                                {
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="roles" id="nma" value="National Member Association">
+                                        <label class="form-check-label" for="nma">National Member Association User</label>
+                                    </div>
 
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" name="roles" id="clubContact" value="Club Contact">
-                                <label class="form-check-label" for="clubContact">Club Contact</label>
-                            </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="roles" id="clubContact" value="Club Contact">
+                                        <label class="form-check-label" for="clubContact">Club Contact</label>
+                                    </div>
+                                }
+                            }
+                            @{
+                                if (isNMA || isIISHF || isClubContact)
+                                {
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="roles" id="teamContact" value="Team Contact">
+                                        <label class="form-check-label" for="teamContact">Team Contact</label>
+                                    </div>
+                                }
+                            }
 
 
-
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" name="roles" id="teamContact" value="Team Contact">
-                                <label class="form-check-label" for="teamContact">Team Contact</label>
-                            </div>
+                           
                         </div>
                     </div>
 
@@ -159,7 +176,7 @@
 
 
                 @{
-                    if (isIsshfApprover)
+                    if (isIISHF)
                     {
                     }
                 }
