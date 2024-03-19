@@ -124,7 +124,7 @@
                                     
                                     
                                     @{
-                                        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(telephone))
+                                        if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(telephone))
                                         {
                                             <h6 class="card-subtitle mb-2 text-muted">Contact information not supplied</h6>
                                         }
@@ -139,7 +139,7 @@
                                         @{
                                             if (!string.IsNullOrWhiteSpace(clubContact))
                                             {
-                                                <i class="fa-regular fa-at"></i>
+                                                <i class="fa-regular fa-id-badge"></i>
                                                 @clubContact
                                             }
                                         }

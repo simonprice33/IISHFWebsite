@@ -362,6 +362,10 @@
 
             console.log(selectedteams)
 
+            if (selectedNma === '') {
+                selectedNma = '00000000-0000-0000-0000-000000000000';
+            }
+
             var json = {
                 name : name,
                 email : emailAddress,

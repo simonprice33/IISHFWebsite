@@ -12,6 +12,7 @@ namespace IISHF.Core.Models
         public UserInvitationModel()
         {
             NmaRoles = new List<string>();
+            clubTeams = new List<Guid>();
         }
 
         public string Name { get; set; } = string.Empty;
@@ -25,10 +26,10 @@ namespace IISHF.Core.Models
         public bool IsClubContact { get; set; } = false;
 
         public bool IsTeamAdmin { get; set; } = false;
-        
-        public Guid NmaKey { get; set; } = Guid.Empty;
 
-        public Guid ClubKey { get; set; } = Guid.Empty;
+        public Guid? NmaKey { get; set; } = Guid.Empty;
+
+        public Guid? ClubKey { get; set; } = Guid.Empty;
 
         public IEnumerable<Guid> clubTeams { get; set; }
 
