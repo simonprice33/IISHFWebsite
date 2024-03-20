@@ -1,7 +1,10 @@
 ﻿@inherits UmbracoViewPage<IISHF.Core.Models.RegisterViewModel>
 @using IISHF.Core.Controllers.SurfaceControllers
 @using IISHF.Extensions
+@using Umbraco.Cms.Core.Security
+@using Umbraco.Cms.Web.Common.Security
 @model IISHF.Core.Models.RegisterViewModel
+@inject IMemberManager MemberManager
 
 @{
         var modelContent = Umbraco.ContentAtRoot().ToList();
@@ -13,6 +16,8 @@
 
         var heroImageObj = registerContent.Value<IPublishedContent>("heroImage");
         var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
+
+    var user = await MemberManager.GetCurrentMemberAsync();
 }
 
 <div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
@@ -69,6 +74,13 @@
 
     </div>
 </div>
+
+@if (user != null)
+{
+    <script>
+        window.location.href = "/my-account";
+    </script>
+}
 
 <script>
     $(document).ready(function() {

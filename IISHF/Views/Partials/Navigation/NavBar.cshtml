@@ -45,7 +45,7 @@
                                                     @for (int i = col * itemsPerColumn; i < (col + 1) * itemsPerColumn && i < grandChildren.Count; i++)
                                                     {
                                                         var grandChild = grandChildren[i];
-                                                        <a class="dropdown-item" href="@grandChild.Url()">@grandChild.Name</a>
+                                                        <span class="dropdown-item" style="font-weight: 700" >@grandChild.Name</span>
 
                                                         // Loop through each great-grandchild and display under grandchild
                                                         foreach (var greatGrandChild in grandChild.Children().Where(x => x.IsVisible()))
