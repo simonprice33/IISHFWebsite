@@ -13,6 +13,7 @@ using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Examine;
+using IFileService = IISHF.Core.Interfaces.IFileService;
 using IMediaService = Umbraco.Cms.Core.Services.IMediaService;
 
 namespace IISHF.Core.Services
@@ -27,6 +28,8 @@ namespace IISHF.Core.Services
         private readonly IMediaService _umbracoMediaService;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly IMessageSender _messageSender;
+        private readonly IFileService _fileService;
+        private readonly INMAService _nmaService;
         private readonly ILogger<TournamentService> _logger;
 
         public TournamentService(
@@ -38,6 +41,8 @@ namespace IISHF.Core.Services
             IMediaService umbracoMediaService,
             IWebHostEnvironment webHostEnvironment,
             IMessageSender messageSender,
+            IFileService fileService,
+            INMAService nmaService,
             ILogger<TournamentService> logger)
         {
             _contentQuery = contentQuery;
@@ -48,6 +53,8 @@ namespace IISHF.Core.Services
             _umbracoMediaService = umbracoMediaService;
             _webHostEnvironment = webHostEnvironment;
             _messageSender = messageSender;
+            _fileService = fileService;
+            _nmaService = nmaService;
             _logger = logger;
         }
 
@@ -235,9 +242,9 @@ namespace IISHF.Core.Services
 
             var udi = Udi.Create(Constants.UdiEntityType.Member, user.Key);
 
-            tournamentTeam.SetValue("iTCSubmissionDate", DateTime.UtcNow);
-            tournamentTeam.SetValue("iTCSubmitted", true);
-            tournamentTeam.SetValue("iTCSubmittedBy", udi);
+            tournamentTeam.SetValue("ITcsubmissionDate", DateTime.UtcNow);
+            tournamentTeam.SetValue("ITcsubmitted", true);
+            tournamentTeam.SetValue("ITcsubmittedBy", udi);
             _contentService.SaveAndPublish(tournamentTeam);
         }
 
@@ -253,7 +260,7 @@ namespace IISHF.Core.Services
 
                 tournamentTeam.SetValue("iTCSubmissionDate", null);
                 tournamentTeam.SetValue("iTCSubmitted", false);
-                tournamentTeam.SetValue("iTCSubmittedBy", null);    
+                tournamentTeam.SetValue("iTCSubmittedBy", null);
                 _contentService.SaveAndPublish(tournamentTeam);
 
             });
@@ -498,22 +505,14 @@ namespace IISHF.Core.Services
             }
             else
             {
-                 nma = _contentQuery.ContentAtRoot()
-                    .DescendantsOrSelfOfType("nationalMemberAssociations")
-                    .FirstOrDefault()
-                    .Children()
-                    .FirstOrDefault(x => x.Value<string>("iSO3") == team.Value<string>("countryIso3"));
+                nma = _contentQuery.ContentAtRoot()
+                   .DescendantsOrSelfOfType("nationalMemberAssociations")
+                   .FirstOrDefault()
+                   .Children()
+                   .FirstOrDefault(x => x.Value<string>("iSO3") == team.Value<string>("countryIso3"));
             }
 
-
-            var itcApprovers = _memberService.GetMembersByPropertyValue("nMAITCApprover", true)
-                .Where(x => x.GetValue<string>("nationalMemberAssosiciation") == nma.Name)
-                .Select(x => new ITCApprover
-                {
-                    NmaApproverName = x.Name,
-                    NmaApproverEmail = x.Email
-                })
-                .ToList();
+            var itcApprovers = await _nmaService.GetNMAITCApprovers(nma.Key);
 
             var protocol = _httpContextAccessor.HttpContext.Request.Scheme;
             var baseUrl = _httpContextAccessor.HttpContext.Request.Host;
@@ -522,7 +521,7 @@ namespace IISHF.Core.Services
 
             var serviceBusMessage = new SubmittedITCInformation
             {
-                ItcApprovers = itcApprovers,
+                ItcApprovers = itcApprovers.ToList(),
                 ITCApprovalUri = new Uri($"{protocol}://{baseUrl}/{route}?{queryString}"),
                 TemplateName = "NmaItcApproval",
                 TeamName = team.Name,
@@ -582,7 +581,7 @@ namespace IISHF.Core.Services
 
                 foreach (var rosterMember in rosterMembers)
                 {
-                    
+
                     comments.Add($"<li>{rosterMember.Value<string>("playerName")} - {rosterMember.Value<string>("comments")}</li>");
                 }
 
@@ -591,6 +590,16 @@ namespace IISHF.Core.Services
                 _contentService.SaveAndPublish(teamContent);
 
             });
+        }
+
+        public byte[] GenerateItcAsPdfFile(byte[] itBytes)
+        {
+            return _fileService.GenerateItcAsPdfFile(itBytes);
+        }
+
+        public async Task<byte[]> GenerateItcAsExcelFile(IPublishedContent team, IPublishedContent tournament)
+        {
+            return await _fileService.GenerateItcAsExcelFile(team, tournament);
         }
 
         public async Task ResetNmaApproval(IPublishedContent team)

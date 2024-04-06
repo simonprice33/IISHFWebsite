@@ -16,7 +16,7 @@
                 <div class="form-group row mb-2">
                     @Html.LabelFor(m => m.Email, new { @class = "col-form-label col-md-4", placeholder = "Email Address" })
                     <div class="col-md-8">
-                        @Html.TextBoxFor(m => m.Email, new { @class = "form-control", placeholder = "Email Address", type = "email" })
+                        @Html.TextBoxFor(m => m.Email, new { @class = "form-control", placeholder = "Email Address", type = "email", autocomplete = "off", disabled = "disabled" })
                     </div>
                 </div>
                 <div class="form-group row mb-2">
@@ -40,6 +40,16 @@
 <script>
 
     $(document).ready(function () {
+
+        // This is so that password manager doesnt accidently 
+        // update the form and change a user name by accident
+        setTimeout(function () { 
+        @{
+            <text>
+            $("#Email").val('@Model.Email')
+            </text>
+        }
+        }, 1000)
 
         $("#update").on("click", function () {
 

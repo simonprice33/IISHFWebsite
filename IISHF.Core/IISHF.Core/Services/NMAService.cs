@@ -14,6 +14,7 @@ using Microsoft.Azure.Amqp.Encoding;
 using Umbraco.Cms.Core.Models;
 using Lucene.Net.Index;
 using Microsoft.AspNetCore.Http.HttpResults;
+using IISHF.Core.Models.ServiceBusMessage;
 
 namespace IISHF.Core.Services
 {
@@ -143,6 +144,22 @@ namespace IISHF.Core.Services
                     }
                 }
             }
+        }
+
+        public async Task<IEnumerable<ITCApprover>> GetNMAITCApprovers(Guid nmaKey)
+        {
+            var nma = await GetPublishedContentByKey(nmaKey);
+
+            var itcApprovers = _memberService.GetMembersByPropertyValue("nMAITCApprover", true)
+                .Where(x => x.GetValue<string>("nationalMemberAssosiciation") == nma.Name)
+                .Select(x => new ITCApprover
+                {
+                    NmaApproverName = x.Name,
+                    NmaApproverEmail = x.Email
+                })
+                .ToList();
+
+            return itcApprovers;
         }
     }
 }

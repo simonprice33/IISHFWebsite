@@ -2,6 +2,9 @@ using IISHF.Core.Configurations;
 using IISHF.Core.Interfaces;
 using IISHF.Core.Services;
 using IISHF.Core.Settings;
+using IISHF.ExcelToPdf.Interfaces;
+using Umbraco.Cms.Core.Services;
+using FileService = IISHF.Core.Services.FileService;
 using HttpClient = IISHF.Core.Services.HttpClient;
 using IMediaService = IISHF.Core.Interfaces.IMediaService;
 using IUserService = IISHF.Core.Interfaces.IUserService;
@@ -56,6 +59,8 @@ namespace IISHF
             services.AddScoped<IMessageSender, ServiceBusMessagingService>();
             services.AddScoped<INMAService, NMAService>();
             services.AddScoped<IUserInvitationService, UserInvitationService>();
+            services.AddScoped<Core.Interfaces.IFileService, FileService>();
+            services.AddScoped<IExcelToPdf, ExcelToPdf.Services.ExcelToPdf>();
 
             services.Configure<SendGridConfiguration>
                 (_config.GetSection("SendGridConfiguration"));

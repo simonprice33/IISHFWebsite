@@ -2,6 +2,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
+using IISHF.Core.Helpers;
+using Microsoft.AspNetCore.Routing.Constraints;
+using SendGrid;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.IO;
 using Umbraco.Cms.Core.Models;
@@ -97,6 +100,32 @@ namespace IISHF.Core.Services
 
         }
 
+        private async Task<IMedia> CreateMediaAsync(Stream stream, string fileName, string directory)
+        {
+            return await Task.Run(async () =>
+            {
+                try
+                {
+                    int folderId = EnsureFolderExists(directory);
+                    IMedia media = _umbracoMediaService.CreateMedia(fileName, folderId,
+                        Constants.Conventions.MediaTypes.Image);
+                    media.SetValue(_mediaFileManager, _mediaUrlGeneratorCollection, _shortStringHelper,
+                        _contentTypeBaseServiceProvider,
+                        Constants.Conventions.Media.File, fileName, stream);
+                    _umbracoMediaService.Save(media);
+                    return media;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "unable to upload media");
+                    throw;
+                }
+
+            });
+
+        }
+
+
         public async Task<IContent>? AddPlayerPermissionDocumentToTeam(IFormFile file, string label, IPublishedContent team)
         {
 
@@ -117,6 +146,21 @@ namespace IISHF.Core.Services
             var udi = Udi.Create(Constants.UdiEntityType.Media, media.Key);
             document.SetValue("permissionDocument", udi.ToString());
             document.SetValue("identifier", label);
+            _contentService.SaveAndPublish(document);
+
+            return document;
+        }
+
+        public async Task<IContent>? AddItcToTeam(Stream file, string fileName, IPublishedContent team)
+        {
+            var mediaItem = await CreateMediaAsync(file, fileName, "Team Documents");
+            var document = _contentService.Create(fileName, team.Id, "teamDocuments");
+
+            // Ensure the mediaItemId is converted to a UDI
+            var media = _contentQuery.Media(mediaItem.Key);
+            var udi = Udi.Create(Constants.UdiEntityType.Media, media.Key);
+            document.SetValue("supportingDocument", udi.ToString());
+            document.SetValue("mimeType", MimeTypes.GetMimeType(fileName.Split(".").Last()));
             _contentService.SaveAndPublish(document);
 
             return document;
@@ -145,14 +189,14 @@ namespace IISHF.Core.Services
 
         public async Task DeleteMedia(int sponsorId, int mediaId)
         {
-                await Task.Run(() =>
-                {
-                    var content = _contentService.GetById(sponsorId);
-                    var media = _umbracoMediaService.GetById(mediaId);
+            await Task.Run(() =>
+            {
+                var content = _contentService.GetById(sponsorId);
+                var media = _umbracoMediaService.GetById(mediaId);
 
-                    _contentService.Delete(content);
-                    _umbracoMediaService.Delete(media);
-                });
+                _contentService.Delete(content);
+                _umbracoMediaService.Delete(media);
+            });
         }
 
         public async Task AddMediaToTeam(IMedia image, IContent team, string propertyAlias)

@@ -19,5 +19,9 @@ namespace IISHF.Core.Models
         public string TeamSignatory { get; set; }
 
         public string IssuingCountry { get; set; }
+
+        public int NmaTeamId { get; set; }
+
+        public Guid nmaTeamKey { get; set; } = Guid.Empty;
     }
 }

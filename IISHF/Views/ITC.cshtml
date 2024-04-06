@@ -163,11 +163,11 @@
         <span class="nav-link mb-3 p-3 shadow" id="v-pills-players-tab">
             <select id="eventSelect" class="form-control">
                 @{
-                    <option value="">Select Event for @DateTime.Now.Year.ToString()</option>
+                            <option value="">Select Event for @DateTime.Now.Year.ToString()</option>
 
                     foreach (var iishfEvent in allEvents)
                     {
-                        <option value="@iishfEvent.Id">@iishfEvent.EventName</option>
+                                <option value="@iishfEvent.Id">@iishfEvent.EventName</option>
                     }
                 }
             </select>
@@ -182,7 +182,7 @@
             @{
                 if (isNmaApprover || isIsshfApprover)
                 {
-                    <div id="counterId1">0 of X approved</div>
+                            <div id="counterId1">0 of X approved</div>
                 }
             }
         </a>
@@ -191,7 +191,7 @@
             @{
                 if (isNmaApprover || isIsshfApprover)
                 {
-                    <div id="counterId2">0 of X approved</div>
+                            <div id="counterId2">0 of X approved</div>
                 }
             }
         </a>
@@ -247,16 +247,16 @@
                 {
                     if (country.ISO3 == team?.Value<string>("countryIso3"))
                     {
-                        <option selected="true" value="@country.ISO3">@country.Country</option>
+                                <option selected="true" value="@country.ISO3">@country.Country</option>
                     }
                     else
                     {
-                        <option value="@country.ISO3">@country.Country</option>
+                                <option value="@country.ISO3">@country.Country</option>
                     }
                     if (countries.ToList().IndexOf(country) == lastPriorityCountryIndex && !addedSeparator)
                     {
                         // Add the separator
-                        <option disabled>──────────</option>
+                                <option disabled>──────────</option>
                         addedSeparator = true; // Ensure the separator is only added once
                     }
                 }
@@ -302,7 +302,7 @@
                 @{
                     if (selectedTournament != null && !selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase))
                     {
-                        <th>Is Guest</th>
+                                <th>Is Guest</th>
                     }
                 }
 
@@ -310,30 +310,30 @@
                 @{
                     if (!isSubmitted)
                     {
-                        <th></th>
+                                <th></th>
                     }
 
                     if (isNmaApprover)
                     {
-                        <th>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="checkAllPlayers">
-                                <label class="form-check-label" for="flexSwitchCheckDefault"></label>
-                            </div>
-                        </th>
+                                <th>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="checkAllPlayers">
+                                        <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                                    </div>
+                                </th>
                     }
                     if (isIsshfApprover)
                     {
-                        <th class="text-center">
+                                <th class="text-center">
 
-                            NMA Check
-                        </th>
-                        <th>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="checkAllPlayers">
-                                <label class="form-check-label" for="flexSwitchCheckDefault"></label>
-                            </div>
-                        </th>
+                                    NMA Check
+                                </th>
+                                <th>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="checkAllPlayers">
+                                        <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                                    </div>
+                                </th>
                     }
                 }
             </tr>
@@ -376,60 +376,60 @@
                     @{
                         if (!selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase))
                         {
-                            <td>
-                                @if (players[i].Value<bool>("isGuest"))
+                                    <td>
+                                        @if (players[i].Value<bool>("isGuest"))
                                 {
-                                    <span>
-                                        <i class="fas fa-check"></i>
-                                    </span>
+                                            <span>
+                                                <i class="fas fa-check"></i>
+                                            </span>
                                 }
-                            </td>
+                                    </td>
                         }
                     }
                     @{
                         if (!isSubmitted)
                         {
-                            <td>
-                                <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); deleteRow(this)">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
+                                    <td>
+                                        <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); deleteRow(this)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
                         }
                         if (isNmaApprover)
                         {
                             var checkId = $"player-id-{players[i].Id}";
                             var nmaCheckedState = players[i].Value<bool>("nmaCheck") ? "checked" : "";
-                            <td>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" @nmaCheckedState data-id="@players[i].Id" type="checkbox" id="@checkId">
-                                    <label class="form-check-label" for="@checkId"></label>
-                                </div>
+                                    <td>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" @nmaCheckedState data-id="@players[i].Id" type="checkbox" id="@checkId">
+                                            <label class="form-check-label" for="@checkId"></label>
+                                        </div>
 
-                            </td>
+                                    </td>
                         }
 
-                        @if (isIsshfApprover)
+                                @if (isIsshfApprover)
                         {
                             var checkId = $"player-id-{players[i].Id}";
                             var iishfCheckedState = players[i].Value<bool>("iISHFCheck") ? "checked" : "";
                             var nmaCheckedState = players[i].Value<bool>("nmaCheck");
-                            <td class="text-center">
-                                @{
+                                    <td class="text-center">
+                                        @{
                                     if (nmaCheckedState)
                                     {
-                                        <span>
-                                            <i class="fas fa-check"></i>
-                                        </span>
+                                                        <span>
+                                                            <i class="fas fa-check"></i>
+                                                        </span>
                                     }
-                                }
-                            </td>
-                            <td>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" @iishfCheckedState data-id="@players[i].Id" type="checkbox" id="@checkId">
-                                    <label class="form-check-label" for="flexSwitchCheckDefault"></label>
-                                </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" @iishfCheckedState data-id="@players[i].Id" type="checkbox" id="@checkId">
+                                            <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                                        </div>
 
-                            </td>
+                                    </td>
                         }
                     }
                 </tr>
@@ -440,7 +440,7 @@
     @{
         if (!isSubmitted)
         {
-            <button class="btn btn-custom-draft" id="addRowButton" type="button"><i class="fa-duotone fa-user-plus"></i> Add player</button>
+                    <button class="btn btn-custom-draft" id="addRowButton" type="button"><i class="fa-duotone fa-user-plus"></i> Add player</button>
             
         }
     }
@@ -461,31 +461,31 @@
             @{
                 if (!isSubmitted)
                 {
-                    <th></th>
+                            <th></th>
                 }
 
 
                 if (isNmaApprover)
                 {
-                    <th>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="checkAllOfficials">
-                            <label class="form-check-label" for="flexSwitchCheckDefault"></label>
-                        </div>
-                    </th>
+                            <th>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="checkAllOfficials">
+                                    <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                                </div>
+                            </th>
                 }
                 if (isIsshfApprover)
                 {
-                    <th class="text-center">
+                            <th class="text-center">
 
-                        NMA Check
-                    </th>
-                    <th>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="checkAllOfficials">
-                            <label class="form-check-label" for="flexSwitchCheckDefault"></label>
-                        </div>
-                    </th>
+                                NMA Check
+                            </th>
+                            <th>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="checkAllOfficials">
+                                    <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                                </div>
+                            </th>
                 }
 
             }
@@ -525,48 +525,48 @@
                 @{
                     if (!isSubmitted)
                     {
-                        <td>
-                            <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); deleteRow(this)">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
+                                <td>
+                                    <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); deleteRow(this)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
                     }
 
                     if (isNmaApprover)
                     {
                         var checkId = $"player-id-{benchOfficials[i].Id}";
                         var nmaCheckedState = benchOfficials[i].Value<bool>("nmaCheck") ? "checked" : "";
-                        <td>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" @nmaCheckedState data-id="@benchOfficials[i].Id" type="checkbox" id="@checkId">
-                                <label class="form-check-label" for="@checkId"></label>
-                            </div>
+                                <td>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" @nmaCheckedState data-id="@benchOfficials[i].Id" type="checkbox" id="@checkId">
+                                        <label class="form-check-label" for="@checkId"></label>
+                                    </div>
 
-                        </td>
+                                </td>
                     }
 
-                    @if (isIsshfApprover)
+                            @if (isIsshfApprover)
                     {
                         var checkId = $"player-id-{benchOfficials[i].Id}";
                         var iishfCheckedState = benchOfficials[i].Value<bool>("iISHFCheck") ? "checked" : "";
                         var nmaCheckedState = benchOfficials[i].Value<bool>("nmaCheck");
-                        <td class="text-center">
-                            @{
+                                <td class="text-center">
+                                    @{
                                 if (nmaCheckedState)
                                 {
-                                    <span>
-                                        <i class="fas fa-check"></i>
-                                    </span>
+                                                    <span>
+                                                        <i class="fas fa-check"></i>
+                                                    </span>
                                 }
-                            }
-                        </td>
-                        <td>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" @iishfCheckedState data-id="@benchOfficials[i].Id" type="checkbox" id="@checkId">
-                                <label class="form-check-label" for="flexSwitchCheckDefault"></label>
-                            </div>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" @iishfCheckedState data-id="@benchOfficials[i].Id" type="checkbox" id="@checkId">
+                                        <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+                                    </div>
 
-                        </td>
+                                </td>
                     }
                 }
             </tr>
@@ -581,7 +581,7 @@
     @{
         if (!isSubmitted)
         {
-            <button class="btn btn-custom-draft" id="addBenchOfficialButton" type="button"><i class="fa-duotone fa-user-plus"> </i> Add official</button>
+                    <button class="btn btn-custom-draft" id="addBenchOfficialButton" type="button"><i class="fa-duotone fa-user-plus"> </i> Add official</button>
 
         }
     }
@@ -602,7 +602,7 @@
                 && !selectedTournament.Value<string>("sanctionNumber").StartsWith("A", StringComparison.CurrentCultureIgnoreCase)
                 && team.Children().Any(x => x.ContentType.Alias == "guestPlayerPermission"))
             {
-                @await Html.PartialAsync("Partials/ITC/GuestPlayerPermissionDocuments.cshtml", new PermissionLetters
+                        @await Html.PartialAsync("Partials/ITC/GuestPlayerPermissionDocuments.cshtml", new PermissionLetters
                        {
                            Permissionletters = team.Children().Where(x => x.ContentType.Alias == "guestPlayerPermission").ToList(),
                            Players = players
@@ -620,9 +620,9 @@
     @{
         if (!isSubmitted)
         {
-            <button class="btn btn-light m-1" type="submit" onclick="validateForms()">Validate</button>
-            <button class="btn btn-custom-draft m-1" onclick="submit(true)">Save Draft</button>
-            <button class="btn btn-custom-save m-1" onclick="submit(false)">Submit</button>
+                    <button class="btn btn-light m-1" type="submit" onclick="validateForms()">Validate</button>
+                    <button class="btn btn-custom-draft m-1" onclick="submit(true)">Save Draft</button>
+                    <button class="btn btn-custom-save m-1" onclick="submit(false)">Submit</button>
         }
 
         if (isNmaApprover && !isNmaApprover)
@@ -631,19 +631,19 @@
 
         if (isNmaApprover)
         {
-            <button class="btn btn-danger m-1">Reject with reasons</button>
-            <button id="nmaApprove" class="btn btn-custom-save m-1" data-approver="nma">Approve and send to IISHF</button>
+                    <button class="btn btn-danger m-1">Reject with reasons</button>
+                    <button id="nmaApprove" class="btn btn-custom-save m-1" data-approver="nma">Approve and send to IISHF</button>
         }
 
         if (isIsshfApprover)
         {
-            <button id="rejectWithReasons"class="btn btn-danger m-1">Reject with reasons</button>
-            <button id="iishfApprove" class="btn btn-custom-save m-1" data-approver="nma">Approve ITC</button>
+                    <button id="rejectWithReasons"class="btn btn-danger m-1">Reject with reasons</button>
+                    <button id="iishfApprove" class="btn btn-custom-save m-1" data-approver="nma">Approve ITC</button>
         }
 
         if (isNmaApprover || isIsshfApprover)
         {
-            <div class="col-12" id="reasons"></div>
+                    <div class="col-12" id="reasons"></div>
         }
     }
     </>
@@ -1381,7 +1381,7 @@
 
         $.ajax({
             type: "PUT",
-            url: "/api/events/itc",
+            url: "/api/events/itc/submit",
             data: JSON.stringify(json),
             contentType: "application/json; charset=utf-8",
             dataType: "json",
@@ -2168,9 +2168,9 @@
             @{
                 if (!isSubmitted)
                 {
-                                <text>
-                                                                                        $('#editModal').modal('show');
-                                                                                    </text>
+                                        <text>
+                                                                                                $('#editModal').modal('show');
+                                                                                            </text>
                 }
             }
             
@@ -2202,9 +2202,9 @@
              @{
                  if (!isSubmitted)
                  {
-                                 <text>
-                                                                                        $('#editModal').modal('show');
-                                                                                    </text>
+                                         <text>
+                                                                                                $('#editModal').modal('show');
+                                                                                            </text>
                  }
              }
         });
@@ -2368,48 +2368,48 @@
          @{
              if (selectedTournament != null && selectedTournament.Id > 0)
              {
-                             <text>
-                                                                                        var selectedValue = @selectedTournament.Id;
-                                                                                        $('#eventSelect').val(selectedValue).change();
-                                                                                        $('#eventSelect').prop('disabled', true);
+                                     <text>
+                                                                                                var selectedValue = @selectedTournament.Id;
+                                                                                                $('#eventSelect').val(selectedValue).change();
+                                                                                                $('#eventSelect').prop('disabled', true);
 
-                                                                                    </text>
+                                                                                            </text>
              }
 
              if (!string.IsNullOrWhiteSpace(team?.Value<string>("countryIso3")))
              {
-                             <text>
-                                                                                       
-                                                                                    </text>
+                                     <text>
+                                                                                               
+                                                                                            </text>
              }
 
              if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyOneColour")))
              {
-                             <text>
-                                                                                        setTimeout(function () { 
-                                                                                        $('#colourOne').val('@(team?.Value<string>("jerseyOneColour"))').change();}, 500)
-                                                                                    </text>
+                                     <text>
+                                                                                                setTimeout(function () { 
+                                                                                                $('#colourOne').val('@(team?.Value<string>("jerseyOneColour"))').change();}, 500)
+                                                                                            </text>
              }
 
              if (!string.IsNullOrWhiteSpace(team?.Value<string>("jerseyTwoColour")))
              {
-                             <text>
-                                                                                        setTimeout(function(){
-                                                                                        $('#colourTwo').val('@(team?.Value<string>("jerseyTwoColour"))').change();}, 500)
+                                     <text>
+                                                                                                setTimeout(function(){
+                                                                                                $('#colourTwo').val('@(team?.Value<string>("jerseyTwoColour"))').change();}, 500)
 
-                                                                                    </text>
+                                                                                            </text>
              }
 
              if (isSubmitted)
              {
-                             <text>
-                                                                                 $('#teamName').prop('disabled', true);
-                                                                                 $('#teamSignatory').prop('disabled', true);
-                                                                                 $('#issuingCountry').prop('disabled', true);
+                                     <text>
+                                                                                         $('#teamName').prop('disabled', true);
+                                                                                         $('#teamSignatory').prop('disabled', true);
+                                                                                         $('#issuingCountry').prop('disabled', true);
 
-                                                                                 $('.input-group.mb-3').find('button, input').prop('disabled', true);
+                                                                                         $('.input-group.mb-3').find('button, input').prop('disabled', true);
 
-                                                                             </text>
+                                                                                     </text>
              }
          }
 

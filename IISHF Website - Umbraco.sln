@@ -12,6 +12,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IISHF", "IISHF\IISHF.csproj
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IISHF.Core", "IISHF.Core\IISHF.Core\IISHF.Core.csproj", "{C0387C42-1B38-48EE-B6EE-6D7A8B290279}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IISHF.ExcelToPdf", "IISHF.ExcelToPdf\IISHF.ExcelToPdf.csproj", "{9F1068EE-C269-4015-A110-D18093AD8135}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +28,10 @@ Global
 		{C0387C42-1B38-48EE-B6EE-6D7A8B290279}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C0387C42-1B38-48EE-B6EE-6D7A8B290279}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C0387C42-1B38-48EE-B6EE-6D7A8B290279}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F1068EE-C269-4015-A110-D18093AD8135}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F1068EE-C269-4015-A110-D18093AD8135}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F1068EE-C269-4015-A110-D18093AD8135}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F1068EE-C269-4015-A110-D18093AD8135}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

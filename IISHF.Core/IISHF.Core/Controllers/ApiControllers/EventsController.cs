@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Mvc;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using IISHF.Core.Models.ServiceBusMessage;
 using Lucene.Net.Index;
+using Umbraco.Extensions;
 
 namespace IISHF.Core.Controllers.ApiControllers
 {
@@ -35,6 +36,8 @@ namespace IISHF.Core.Controllers.ApiControllers
         private readonly IMediaService _mediaService;
         private readonly ITeamService _teamService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IEmailService _emailService;
+        private readonly INMAService _nmaService;
         private readonly ILogger<EventsController> _logger;
         private readonly JsonSerializerOptions _options;
 
@@ -49,6 +52,8 @@ namespace IISHF.Core.Controllers.ApiControllers
             IMediaService mediaService,
             ITeamService teamService,
             IHttpContextAccessor httpContextAccessor,
+            IEmailService emailService,
+            INMAService nmaService,
             ILogger<EventsController> logger)
         {
             _contentQuery = contentQuery;
@@ -61,6 +66,8 @@ namespace IISHF.Core.Controllers.ApiControllers
             _mediaService = mediaService;
             _teamService = teamService;
             _httpContextAccessor = httpContextAccessor;
+            _emailService = emailService;
+            _nmaService = nmaService;
             _logger = logger;
 
             _options = new JsonSerializerOptions
@@ -351,10 +358,12 @@ namespace IISHF.Core.Controllers.ApiControllers
         [HttpPut("itc/approve/{approver}/tournament/{tournamentId}/team/{teamName}")]
         [HttpPut("itc/approve/tournament/{tournamentId}/team/{teamName}")]
         [UmbracoMemberAuthorize]
-        public async Task<IActionResult> NmaApprove(int tournamentId, string teamName, [FromBody] ITCRosterMemberpproval model, string approver = "")
+        public async Task<IActionResult> ItcApprove(int tournamentId, string teamName, [FromBody] ITCRosterMemberpproval model, string approver = "")
         {
             var setAsApproved = model.RosterApprovals.All(x => x.Approved);
-            var isNma = approver == "nma";
+            var isNma = approver.ToLower() == "nma";
+            var isIISHF = approver.ToLower() == "iishf";
+
             if (!string.IsNullOrWhiteSpace(approver) && !setAsApproved)
             {
                 return BadRequest("Not all roster members approved");
@@ -379,19 +388,42 @@ namespace IISHF.Core.Controllers.ApiControllers
             if (isNma && setAsApproved)
             {
                 await _tournamentService.SetTeamItcNmaApprovalDate(team);
+                return NoContent();
             }
 
-            if (!isNma && setAsApproved)
+            if (isIISHF && setAsApproved)
             {
                 await _tournamentService.SetTeamItcIISHFApprovalDate(team);
 
+                var itcExcel = await _tournamentService.GenerateItcAsExcelFile(team, tournament);
+                await _emailService.SendItc("thf@iishf.com", new List<string>(), "THF Manager", "IISHF Event Name", "ITCApprovedInternalInternalTemplate.html",
+                    $"{tournament.Name} ITC Approved - {team.Name}", team.Name, itcExcel);
+                var excelStream = new MemoryStream(itcExcel);
+                await _teamService.AddItcToTeam(excelStream, $"ITC_${tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-hhmmss")}.xlsx", team);
+
+
+                var itcPdf = _tournamentService.GenerateItcAsPdfFile(itcExcel);
+                var pfdStream = new MemoryStream(itcPdf);
+                await _teamService.AddItcToTeam(pfdStream, $"ITC_${tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-hhmmss")}.pdf", team);
+
+                var nmaKey = team.Value<string>("nmaKey");
+                var itcApprovers = await _nmaService.GetNMAITCApprovers(Guid.Parse(nmaKey));
+
+                var cc = new List<string>()
+                {
+                    "itc@iishf.com"
+                };
+
+                cc.AddRange(itcApprovers.Select(itcApprover => itcApprover.NmaApproverEmail));
+
+                await _emailService.SendItc(tournament.Value<string>("hostEmail"), cc, tournament.Value<string>("hostContact"), "IISHF Event Name", "ITCApprovedInternalExternalTemplate.html",
+                    $"{tournament.Name} ITC Approved - {team.Name}", team.Name, itcPdf);
+
+                return NoContent();
             }
 
-            if (!isNma && !setAsApproved)
-            {
-                await _tournamentService.ResetNmaApproval(team);
-                await _tournamentService.SetItcRejectionReason(team);
-            }
+            await _tournamentService.ResetNmaApproval(team);
+            await _tournamentService.SetItcRejectionReason(team);
 
             return NoContent();
         }

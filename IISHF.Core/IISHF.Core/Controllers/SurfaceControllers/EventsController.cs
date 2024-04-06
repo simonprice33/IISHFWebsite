@@ -94,8 +94,8 @@ namespace IISHF.Core.Controllers.SurfaceControllers
                     var awayTeam =
                         game.Parent.Children.FirstOrDefault(x => x.Name == game.Value<string>("awayTeam")) ?? game.Parent.Children.FirstOrDefault(x => x.Name.Trim().Contains(game.Value<string>("awayTeam").Trim()));
 
-                    var homeLogo = homeTeam.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
-                    var awayLogo = awayTeam.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
+                    var homeLogo = homeTeam?.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
+                    var awayLogo = awayTeam?.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
 
                     var gameDateTime = game.Value<DateTime>("scheduleDateTime");
 

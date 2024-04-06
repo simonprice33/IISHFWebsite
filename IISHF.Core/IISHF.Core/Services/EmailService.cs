@@ -69,6 +69,14 @@ namespace IISHF.Core.Services
             await SendEmail(string.Empty, renderedEmail, sender, recipients, subject);
         }
 
+        public Task SendItc(string email, List<string> ccEmails, string recipientName, string eventName, string templateName, string subject,
+            string teamName, byte[] attachment)
+        {
+            // ToDo
+            // SendEmail with attachment
+            throw new NotImplementedException();
+        }
+
         public async Task SendContactFormMessage(ContactFormViewModel contactModel)
         {
             var sender = new EmailAddress(_iishfOptions.NoReplyEmailAdddress, _iishfOptions.DisplayName);
@@ -83,7 +91,7 @@ namespace IISHF.Core.Services
             return;
         }
 
-        private async Task SendEmail(string plainTextMessage, string htmlMessage, EmailAddress sender, List<EmailAddress> recipients, string subject)
+        private async Task SendEmail(string plainTextMessage, string htmlMessage, EmailAddress sender, List<EmailAddress> recipients, string subject, bool showAllRecipients = true)
         {
             var sendGridMessage = MailHelper.CreateSingleEmailToMultipleRecipients(
                 sender,
@@ -91,7 +99,36 @@ namespace IISHF.Core.Services
                 subject,
                 plainTextMessage,
                 htmlMessage,
-                true);
+                showAllRecipients);
+
+            var result = await _sendGridClient.SendEmailAsync(sendGridMessage, CancellationToken.None);
+
+            if (result.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            throw new SendGridInternalException("Something went wrong in sending");
+        }
+
+        private async Task SendEmail(string plainTextMessage, string htmlMessage, EmailAddress sender, List<EmailAddress> recipients, List<EmailAddress> cc, string subject, bool showAllRecipients = true, List<EmailAttachment>? attachments = null)
+        {
+            var sendGridMessage = MailHelper.CreateSingleEmailToMultipleRecipients(
+                sender,
+                recipients,
+                subject,
+                plainTextMessage,
+                htmlMessage,
+                showAllRecipients);
+
+            if (attachments != null && attachments.Any())
+            {
+                foreach (var attachment in attachments)
+                {
+                    var base64Content = Convert.ToBase64String(attachment.FileBytes);
+                    sendGridMessage.AddAttachment(attachment.FileName, base64Content, attachment.MimeType);
+                }
+            }
 
             var result = await _sendGridClient.SendEmailAsync(sendGridMessage, CancellationToken.None);
 

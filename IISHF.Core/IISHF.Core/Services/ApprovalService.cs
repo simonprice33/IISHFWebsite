@@ -140,6 +140,45 @@ namespace IISHF.Core.Services
                                    });
         }
 
+        //private void AddIishfApprovals(
+        //    List<ITCApproval> approvalsList,
+        //    IEnumerable<IPublishedContent> titleEvents,
+        //    IPublishedContent ageGroup,
+        //    IMember? nmaApprover,
+        //    IMember? iishfItcApprover)
+        //{
+        //    approvalsList.AddRange(from iishfEvent in titleEvents
+        //                           let eventTeams = iishfEvent.Children().Where(x => x.ContentType.Alias == "team").ToList()
+        //                           from team in eventTeams
+        //                           where team.Value<IPublishedContent>("iTCSubmittedBy") != null
+
+        //                           let itcSubmittionDate = team.Value<DateTime>("iTCSubmissionDate")
+        //                           let itcSubmittedBy = team.Value<IPublishedContent>("iTCSubmittedBy")
+        //                           let submittedBy = itcSubmittedBy?.Name ?? string.Empty
+        //                           let nmaApproverDate = team.Value<DateTime>("nMAApprovedDate")
+        //                           let nmaApprovedBy = team.Value<IPublishedContent>("iTCNMAApprover")
+        //                           let nmaItcApprover = nmaApprovedBy?.Name ?? string.Empty
+        //                           let iishfApproveDate = team.Value<DateTime>("iISHFApprovedDate")
+        //                           let iishApprover = team.Value<IPublishedContent>("iISHFITCApprover")
+        //                           let iishfApprover = iishApprover?.Name ?? string.Empty
+        //                           select new ITCApproval
+        //                           {
+        //                               EventId = iishfEvent.Key,
+        //                               EventName = ageGroup.Name,
+        //                               EventStartDate = team.Parent.Value<DateTime>("eventStartDate"),
+        //                               EventEndDate = team.Parent.Value<DateTime>("eventEndDate"),
+        //                               EventTeamId = team.Key,
+        //                               TeamName = team.Name,
+        //                               ITCSubmittedDate = itcSubmittionDate,
+        //                               ITCSubmittedBy = submittedBy,
+        //                               NMAApproveDate = nmaApproverDate,
+        //                               NMAApprover = nmaItcApprover,
+        //                               IISHFApproveDate = iishfApproveDate,
+        //                               IISHFApprover = iishfApprover,
+        //                               CanApprove = CanApprove(nmaApprover, iishfItcApprover, team)
+        //                           });
+        //}
+
         private void AddIishfApprovals(
             List<ITCApproval> approvalsList,
             IEnumerable<IPublishedContent> titleEvents,
@@ -147,37 +186,50 @@ namespace IISHF.Core.Services
             IMember? nmaApprover,
             IMember? iishfItcApprover)
         {
-            approvalsList.AddRange(from iishfEvent in titleEvents
-                                   let eventTeams = iishfEvent.Children().Where(x => x.ContentType.Alias == "team").ToList()
-                                   from team in eventTeams
-                                   where team.Value<IPublishedContent>("iTCSubmittedBy") != null
-
-                                   let itcSubmittionDate = team.Value<DateTime>("iTCSubmissionDate")
-                                   let itcSubmittedBy = team.Value<IPublishedContent>("iTCSubmittedBy")
-                                   let submittedBy = itcSubmittedBy?.Name ?? string.Empty
-                                   let nmaApproverDate = team.Value<DateTime>("nMAApprovedDate")
-                                   let nmaApprovedBy = team.Value<IPublishedContent>("iTCNMAApprover")
-                                   let nmaItcApprover = nmaApprovedBy?.Name ?? string.Empty
-                                   let iishfApproveDate = team.Value<DateTime>("iISHFApprovedDate")
-                                   let iishApprover = team.Value<IPublishedContent>("iISHFITCApprover")
-                                   let iishfApprover = iishApprover?.Name ?? string.Empty
-                                   select new ITCApproval
-                                   {
-                                       EventId = iishfEvent.Key,
-                                       EventName = ageGroup.Name,
-                                       EventStartDate = team.Parent.Value<DateTime>("eventStartDate"),
-                                       EventEndDate = team.Parent.Value<DateTime>("eventEndDate"),
-                                       EventTeamId = team.Key,
-                                       TeamName = team.Name,
-                                       ITCSubmittedDate = itcSubmittionDate,
-                                       ITCSubmittedBy = submittedBy,
-                                       NMAApproveDate = nmaApproverDate,
-                                       NMAApprover = nmaItcApprover,
-                                       IISHFApproveDate = iishfApproveDate,
-                                       IISHFApprover = iishfApprover,
-                                       CanApprove = CanApprove(nmaApprover, iishfItcApprover, team)
-                                   });
+            foreach (var iishfEvent in titleEvents)
+            {
+                var eventTeams = GetEventTeams(iishfEvent);
+                foreach (var team in eventTeams)
+                {
+                    if (IsTeamSubmitted(team))
+                    {
+                        var approval = CreateApproval(iishfEvent, team, ageGroup, nmaApprover, iishfItcApprover);
+                        approvalsList.Add(approval);
+                    }
+                }
+            }
         }
+
+        private List<IPublishedContent> GetEventTeams(IPublishedContent iishfEvent)
+        {
+            return iishfEvent.Children().Where(x => x.ContentType.Alias == "team").ToList();
+        }
+
+        private bool IsTeamSubmitted(IPublishedContent team)
+        {
+            return team.Value<IPublishedContent>("ITcsubmittedBy") != null;
+        }
+
+        private ITCApproval CreateApproval(IPublishedContent iishfEvent, IPublishedContent team, IPublishedContent ageGroup, IMember? nmaApprover, IMember? iishfItcApprover)
+        {
+            return new ITCApproval
+            {
+                EventId = iishfEvent.Key,
+                EventName = ageGroup.Name,
+                EventStartDate = team.Parent.Value<DateTime>("eventStartDate"),
+                EventEndDate = team.Parent.Value<DateTime>("eventEndDate"),
+                EventTeamId = team.Key,
+                TeamName = team.Name,
+                ITCSubmittedDate = team.Value<DateTime>("iTCSubmissionDate"),
+                ITCSubmittedBy = team.Value<IPublishedContent>("iTCSubmittedBy")?.Name ?? string.Empty,
+                NMAApproveDate = team.Value<DateTime>("nMAApprovedDate"),
+                NMAApprover = team.Value<IPublishedContent>("iTCNMAApprover")?.Name ?? string.Empty,
+                IISHFApproveDate = team.Value<DateTime>("iISHFApprovedDate"),
+                IISHFApprover = team.Value<IPublishedContent>("iISHFITCApprover")?.Name ?? string.Empty,
+                CanApprove = CanApprove(nmaApprover, iishfItcApprover, team)
+            };
+        }
+
 
         private bool CanApprove(IMember nmaApprover, IMember iishfItcApprover, IPublishedContent team)
         {
