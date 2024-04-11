@@ -71,15 +71,15 @@ public class FileService : IFileService
         var worksheet = workbook.Worksheet("ITC");
 
         var mergeRanges = new List<EventInformation> {
-            new EventInformation { Range = "F2:K2", Value = "123" }, // ITC Reference Number
-            new EventInformation { Range = "F3:K3", Value = "A2024-00" }, // Sanction Number
-            new EventInformation { Range = "F4:K4", Value = "U13" }, // Age Group
-            new EventInformation { Range = "F5:K5", Value = "U13 European Cup" }, // Event Name
-            new EventInformation { Range = "F10:K10", Value = "Some signatory" }, // Team Signatory
-            new EventInformation { Range = "F11:K11", Value = "Germany" }, // Hosting Country
-            new EventInformation { Range = "F12:K12", Value = "#ffffff" }, // Jersey Colour one
-            new EventInformation { Range = "F13:K13", Value = "#987acb" }, // Jersey Colour Two
-            new EventInformation { Range = "C15:E15", Value = "Some Made up team" } // Team Name
+            new EventInformation { Range = "F2:K2", Value = $"{team.Id}-{tournament.Id}" }, // ITC Reference Number
+            new EventInformation { Range = "F3:K3", Value = tournament.Value<string>("sanctionNumber") }, // Sanction Number
+            new EventInformation { Range = "F4:K4", Value = tournament.Parent.Value<string>("ageGroup") }, // Age Group
+            new EventInformation { Range = "F5:K5", Value = tournament.Parent.Name }, // Event Name
+            new EventInformation { Range = "F10:K10", Value = team.Value<string>("teamSignatory") }, // Team Signatory
+            new EventInformation { Range = "F11:K11", Value = tournament.Value<string>("hostCountry") }, // Hosting Country
+            new EventInformation { Range = "F12:K12", Value = team.Value<string>("jerseyOneColour") }, // Jersey Colour one
+            new EventInformation { Range = "F13:K13", Value = team.Value<string>("jerseyTwoColour") }, // Jersey Colour Two
+            new EventInformation { Range = "C15:E15", Value = $"{team.Name}" } // Team Name
         };
 
         foreach (var range in mergeRanges)
@@ -92,20 +92,56 @@ public class FileService : IFileService
             worksheet.Cell(range.Range.Split(':')[0]).Value = range.Value; // Replace "Your Value Here" with your actual value
         }
 
-
         // Assume we have a DataTable
-        DataTable dataTable = CreateDataTable(team, tournament);
+        DataTable playersDataTable = CreatePlayersDataTable(team, tournament);
+        DataTable officialsDataTable = CreateOfficialsDataTable(team, tournament);
+        var signOffsDataTable = GetItcSignApprovals(team);
 
-        // Define starting cell row and column (B19)
-        int startRow = 19;
-        int startColumn = 2; // B column
+        AddToItc(playersDataTable, worksheet, 19, 2);
+        AddToItc(officialsDataTable, worksheet, 50, 2);
+        AddToItc(signOffsDataTable, worksheet, 61, 6);
 
-        for (int row = 0; row < dataTable.Rows.Count; row++)
+        var ms = new MemoryStream();
+        workbook.SaveAs(ms);
+        ms.Position = 0;
+        return ms;
+    }
+
+    private DataTable GetItcSignApprovals(IPublishedContent team)
+    {
+
+        var submittedDate = team.Value<DateTime>("iTCSubmissionDate");
+        var submittedBy = team.Value<IPublishedContent>("iTCSubmittedBy");
+        var nmaApprovedDateTime = team.Value<DateTime>("nMAApprovedDate");
+        var nmaApprover = team.Value<IPublishedContent>("iTCNMAApprover");
+        var iishfApprovedDate = team.Value<DateTime>("iISHFApprovedDate");
+        var iishfApprover = team.Value<IPublishedContent>("iISHFITCApprover");
+
+        var dt = new DataTable();
+        dt.Columns.Add("Date", typeof(DateTime));
+        dt.Columns.Add("Person");
+
+        // ToDo
+        // Add approvals to Responsibilities and dates
+        dt.Rows.Add(submittedDate, submittedBy.Name);
+        dt.Rows.Add(submittedDate, nmaApprover.Name);
+        dt.Rows.Add(nmaApprovedDateTime, nmaApprover.Name);
+        dt.Rows.Add(nmaApprovedDateTime, iishfApprover.Name);
+        dt.Rows.Add(iishfApprovedDate, iishfApprover.Name);
+        dt.Rows.Add(iishfApprovedDate, iishfApprover.Name);
+
+        return dt;
+    }
+
+    private static void AddToItc(DataTable playersDataTable, IXLWorksheet worksheet, int startRow, int startColumn)
+    {
+
+        for (int row = 0; row < playersDataTable.Rows.Count; row++)
         {
-            for (int column = 0; column < dataTable.Columns.Count; column++)
+            for (int column = 0; column < playersDataTable.Columns.Count; column++)
             {
                 var cell = worksheet.Cell(startRow + row, startColumn + column);
-                var value = dataTable.Rows[row][column];
+                var value = playersDataTable.Rows[row][column];
 
                 if (column == 5)
                 {
@@ -115,9 +151,9 @@ public class FileService : IFileService
                         cell.Style.DateFormat.Format = "dd.mm.yyyy";
                     }
                 }
+
                 if (column != 6)
                 {
-
                     if (value is DateTime)
                     {
                         cell.SetValue((DateTime)value);
@@ -140,14 +176,10 @@ public class FileService : IFileService
             if (startRow + row <= 48)
             {
                 string dateOfBirthCellAddress = worksheet.Cell(startRow + row, startColumn + 5).Address.ToString();
-                worksheet.Cell(startRow + row, startColumn + 6).FormulaA1 = $"=IF(LEN({dateOfBirthCellAddress}) = 0, 0, YEAR({dateOfBirthCellAddress}))";
+                worksheet.Cell(startRow + row, startColumn + 6).FormulaA1 =
+                    $"=IF(LEN({dateOfBirthCellAddress}) = 0, 0, YEAR({dateOfBirthCellAddress}))";
             }
         }
-
-        var ms = new MemoryStream();
-        workbook.SaveAs(ms);
-        ms.Position = 0;
-        return ms;
     }
 
     public async Task<MemoryStream> GetFileAsStreamAsync(int mediaItemId)
@@ -174,7 +206,7 @@ public class FileService : IFileService
         return null;
     }
 
-    DataTable CreateDataTable(IPublishedContent team, IPublishedContent tournament)
+    DataTable CreatePlayersDataTable(IPublishedContent team, IPublishedContent tournament)
     {
         // Create and populate your DataTable
         DataTable table = new DataTable();
@@ -219,6 +251,50 @@ public class FileService : IFileService
         return table;
     }
 
+    DataTable CreateOfficialsDataTable(IPublishedContent team, IPublishedContent tournament)
+    {
+        // Create and populate your DataTable
+        DataTable table = new DataTable();
+        table.Columns.Add("LICENCE NUMBER");
+        table.Columns.Add("POSITION");
+        table.Columns.Add("LAST NAME");
+        table.Columns.Add("First Name");
+        table.Columns.Add("Intentionally blank");
+        table.Columns.Add("Date of Birth", typeof(DateTime));
+        table.Columns.Add("Year of birth", typeof(int));
+        table.Columns.Add("Gender");
+        table.Columns.Add("Nationality");
+        table.Columns.Add("NMA Check");
+        table.Columns.Add("Comments");
+
+        // Add rows to the table as needed
+
+        var playersOnRoster = team.Children().Where(x => x.ContentType.Alias == "roster" && x.Value<bool>("isBenchOfficial")).ToList();
+        var sortedRoster = SortRoster(playersOnRoster);
+        for (var i = 0; i < sortedRoster.Count; i++)
+        {
+            var rosterMember = sortedRoster[i];
+
+            var nmaApproved = rosterMember.Value<bool>("nmaCheck");
+
+            table.Rows.Add(
+                rosterMember.Value<string>("licenseNumber"),
+                rosterMember.Value<string>("role"),
+                rosterMember.Value<string>("lastName").ToUpper(),
+                rosterMember.Value<string>("firstName"),
+                rosterMember.Value<string>(string.Empty),
+                rosterMember.Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy"),
+                rosterMember.Value<DateTime>("dateOfBirth").Year,
+                rosterMember.Value<string>("gender"),
+                rosterMember.Value<string>("iso3"),
+                nmaApproved ? "OK" : "Rejected",
+                rosterMember.Value<string>("comments")
+            );
+        }
+
+        // Return the populated DataTable
+        return table;
+    }
     public List<IPublishedContent> SortRoster(List<IPublishedContent> roster)
     {
         var roleOrder = new Dictionary<string, int>
@@ -244,7 +320,6 @@ public class FileService : IFileService
 
         return sortedRoster;
     }
-
 
     public class EventInformation
     {
