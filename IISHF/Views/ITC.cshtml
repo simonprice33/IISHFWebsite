@@ -363,6 +363,10 @@
                     <td>
                         @{
                             var dob = players[i].Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy");
+                            if (dob == "01.01.0001" || dob == "01.01.1753")
+                            {
+                                dob = null;
+                            }
                         }
                         <span>@dob</span>
                     </td>
@@ -707,10 +711,28 @@
                         <label for="nationality">Nationality:</label>
                         <select class="form-control" id="nationality" name="nationality">
                             <option value="">Nationality</option>
-                            @foreach (var country in countries)
+                            @* @foreach (var country in countries)
                             {
                                 <option value="@country.Country">@country.Country</option>
+                            } *@
+                            
+                            @{
+                                var addedSeparator = false; // Flag to check if separator has been added
+                                // This will get the index of last priority country in the sorted list
+                                var lastPriorityCountryIndex = countries.ToList().FindLastIndex(c => priorityCountries.Contains(c.Country));
+
+                                foreach (var country in countries)
+                                {
+                                    <option value="@country.Country">@country.Country</option>
+                                    if (countries.ToList().IndexOf(country) == lastPriorityCountryIndex && !addedSeparator)
+                                    {
+                                        // Add the separator
+                                        <option disabled>──────────</option>
+                                        addedSeparator = true; // Ensure the separator is only added once
+                                    }
+                                }
                             }
+
                         </select>
                     </div>
                     <div class="form-group">
@@ -723,7 +745,7 @@
                         </select>
                     </div>
 
-                    <div class="form-group mt-2">
+                    <div id="guest" class="form-group mt-2">
                         <label for="isGuest">Is Guest:</label>
                         <!-- Label and select for Gender -->
                         <input type="checkbox" id="isGuest"/>
@@ -2146,6 +2168,8 @@
             currentMode = 'editPlayer';
             currentRow = $(this);
 
+            $("#jerseyNumberFormGroup").show()
+
             // Restore standard role options
             var standardRoles = [
                 "Captain",
@@ -2168,9 +2192,9 @@
             @{
                 if (!isSubmitted)
                 {
-                                        <text>
-                                                                                                $('#editModal').modal('show');
-                                                                                            </text>
+                    <text>
+                        $('#editModal').modal('show');
+                </text>
                 }
             }
             

@@ -7,52 +7,52 @@
     @{
         if (@Model == null)
         {
-                <div class="row">
-                    <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                    </div>
-                </div>
+                        <div class="row">
+                            <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                            </div>
+                        </div>
         }
         else
         {
-                <div class="row">
-                    <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                        <strong>Event Reference</strong>
-                        <p id="sanction">@Model.SanctionNumber</p>
-                        <input id="isChampionship" type="hidden" value="@Model.IsChampionship" />
+                        <div class="row">
+                            <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                                <strong>Event Reference</strong>
+                                <p id="sanction">@Model.SanctionNumber</p>
+                                <input id="isChampionship" type="hidden" value="@Model.IsChampionship" />
 
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                        <strong>Age Group</strong>
-                        <p id="ageGroup">@Model.AgeGroup</p>
-                        <input id="shortCode" type="hidden" value="@Model.ShortCode" />
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                        <strong>Start and End Date</strong>
-                        <p class=""><span id="startDate">@Model.EventStartDate.ToString("dd.MM.yyyy")</span> - <span id="endDate">@Model.EventEndDate.ToString("dd.MM.yyyy")</span></p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                        <strong>Hosting Club</strong>
-                        <p>@Model.HostingClub</p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                        <strong>Event Location</strong>
-                        <p>@Model.EvenLocation.Replace("\n", ", ").Replace(",,", ", ")</p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                        <strong>Event Country</strong>
-                        <p>@Model.HostingCountry</p>
-                    </div>
-                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                                <strong>Age Group</strong>
+                                <p id="ageGroup">@Model.AgeGroup</p>
+                                <input id="shortCode" type="hidden" value="@Model.ShortCode" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                                <strong>Start and End Date</strong>
+                                <p class=""><span id="startDate">@Model.EventStartDate.ToString("dd.MM.yyyy")</span> - <span id="endDate">@Model.EventEndDate.ToString("dd.MM.yyyy")</span></p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                                <strong>Hosting Club</strong>
+                                <p>@Model.HostingClub</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                                <strong>Event Location</strong>
+                                <p>@Model.EvenLocation.Replace("\n", ", ").Replace(",,", ", ")</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                                <strong>Event Country</strong>
+                                <p>@Model.HostingCountry</p>
+                            </div>
+                        </div>
         }
     }
 </div>
@@ -140,6 +140,10 @@
             $('#data-table tbody tr').each(function () {
                 $(this).find('td:nth-child(' + (columnIndex + 1) + ')').remove(); // +1 for the same reason
             });
+        }
+
+        if (sanctionNumber.charAt(0)) { 
+        $("#guest").hide()
         }
 
     });
