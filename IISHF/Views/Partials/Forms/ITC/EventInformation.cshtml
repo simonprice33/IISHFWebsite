@@ -62,6 +62,9 @@
 
         var sanctionNumber = $('#sanction')[0].innerHTML;
 
+         var selectedTeamName = $("#teamName").val();
+         console.log("Selected Team Name : " + selectedTeamName)
+
         @if (Model != null && Model.Teams != null && Model.SanctionNumber.StartsWith('A'))
         {
             <text>
@@ -118,6 +121,10 @@
                      var textboxHtml = '<input type="text" class="form-control" placeholder="Team Name" id="teamName" />';
                     $('#teamName').replaceWith(textboxHtml); 
                     $('#teamName').val('')
+
+            if (selectedTeamName !== ''){
+                $('#teamName').val(selectedTeamName)
+            }
             </text>
         }
 

@@ -47,7 +47,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
                 return Unauthorized();
             }
 
-            var invitations = _invitationService.GetInvitation(member.Email);
+            var invitations = await _invitationService.GetInvitation(member.Email);
 
             var approvals = await _approvals.GetApprovalsAsync();
 
@@ -62,7 +62,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
 
             return PartialView("~/Views/Partials/Members/MyAccount.cshtml", model);
         }
-        
+
         [HttpPost]
         public IActionResult HandleUpdateDetails(AccountViewModel model)
         {

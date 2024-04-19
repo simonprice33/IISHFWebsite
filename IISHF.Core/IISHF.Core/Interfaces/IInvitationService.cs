@@ -4,6 +4,6 @@ namespace IISHF.Core.Interfaces
 {
     public interface IInvitationService
     {
-        List<EventInvitation> GetInvitation(string email);
+        Task<List<EventInvitation>> GetInvitation(string email);
     }
 }

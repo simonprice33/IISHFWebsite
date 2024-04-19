@@ -6,6 +6,8 @@
     var user = await MemberManager.GetCurrentMemberAsync();
     var member = MemberService.GetById(int.Parse(user.Id));
 
+    var memberNma = member.GetValue<string>("nationalMemberAssosiciation");
+
     var isNMA = member.GetValue<bool>("isNMA");
 
     var isIISHF = member.GetValue<bool>("isIISHF");
@@ -22,13 +24,13 @@
 
     if (isNMA)
     {
-        invitationText = "Club Contact";
+        invitationText = "User";
     }
 
 
     if (isIISHF)
     {
-        invitationText = "Site User";
+        invitationText = "User";
     }
 }
 
@@ -58,33 +60,33 @@
                             @{
                                 if (isIISHF)
                                 {
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="roles" id="iishf" value="IISHF">
-                                        <label class="form-check-label" for="iishf">IISHF User</label>
-                                    </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" name="roles" id="iishf" value="IISHF">
+                                                <label class="form-check-label" for="iishf">IISHF User</label>
+                                            </div>
                                 }
                             }
                             @{
                                 if (isNMA || isIISHF)
                                 {
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="roles" id="nma" value="National Member Association">
-                                        <label class="form-check-label" for="nma">National Member Association User</label>
-                                    </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" name="roles" id="nma" value="National Member Association">
+                                                <label class="form-check-label" for="nma">National Member Association User</label>
+                                            </div>
 
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="roles" id="clubContact" value="Club Contact">
-                                        <label class="form-check-label" for="clubContact">Club Contact</label>
-                                    </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" name="roles" id="clubContact" value="Club Contact">
+                                                <label class="form-check-label" for="clubContact">Club Contact</label>
+                                            </div>
                                 }
                             }
                             @{
                                 if (isNMA || isIISHF || isClubContact)
                                 {
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="roles" id="teamContact" value="Team Contact">
-                                        <label class="form-check-label" for="teamContact">Team Contact</label>
-                                    </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" name="roles" id="teamContact" value="Team Contact">
+                                                <label class="form-check-label" for="teamContact">Team Contact</label>
+                                            </div>
                                 }
                             }
 
@@ -153,11 +155,7 @@
                                 <label for="otherRole">Please specify:</label>
                                 <input type="text" class="form-control" id="otherRole" name="otherRole">
                             </div>
-
-                            <div class="form-group" id="otherRoleContainer" style="display:none">
-                                <label for="otherRole">Please specify:</label>
-                                <input type="text" class="form-control" id="otherRole" name="otherRole">
-                            </div>
+                            
                         </div>
 
                         <div class="form-group mt-2" id="clubNameContainer" style="position: relative; display:none">
@@ -246,6 +244,8 @@
             }
         });
 
+        var memberNma = '@memberNma';
+
         // Populate the "Select Association" dropdown via AJAX
         $.ajax({
             url: '/umbraco/surface/lookup/GetNmaInformation',
@@ -257,6 +257,15 @@
                         text: item.name
                     }));
                 });
+                
+                var associationSelect = $('#associationSelect');
+                if(memberNma !== "IISHF" && memberNma) {
+                    associationSelect.find('option').filter(function () {
+                        return $(this).text() === memberNma;
+                    }).prop('selected', true);
+
+                    associationSelect.prop('disabled', true).change();
+                }
             },
             error: function (xhr) {
                 console.error("Error: " + xhr.statusText);
@@ -356,6 +365,19 @@
                 return this.value;
             }).get();
 
+            debugger;
+
+            var index = selectedRoles.indexOf('Other');
+            if (index > -1) {
+                selectedRoles.splice(index, 1);
+                var otherRoleValue = $('#otherRole').val();
+                var otherRoles = otherRoleValue.split(',').map(function (role) {
+                    return role.trim();
+                });
+                
+                selectedRoles = selectedRoles.concat(otherRoles);
+            }
+
             var selectedteams = $('input[name="teams[]"]:checked').map(function () {
                 return this.value;
             }).get();
@@ -365,6 +387,8 @@
             if (selectedNma === '') {
                 selectedNma = '00000000-0000-0000-0000-000000000000';
             }
+
+            debugger;
 
             var json = {
                 name : name,
@@ -389,10 +413,7 @@
                 data: jsonstring,
                 contentType: 'application/json',
                 success: function (data) {
-                    // Remove the row from the table
-                    // $.get('/umbraco/surface/events/GetPermissionDocuments', { tournamentId: tournamentId, teamId: teamId }, function (data) {
-                    //     $('#documents').html(data);
-                    // });
+                   
                 },
                 error: function (xhr, status, error) {
                     console.error("Error: " + error);

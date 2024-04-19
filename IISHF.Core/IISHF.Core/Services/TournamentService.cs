@@ -211,6 +211,26 @@ namespace IISHF.Core.Services
             return team;
         }
 
+        public async Task SetSelectTeamCreator(IPublishedContent team)
+        {
+            var user = await _memberManager.GetCurrentMemberAsync();
+            if (user == null)
+            {
+                return;
+            }
+
+            var tournamentTeam = _contentService.GetById(team.Id);
+            if (tournamentTeam == null)
+            {
+                return;
+            }
+
+            var udi = Udi.Create(Constants.UdiEntityType.Member, user.Key);
+
+            tournamentTeam.SetValue("selectTeamCreatedBy", udi);
+            _contentService.SaveAndPublish(tournamentTeam);
+        }
+
         public async Task UpdateTeamProperties(string propertyValue, string fieldName, IPublishedContent team)
         {
             await Task.Run(() =>

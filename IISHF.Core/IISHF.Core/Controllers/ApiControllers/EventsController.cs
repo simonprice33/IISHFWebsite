@@ -256,6 +256,7 @@ namespace IISHF.Core.Controllers.ApiControllers
         }
 
         [HttpPut("itc")]
+        [HttpPut("itc/submit")]
         [UmbracoMemberAuthorize]
         public async Task<IActionResult> PutItcRoster([FromBody] TeamInformationSubmission model)
         {
@@ -295,10 +296,14 @@ namespace IISHF.Core.Controllers.ApiControllers
                 tournament = _tournamentService.GetTournament(model.EventId);
                 team = _tournamentService.GetTournamentTeamByName(eventTeam.PublishName, tournament);
 
+
                 if (team == null)
                 {
                     return NotFound();
                 }
+
+                await _tournamentService.SetSelectTeamCreator(team);
+
             }
 
             // update jersey colours for event team

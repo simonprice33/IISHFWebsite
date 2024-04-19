@@ -30,6 +30,8 @@ namespace IISHF.Core.Interfaces
 
         Task SetTeamItcSubmissionDateFromTeam(IPublishedContent team);
 
+        Task SetSelectTeamCreator(IPublishedContent team);
+
         Task SetTeamItcNmaApprovalDate(IPublishedContent team);
 
         Task SetTeamItcIISHFApprovalDate(IPublishedContent team);

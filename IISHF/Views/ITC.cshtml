@@ -130,7 +130,7 @@
     if (team != null)
     {
         var nmaTeam = Umbraco.Content(team.Value<Guid>("nMATeamKey"));
-        var userIsWithTeam = user.Email == nmaTeam.Value<string>("teamContactEmail"); // user is team contact
+        var userIsWithTeam = user.Email == nmaTeam?.Value<string>("teamContactEmail") || team.Value<IPublishedContent>("selectTeamCreatedBy").Id == member.Id; // user is team contact
         var userIsClubContact = user.Email == null;
         if (!userIsWithTeam && !isNmaApprover && !isIsshfApprover)
         {
@@ -220,8 +220,6 @@
         }
         <input type="text" class="form-control" placeholder="Team Name" id="teamName" value="@teamName"/>
         <div id="suggestionsContainer"></div>
-
-
     </div>
 </div>
 <div class="row form-group">
@@ -711,10 +709,6 @@
                         <label for="nationality">Nationality:</label>
                         <select class="form-control" id="nationality" name="nationality">
                             <option value="">Nationality</option>
-                            @* @foreach (var country in countries)
-                            {
-                                <option value="@country.Country">@country.Country</option>
-                            } *@
                             
                             @{
                                 var addedSeparator = false; // Flag to check if separator has been added
@@ -2476,10 +2470,6 @@
             url: `/api/events/itc/unsubmit/tournament/${tournamentId}/team/${key}`,
             type: 'PUT',
             success: function (data) {
-                // Remove the row from the table
-                // $.get('/umbraco/surface/events/GetPermissionDocuments', { tournamentId: tournamentId, teamId: teamId }, function (data) {
-                //     $('#documents').html(data);
-                // });
             },
             error: function (xhr, status, error) {
                 console.error("Error: " + error);
