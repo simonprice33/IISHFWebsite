@@ -43,9 +43,8 @@ namespace IISHF.Core.Models
         public string Comments { get; set; } = string.Empty;
 
         [JsonPropertyName("nationality")]
-        public string Nationality { get; set; }
+        public string Nationality { get; set; } = string.Empty;
 
-        [JsonPropertyName("isGuest")]
-        public bool IsGuest { get; set; }
+        [JsonPropertyName("isGuest")] public bool IsGuest { get; set; } = false;
     }
 }

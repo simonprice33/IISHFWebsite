@@ -69,6 +69,10 @@ footer {
     width: 750px; /* Adjust this value based on your requirements */
 }
 
+#navbarDropdownMenuLink-2283 + .dropdown-menu {
+    width: 350px; /* Adjust this value based on your requirements */
+}
+
 @media (max-width: 767px) {
     .h2-mobile {
         margin-bottom: 1rem; /* equivalent to Bootstrap's mb-5 */
@@ -110,4 +114,8 @@ footer {
     #filters {
         display: none;
     }
+}
+
+.dropdown-item {
+    white-space: normal !important;
 }

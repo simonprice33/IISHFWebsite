@@ -21,5 +21,7 @@
         public string HomeTeamLogoUrl { get; set; }
 
         public string AwayTeamLogoUrl { get; set; }
+
+        public string GameSheetUrl { get; set; }
     }
 }

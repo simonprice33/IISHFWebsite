@@ -130,8 +130,14 @@
     if (team != null)
     {
         var nmaTeam = Umbraco.Content(team.Value<Guid>("nMATeamKey"));
-        var userIsWithTeam = user.Email == nmaTeam?.Value<string>("teamContactEmail") || team.Value<IPublishedContent>("selectTeamCreatedBy").Id == member.Id; // user is team contact
-        var userIsClubContact = user.Email == null;
+        var userIsWithTeam = false;
+
+        if (!isNmaApprover && !isIsshfApprover)
+        {
+            userIsWithTeam = user.Email == nmaTeam?.Value<string>("teamContactEmail") || team.Value<IPublishedContent>("selectTeamCreatedBy").Id == member.Id; // user is team contact
+        }
+
+        // // var userIsClubContact = user.Email == null;
         if (!userIsWithTeam && !isNmaApprover && !isIsshfApprover)
         {
             players.Clear();
@@ -703,7 +709,12 @@
                     </div>
                     <div class="form-group">
                         <label for="dateOfBirth">Date of Birth:</label>
-                        <input type="text" class="form-control" id="dateOfBirth" name="dateOfBirth">
+                        <div class="input-group mb-3" id="datepicker">
+                            <input type="text" class="form-control" id="dateOfBirth" name="dateOfBirth" placeholder="dd.mm.yyyy" aria-label="dateOfBirth" aria-describedby="dateOfBirthicon">
+                            <span class="input-group-text" id="dateOfBirthicon">
+                                <i class="fa-solid fa-calendar-days"></i>
+                            </span>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="nationality">Nationality:</label>
@@ -1440,7 +1451,7 @@
 
     // Perform the AJAX request
     $.ajax({
-        url: `/api/events/itc/guest-permission-letters/tournament/${tournamentId}/team/${teamId}`, // Replace with your actual endpoint
+        url: `/api/events/itc/guest-permission-letters/tournament/${tournamentId}/team/${teamId}`, 
         type: 'POST',
         data: formData,
         processData: false, // Important: Don't process files
@@ -1826,6 +1837,8 @@
     var divId = 'rejected-player-' + memberId; // Construct the div ID
     var $div = $('#' + divId); // Get the div by ID
 
+
+
     // Check if the div exists
     if ($div.length > 0) {
         // If the checkbox is checked, hide the div; otherwise, show the div
@@ -1899,6 +1912,20 @@
         }
 
     })
+
+$('#dateOfBirth').datepicker({
+        format: 'dd.mm.yyyy',
+        autoclose: true,
+        todayHighlight: true,
+        endDate: new Date(), // Prevents selecting future dates
+        minViewMode: 0, // 0: days, 1: months, 2: years
+        todayBtn: true // Show "Today" button to quickly navigate to today's date
+    });
+
+    // Show datepicker when clicking on the icon
+    $('#dateOfBirthicon').on('click', function() {
+        $('#dateOfBirth').datepicker('show');
+    });
 
         function GetRejectionReasons(queryString) {
 

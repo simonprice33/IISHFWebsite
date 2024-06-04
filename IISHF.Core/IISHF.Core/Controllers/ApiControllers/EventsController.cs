@@ -120,7 +120,7 @@ namespace IISHF.Core.Controllers.ApiControllers
         }
 
         [HttpPut("Statistics")]
-        public IActionResult PutStatistics([FromBody] UpdatePlayerStatistics model)
+        public async Task<IActionResult> PutStatistics([FromBody] UpdatePlayerStatistics model)
         {
             var tournament = _tournamentService.GetTournament(
                 model.IsChampionships,
@@ -132,14 +132,14 @@ namespace IISHF.Core.Controllers.ApiControllers
                 return NotFound();
             }
 
-            _eventResultsService.UpdatePlayerStatistics(model, tournament);
+            await _eventResultsService.UpdatePlayerStatistics(model, tournament);
 
             return NoContent();
         }
 
         [HttpPut("Ranking")]
         //[ApiKeyAuthorize]
-        public IActionResult PutRanking([FromBody] Rankings model)
+        public async Task<IActionResult> PutRanking([FromBody] Rankings model)
         {
             var tournament = _tournamentService.GetTournament(
                 model.IsChampionships,
@@ -158,7 +158,7 @@ namespace IISHF.Core.Controllers.ApiControllers
 
         [HttpPut("Placement")]
         //[ApiKeyAuthorize]
-        public IActionResult PutPlacement([FromBody] TeamPlacements model)
+        public async Task<IActionResult> PutPlacement([FromBody] TeamPlacements model)
         {
             var tournament = _tournamentService.GetTournament(
                 model.IsChampionships,
@@ -177,7 +177,7 @@ namespace IISHF.Core.Controllers.ApiControllers
 
         [HttpPut("ScheduleGame")]
         //[ApiKeyAuthorize]
-        public IActionResult PutScheduleGame([FromBody] UpdateTeamScores model)
+        public async Task<IActionResult> PutScheduleGame([FromBody] UpdateTeamScores model)
         {
             var tournament = _tournamentService.GetTournament(
                 model.IsChampionships,
@@ -190,7 +190,37 @@ namespace IISHF.Core.Controllers.ApiControllers
 
             try
             {
-                _tournamentService.UpdateGameWithResults(model, tournament);
+                await _tournamentService.UpdateGameWithResults(model, tournament);
+            }
+            catch (NullReferenceException nEx)
+            {
+                return NotFound(nEx.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unhandled exception has been thrown");
+                throw;
+            }
+
+            return NoContent();
+        }
+
+        [HttpPut("ScheduleGame/placement")]
+        //[ApiKeyAuthorize]
+        public async Task<IActionResult> PutSchedulePlacementGame([FromBody] CreateScheduleGames model)
+        {
+            var tournament = _tournamentService.GetTournament(
+                model.IsChampionships,
+                model.TitleEvent,
+                string.Format(model.EventYear.ToString()));
+            if (tournament == null)
+            {
+                return NotFound("Tournament not found");
+            }
+
+            try
+            {
+                await _tournamentService.UpdateEventGame(model, tournament);
             }
             catch (NullReferenceException nEx)
             {
@@ -226,6 +256,39 @@ namespace IISHF.Core.Controllers.ApiControllers
 
             return NoContent();
         }
+
+        [HttpPut("Gamesheet")]
+        public async Task<IActionResult> PutGameSheetLetters([FromForm] GameSheets model)
+        {
+
+            var file = model.GamesSheet;
+            if (file.Length == 0)
+            {
+                return BadRequest("File not valid");
+            }
+
+            var tournament = _tournamentService.GetTournament(
+                model.IsChampionships,
+                model.TitleEvent,
+                string.Format(model.EventYear.ToString()));
+
+            if (tournament == null)
+            {
+                return NotFound();
+            }
+
+            var game = tournament.Children.FirstOrDefault(x => x.Name == model.GameNumber.ToString() && x.ContentType.Alias == "game");
+
+            if (game == null)
+            {
+                return NotFound();
+            }
+
+            await _tournamentService.AddGameSheetToGame(model.GamesSheet, model.GameNumber.ToString(), game);
+
+            return NoContent();
+        }
+
 
         [HttpPut("VideoFeed")]
         public IActionResult PutVideoFeeed([FromBody] VideoFeeds model)

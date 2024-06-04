@@ -182,24 +182,44 @@
     if (!string.IsNullOrWhiteSpace(@eventShortCode))
     {
         <script>
+
             $(document).ready(function () {
-                $.get('/umbraco/surface/events/GetGroupRankings', { year: '@selectedCalendarYear', titleEvent: '@eventShortCode' }, function (data) {
-                    $('#groupRankingsContainer').html(data);
-                });
+                function fetchEventData() {
+                    $.get('/umbraco/surface/events/GetGroupRankings', { year: '@selectedCalendarYear', titleEvent: '@eventShortCode' }, function (data) {
+                        $('#groupRankingsContainer').html(data);
+                    });
 
-                $.get('/umbraco/surface/events/getsheduleandresults', { year: '@selectedCalendarYear', titleEvent: '@eventShortCode' }, function (data) {
-                    $('#scheduleResultsContainer').html(data);
-                });
+                    $.get('/umbraco/surface/events/getsheduleandresults', { year: '@selectedCalendarYear', titleEvent: '@eventShortCode' }, function (data) {
+                        $('#scheduleResultsContainer').html(data);
+                    });
 
-                $.get('/umbraco/surface/events/GetPlacements', { year: '@selectedCalendarYear', titleEvent: '@eventShortCode' }, function (data) {
-                    $('#eventPlacements').html(data);
-                });
+                    $.get('/umbraco/surface/events/GetPlacements', { year: '@selectedCalendarYear', titleEvent: '@eventShortCode' }, function (data) {
+                        $('#eventPlacements').html(data);
+                    });
 
-                $.get('/umbraco/surface/events/GetPlayerStats', { year: '@selectedCalendarYear', titleEvent: '@eventShortCode' }, function (data) {
-                    $('#playerStats').html(data);
+                    $.get('/umbraco/surface/events/GetPlayerStats', { year: '@selectedCalendarYear', titleEvent: '@eventShortCode' }, function (data) {
+                        $('#playerStats').html(data);
+                    });
+                }
+
+                // Initial fetch
+                fetchEventData();
+
+                // Set interval to fetch data every 2 minutes
+                setInterval(fetchEventData, 60000); // 120000 milliseconds = 2 minutes
+
+                $('a[data-bs-toggle="pill"]').on('shown.bs.tab', function (e) {
+                    if ($(window).width() <= 768) { // Check if the screen width is 768px or less
+                        var target = $(e.target).attr("href"); // Get the target pane
+                        var offset = $(target).offset().top - 75; // Adjust by 75px
+                        $('html, body').animate({
+                            scrollTop: offset
+                        }, 500); // Scroll to the top of the target pane
+                    }
                 });
             });
-        </script>
+
+            </script>
     }
 }
 

@@ -1,4 +1,5 @@
 ﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@using Umbraco.Cms.Core.Models.PublishedContent;
 @inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.Home>
 @using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
 @using Newtonsoft.Json
@@ -6,6 +7,55 @@
 @using IISHF.Core.Models
 @{
     Layout = "Main.cshtml";
+    var id = Model.Id;
+    var rootContent = Umbraco.ContentAtRoot().ToList();
+    var tournaments = rootContent
+        .FirstOrDefault(x => x.Name == "Home")!.Children()?
+        .FirstOrDefault(x => x.Name == "Tournaments")!.Children().ToList();
+    ;
+
+    var eventYear = DateTime.UtcNow.Year.ToString();
+
+    var cups = tournaments
+        .FirstOrDefault(x => x.Name == "European Cups")
+        .Children()
+        .Select(x => x.Children.FirstOrDefault(x => x.Name == eventYear))
+        .ToList();
+
+    var championships = tournaments
+        .FirstOrDefault(x => x.Name == "European Championships")
+        .Children()
+        .Select(x => x.Children.FirstOrDefault(x => x.Name == eventYear))
+        .ToList();
+
+    var allEvents = cups.Where(x => x != null).ToList()
+        .Concat(championships.Where(x => x != null).ToList())
+        .ToList();
+
+    var today = DateTime.UtcNow.Date;
+    var currentEvent = allEvents
+        .Where(e => e != null && e.HasProperty("EventStartDate") && e.HasProperty("EventEndDate"))
+        .FirstOrDefault(e =>
+            e.Value<DateTime>("EventStartDate").Date <= today &&
+            e.Value<DateTime>("EventEndDate").Date >= today);
+
+    List<IPublishedContent> liveFeed = null;
+    if (currentEvent != null)
+    {
+        liveFeed = currentEvent.Children()
+            .OfType<IPublishedContent>()  // Ensure it's published content
+            .Where(c => c.ContentType.Alias == "liveFeeds")
+            .Where(c => c.Value<DateTime>("LiveFeedDateTime").Date == today)  // Filter by LiveFeedDateTime date
+            .OrderByDescending(c => c.Value<DateTime>("LiveFeedDateTime"))
+            .ToList();
+
+        if (liveFeed != null)
+        {
+            // Do something with the live feed
+        }
+    }
+
+    var video = allEvents;
 }
 
 <section class="home-header-section">
@@ -21,6 +71,113 @@
         </div>
     </div>
 </section>
+
+@* 
+@{
+    if (currentEvent != null && liveFeed != null)
+    {
+        <div class="container mt-3">
+            <div class="row">
+                <div id="live-feed-container">
+                    <h1 class="text-center mb-4">IISHF @currentEvent.Parent.Name @currentEvent.Name <span class="orange">Live</span> feed</h1>
+                    @{
+
+                        if (!liveFeed.Any(x => x.Value<bool>("ShowInSite")))
+                        {
+                            <h3 class="text-center">No video feeds are currently available for this event</h3>
+                        }
+
+                        if (liveFeed.Any())
+                        {
+                            @foreach (var feed in liveFeed.Where(x => x.Value<bool>("ShowInSite")))
+                            {
+
+                                var link = feed.Value<Umbraco.Cms.Core.Models.Link>("liveFeedUrl");
+                                var feedFromTime = feed.Value<DateTime>("liveFeedDateTime").ToString("F");
+                                var feedId = $"feed{feed.Id}";
+                                <div class="feed-item" id="@feedId">
+                                    <h3>@feed.Name</h3>
+                                    <h5>Feed Time CET : @feedFromTime</h5>
+                                    @if (link.Url.ToLower().Contains("youtube"))
+                                    {
+                                        var src = $"https://www.youtube.com/embed/{@link.Url.Split('/').Last()}";
+                                        <div class="row mb-5">
+                                            <iframe width="640" height="420" src="@src" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                                        </div>
+                                    }
+
+                                    @if (link.Url.ToLower().Contains("sportdeutschland"))
+                                    {
+                                       
+                                        <div class="row mb-5">
+
+                                        <iframe id="@feedId" src="@link.Url" width=640 height="420" frameborder=0 allowfullscreen></iframe>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    }
+                </div>
+                
+            </div>
+        </div>
+
+    }
+} *@
+
+
+@{
+    if (currentEvent != null && liveFeed != null)
+    {
+        <div class="container mt-3">
+            <div class="row">
+                <div id="live-feed-container">
+                    <h1 class="text-center mb-4">IISHF @currentEvent.Parent.Name @currentEvent.Name <span class="orange">Live</span> feed</h1>
+                    @{
+
+                        if (!liveFeed.Any(x => x.Value<bool>("ShowInSite")))
+                        {
+                            <h3 class="text-center">No video feeds are currently available for this event</h3>
+                        }
+
+                        if (liveFeed.Any())
+                        {
+                            @foreach (var feed in liveFeed.Where(x => x.Value<bool>("ShowInSite")))
+                            {
+
+                                var link = feed.Value<Umbraco.Cms.Core.Models.Link>("liveFeedUrl");
+                                var feedFromTime = feed.Value<DateTime>("liveFeedDateTime").ToString("F");
+                                var feedId = $"feed{feed.Id}";
+                                <div class="feed-item" id="@feedId">
+                                    <h3>@feed.Name</h3>
+                                    <h5>Feed Time CET : @feedFromTime</h5>
+                                    @if (link.Url.ToLower().Contains("youtube"))
+                                    {
+                                        var src = $"https://www.youtube.com/embed/{@link.Url.Split('/').Last()}";
+                                        <div class="row mb-5">
+                                            <iframe width="640" height="420" src="@src" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                                        </div>
+                                    }
+
+                                    @if (link.Url.ToLower().Contains("sportdeutschland"))
+                                    {
+                                        <div class="row mb-5">
+                                            <iframe id="@feedId" src="@link.Url" width="640" height="420" frameborder="0" allowfullscreen loading="lazy"></iframe>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    }
+                </div>
+
+            </div>
+        </div>
+
+    }
+}
+
 
 @await Html.PartialAsync("News/LatestNewsLimit6")
 
@@ -48,3 +205,44 @@
 
 @Html.Partial("~/Views/Partials/Contact/ContactForm.cshtml", new ContactFormViewModel())
 
+<script>
+    $(document).ready(function () {
+        function showFeed(feedFromTime) {
+            // Convert feed time from CET to UTC with milliseconds
+            const feedTimeCET = new Date(feedFromTime);
+            const currentTimeUTC = new Date();
+            feedTimeCET.setHours(feedTimeCET.getHours() - 1); // Assuming CET is 1 hour ahead of UTC
+            const timeDifference = feedTimeCET.getTime() - currentTimeUTC.getTime();
+            return Math.abs(timeDifference) <= 1800000; // Check absolute difference for both scenarios
+        }
+
+        const liveFeedContainer = $("#live-feed-container");
+        const feedItems = liveFeedContainer.find(".feed-item");
+
+        // Check if there's only one feed
+        if (feedItems.length === 1) {
+            console.log(feedItems.length)
+            liveFeedContainer.show(); // Show the container if only one feed
+        } else {
+            // Existing logic for hiding/showing individual feed items based on time difference
+            feedItems.each(function () {
+                const feedId = $(this).attr("id");
+                const feedTime = $(this).find("h5").text().split(": ")[1]; // Extract feed time
+                if (showFeed(feedTime)) {
+                    $(this).show(); // Show the feed item
+                } else {
+                    $(this).hide(); // Hide the feed item
+                }
+            });
+
+            // Check and update visibility on interval (optional)
+            setInterval(function () {
+                feedItems.each(function () {
+                    const feedId = $(this).attr("id");
+                    const feedTime = $(this).find("h5").text().split(": ")[1]; // Extract feed time
+                    $(this).toggle(showFeed(feedTime)); // Toggle visibility based on current time
+                });
+            }, 60000); // Check every minute (adjust interval as needed)
+        }
+    });
+</script>

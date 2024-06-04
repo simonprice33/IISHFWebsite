@@ -1,7 +1,10 @@
 ﻿using IISHF.Core.Interfaces;
 using IISHF.Core.Models;
 using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
+using System.Transactions;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Services;
 
@@ -26,16 +29,64 @@ namespace IISHF.Core.Services
         }
 
 
-        public void UpdatePlayerStatistics(UpdatePlayerStatistics model, IPublishedContent tournament)
+        ////public async Task UpdatePlayerStatistics(UpdatePlayerStatistics model, IPublishedContent tournament)
+        ////{
+        ////    var rosteredMembersToUpdate = new List<IContent>();
+
+        ////    await Task.Run(async () =>
+        ////    {
+        ////        ////foreach (var player in model.PlayerStatistics)
+        ////        ////{
+        ////        ////    var selectedTeam = tournament.Children.FirstOrDefault(x =>
+        ////        ////        x.Name == player.TeamName && x.ContentType.Alias == "team");
+        ////        ////    if (selectedTeam == null)
+        ////        ////    {
+        ////        ////        continue;
+        ////        ////    }
+
+        ////        ////    var rosterMember = selectedTeam.Children()
+        ////        ////        .FirstOrDefault(x => x.Value<string>("licenseNumber") == player.License);
+
+        ////        ////    if (rosterMember == null)
+        ////        ////    {
+        ////        ////        continue;
+        ////        ////    }
+
+        ////        ////    var rosteredMember = _contentService.GetById(rosterMember.Id);
+        ////        ////    rosteredMember?.SetValue("goals", player.Goals);
+        ////        ////    rosteredMember?.SetValue("assists", player.Assists);
+        ////        ////    rosteredMember?.SetValue("penalties", player.Penalties);
+        ////        ////    rosteredMember?.SetValue("gamesPlayed", player.GamesPlayed);
+        ////        ////    //_contentService.SaveAndPublish(rosteredMember);
+        ////        ////    rosteredMembersToUpdate.Add(rosteredMember);
+        ////        ////}
+
+        ////        ////// Save all rostered members
+        ////        ////foreach (var member in rosteredMembersToUpdate)
+        ////        ////{
+        ////        ////    _contentService.SaveAndPublish(member);
+        ////        ////}
+
+        ////    });
+        ////}
+
+        public async Task UpdatePlayerStatistics(UpdatePlayerStatistics model, IPublishedContent tournament)
         {
+            // Creating a list to store the updated members
+            var rosteredMembersToUpdate = new List<IContent>();
+
+            // Wrap the entire operation in a transaction scope
             foreach (var player in model.PlayerStatistics)
             {
-                var selectedTeam = tournament.Children.FirstOrDefault(x => x.Name == player.TeamName && x.ContentType.Alias == "team");
+                // Find the team
+                var selectedTeam = tournament.Children.FirstOrDefault(x =>
+                    x.Name == player.TeamName && x.ContentType.Alias == "team");
                 if (selectedTeam == null)
                 {
                     continue;
                 }
 
+                // Find the roster member
                 var rosterMember = selectedTeam.Children()
                     .FirstOrDefault(x => x.Value<string>("licenseNumber") == player.License);
 
@@ -44,12 +95,18 @@ namespace IISHF.Core.Services
                     continue;
                 }
 
+                // Get the roster member content by Id within the transaction scope
                 var rosteredMember = _contentService.GetById(rosterMember.Id);
-                rosteredMember?.SetValue("goals", player.Goals);
-                rosteredMember?.SetValue("assists", player.Assists);
-                rosteredMember?.SetValue("penalties", player.Penalties);
-                rosteredMember?.SetValue("gamesPlayed", player.GamesPlayed);
-                _contentService.SaveAndPublish(rosteredMember);
+                if (rosteredMember != null)
+                {
+                    // Update values
+                    rosteredMember.SetValue("goals", player.Goals);
+                    rosteredMember.SetValue("assists", player.Assists);
+                    rosteredMember.SetValue("penalties", player.Penalties);
+                    rosteredMember.SetValue("gamesPlayed", player.GamesPlayed);
+                    rosteredMembersToUpdate.Add(rosteredMember);
+                    _contentService.SaveAndPublish(rosteredMember);
+                }
             }
         }
 
@@ -80,6 +137,7 @@ namespace IISHF.Core.Services
                 }
 
                 teamToUpdate?.SetValue("points", team.Points);
+                // check failed to aquire lock 
                 _contentService.SaveAndPublish(teamToUpdate);
             }
         }
@@ -89,7 +147,8 @@ namespace IISHF.Core.Services
             foreach (var placement in model.Placements)
             {
                 // look at using item from tournament service
-                var selectedTeam = tournament.Children.FirstOrDefault(x => x.Name == placement.TeamName && x.ContentType.Alias == "team");
+                var selectedTeam = tournament.Children.FirstOrDefault(x =>
+                    x.Name == placement.TeamName && x.ContentType.Alias == "team");
                 if (selectedTeam == null)
                 {
                     continue;
@@ -100,6 +159,7 @@ namespace IISHF.Core.Services
                 teamToUpdate?.SetValue("finalRanking", placement.Placement);
                 _contentService.SaveAndPublish(teamToUpdate);
             }
+
         }
     }
 }

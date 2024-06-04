@@ -234,16 +234,23 @@ namespace IISHF.Core.Services
         private bool CanApprove(IMember nmaApprover, IMember iishfItcApprover, IPublishedContent team)
         {
             // If approved can not be approved again
-            if (nmaApprover != null && (team.Value<DateTime>("nMAApprovedDate") != null &&
-                                        team.Value<DateTime>("nMAApprovedDate") > DateTime.MinValue &&
+            if (nmaApprover != null && (team.Value<DateTime>("nMAApprovedDate") != null ||
+                                        team.Value<DateTime>("nMAApprovedDate") > DateTime.MinValue ||
                                         team.Value<DateTime>("nMAApprovedDate") > DateTime.Parse("1/1/1753")))
             {
                 return false;
             }
 
-            if (iishfItcApprover != null && (team.Value<DateTime>("iISHFApprovedDate") != null &&
-                                             team.Value<DateTime>("iISHFApprovedDate") > DateTime.MinValue &&
+            if (iishfItcApprover != null && (team.Value<DateTime>("iISHFApprovedDate") != null ||
+                                             team.Value<DateTime>("iISHFApprovedDate") > DateTime.MinValue ||
                                              team.Value<DateTime>("iISHFApprovedDate") > DateTime.Parse("1/1/1753")))
+            {
+                return false;
+            }
+
+            if (team.Value<DateTime>("iTCSubmissionDate") != null ||
+                team.Value<DateTime>("iISHFApprovedDate") > DateTime.MinValue ||
+                team.Value<DateTime>("iISHFApprovedDate") > DateTime.Parse("1/1/1753"))
             {
                 return false;
             }

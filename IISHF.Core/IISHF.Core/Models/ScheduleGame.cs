@@ -1,10 +1,14 @@
-﻿namespace IISHF.Core.Models
+﻿using System.Text.Json.Serialization;
+
+namespace IISHF.Core.Models
 {
     public class ScheduleGame
     {
-        public string? HomeTeam { get; set; }
+        [JsonPropertyName("Home Team")]
+        public string HomeTeam { get; set; }
 
-        public string? AwayTeam { get; set; }
+        [JsonPropertyName("Away Team")]
+        public string AwayTeam { get; set; }
 
         public int? GameNumber { get; set; }
 

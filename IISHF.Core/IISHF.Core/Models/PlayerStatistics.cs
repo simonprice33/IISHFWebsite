@@ -1,4 +1,6 @@
-﻿namespace IISHF.Core.Models
+﻿using System.Text.Json.Serialization;
+
+namespace IISHF.Core.Models
 {
     public class PlayerStatistics
     {
@@ -14,6 +16,7 @@
 
         public int JerseyNumber { get; set; }
 
+        [JsonPropertyName("Games played")]
         public int GamesPlayed { get; set; }
 
         public int Goals { get; set; } = 0;

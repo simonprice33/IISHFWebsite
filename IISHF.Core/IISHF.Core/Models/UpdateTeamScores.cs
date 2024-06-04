@@ -1,4 +1,6 @@
-﻿namespace IISHF.Core.Models
+﻿using System.Text.Json.Serialization;
+
+namespace IISHF.Core.Models
 {
     public class UpdateTeamScores : TournamentBaseModel
     {
@@ -7,6 +9,7 @@
             Scores = new List<UpdateTeamScore>();
         }
 
+        [JsonPropertyName("Games")]
         public IEnumerable<UpdateTeamScore> Scores { get; set; }
     }
 }

@@ -96,10 +96,16 @@ namespace IISHF.Core.Controllers.SurfaceControllers
 
                     var homeLogo = homeTeam?.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
                     var awayLogo = awayTeam?.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
+                    var gameSheet = game?.Value<IPublishedContent>("gameSheet")?.Url() ?? string.Empty;
 
                     var gameDateTime = game.Value<DateTime>("scheduleDateTime");
 
                     var remarks = game.Value<string>("remarks").Split("(").FirstOrDefault();
+
+                    if (!string.IsNullOrWhiteSpace(gameSheet))
+                    {
+                        gameSheet = $"https://events.iishf.com{gameSheet}";
+                    }
 
                     model.ScheduleAndResults.Add(new ScheduleAndResults()
                     {
@@ -113,6 +119,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
                         Remarks = remarks,
                         HomeTeamLogoUrl = homeLogo,
                         AwayTeamLogoUrl = awayLogo,
+                        GameSheetUrl = gameSheet
                     });
                 }
                 catch (Exception)
@@ -181,6 +188,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
                         Penalties = player.Value<int>("penalties"),
                         TeamLogoUrl = player.Parent.Value<IPublishedContent>("image")?.Url() ?? string.Empty,
                     })
+                    .Where(x => x.GamesPlayed > 0)
                     .ToList()
             };
 
@@ -193,7 +201,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
         {
             var tournament = _tournamentService.GetTournament(tournamentId);
 
-            if(tournament == null)
+            if (tournament == null)
             {
                 return PartialView("~/Views/Partials/ITC/GuestPlayerPermissionDocuments.cshtml", new PermissionLetters());
 

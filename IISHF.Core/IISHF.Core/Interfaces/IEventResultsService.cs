@@ -5,7 +5,7 @@ namespace IISHF.Core.Interfaces
 {
     public interface IEventResultsService
     {
-        void UpdatePlayerStatistics(UpdatePlayerStatistics model, IPublishedContent tournament);
+        Task UpdatePlayerStatistics(UpdatePlayerStatistics model, IPublishedContent tournament);
 
         void UpdateGroupRanking(Rankings model, IPublishedContent tournament);
 

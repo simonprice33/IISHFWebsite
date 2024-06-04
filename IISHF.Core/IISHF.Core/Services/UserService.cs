@@ -154,7 +154,12 @@ namespace IISHF.Core.Services
             {
                 var club = _contentQuery.Content(invitation.Value<Guid>("clubKey"));
                 newMember.SetValue("clubName", club.Name);
+                _services.MemberService.Save(newMember);
 
+            }
+
+            if (invitation.Value<bool>("isIISHF"))
+            {
                 var nma = _contentQuery.Content(invitation.Value<Guid>("nmaKey"));
                 newMember.SetValue("nationalMemberAssosiciation", nma.Name);
                 _services.MemberService.Save(newMember);

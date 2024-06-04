@@ -15,6 +15,11 @@ using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Examine;
 using IFileService = IISHF.Core.Interfaces.IFileService;
 using IMediaService = Umbraco.Cms.Core.Services.IMediaService;
+using DocumentFormat.OpenXml.Wordprocessing;
+using System.Text.RegularExpressions;
+using Umbraco.Cms.Core.IO;
+using Umbraco.Cms.Core.PropertyEditors;
+using Umbraco.Cms.Core.Strings;
 
 namespace IISHF.Core.Services
 {
@@ -30,6 +35,10 @@ namespace IISHF.Core.Services
         private readonly IMessageSender _messageSender;
         private readonly IFileService _fileService;
         private readonly INMAService _nmaService;
+        private readonly IShortStringHelper _shortStringHelper;
+        private readonly IContentTypeBaseServiceProvider _contentTypeBaseServiceProvider;
+        private readonly MediaFileManager _mediaFileManager;
+        private readonly MediaUrlGeneratorCollection _mediaUrlGeneratorCollection;
         private readonly ILogger<TournamentService> _logger;
 
         public TournamentService(
@@ -43,6 +52,10 @@ namespace IISHF.Core.Services
             IMessageSender messageSender,
             IFileService fileService,
             INMAService nmaService,
+            IShortStringHelper shortStringHelper,
+            IContentTypeBaseServiceProvider contentTypeBaseServiceProvider,
+            MediaFileManager mediaFileManager,
+            MediaUrlGeneratorCollection mediaUrlGeneratorCollection,
             ILogger<TournamentService> logger)
         {
             _contentQuery = contentQuery;
@@ -55,6 +68,10 @@ namespace IISHF.Core.Services
             _messageSender = messageSender;
             _fileService = fileService;
             _nmaService = nmaService;
+            _shortStringHelper = shortStringHelper;
+            _contentTypeBaseServiceProvider = contentTypeBaseServiceProvider;
+            _mediaFileManager = mediaFileManager;
+            _mediaUrlGeneratorCollection = mediaUrlGeneratorCollection;
             _logger = logger;
         }
 
@@ -144,28 +161,77 @@ namespace IISHF.Core.Services
             return team;
         }
 
-        public Task UpdateGameWithResults(UpdateTeamScores model, IPublishedContent tournament)
+        public async Task UpdateGameWithResults(UpdateTeamScores model, IPublishedContent tournament)
         {
-            foreach (var finalScore in model.Scores)
+            await Task.Run(async () =>
             {
-                var game = tournament.Children.FirstOrDefault(x => x.Name == finalScore.GameNumber.ToString() && x.ContentType.Alias == "game");
-                if (game == null)
+                foreach (var finalScore in model.Scores)
                 {
-                    var exception = new NullReferenceException($"Game number {finalScore.GameNumber} not found");
-                    _logger.LogError(exception, "Unable to find game number {gameId}", finalScore.GameNumber);
-                    throw exception;
+                    var game = tournament.Children.FirstOrDefault(x => x.Name == finalScore.GameNumber.ToString() && x.ContentType.Alias == "game");
+                    if (game == null)
+                    {
+                        var exception = new NullReferenceException($"Game number {finalScore.GameNumber} not found");
+                        _logger.LogError(exception, "Unable to find game number {gameId}", finalScore.GameNumber);
+                        throw exception;
+                    }
+
+                    var gameToUpdate = _contentService.GetById(game.Id);
+
+                    gameToUpdate?.SetValue("homeScore", finalScore.HomeScore);
+                    gameToUpdate?.SetValue("awayScore", finalScore.AwayScore);
+                    _contentService.SaveAndPublish(gameToUpdate);
                 }
 
-                var gameToUpdate = _contentService.GetById(game.Id);
-
-                gameToUpdate?.SetValue("homeScore", finalScore.HomeScore);
-                gameToUpdate?.SetValue("awayScore", finalScore.AwayScore);
-                _contentService.SaveAndPublish(gameToUpdate);
-            }
-
-            return Task.CompletedTask;
+            });
         }
 
+        public async Task<IContent>? AddGameSheetToGame(IFormFile file, string name, IPublishedContent game)
+        {
+
+            string pattern = @"\[(.*?)\]";
+
+            Match match = Regex.Match(name, pattern);
+            if (match.Success)
+            {
+                // This will print the value between the square brackets
+                name = match.Groups[1].Value;
+            }
+            
+            var mediaItem = await CreateMediaAsync(file, $"{game.Parent.Parent.Name}-{game.Parent.Name}");
+            var document = _contentService.GetById(game.Id);
+
+            // Ensure the mediaItemId is converted to a UDI
+            var media = _contentQuery.Media(mediaItem.Key);
+            var udi = Udi.Create(Constants.UdiEntityType.Media, media.Key);
+            document.SetValue("gameSheet", udi.ToString());
+            _contentService.SaveAndPublish(document);
+
+            return document;
+        }
+
+        private async Task<IMedia> CreateMediaAsync(IFormFile file, string directory)
+        {
+            try
+            {
+                await using var stream = file.OpenReadStream();
+                int folderId = EnsureFolderExists(directory);
+                IMedia media = _umbracoMediaService.CreateMedia(file.FileName, folderId,
+                Constants.Conventions.MediaTypes.Image);
+                media.SetValue(_mediaFileManager, _mediaUrlGeneratorCollection, _shortStringHelper,
+                _contentTypeBaseServiceProvider,
+                    Constants.Conventions.Media.File, file.FileName, stream);
+                _umbracoMediaService.Save(media);
+                return media;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "unable to upload media");
+                throw;
+            }
+        }
+
+
+        
         public Task CreateEventGame(CreateScheduleGames model, IPublishedContent tournament)
         {
             foreach (var scheduledGame in model.Games)
@@ -181,6 +247,42 @@ namespace IISHF.Core.Services
             }
 
             return Task.CompletedTask;
+        }
+
+        public async Task UpdateEventGame(CreateScheduleGames model, IPublishedContent tournament)
+        {
+            await Task.Run(async () =>
+            {
+                foreach (var scheduledGame in model.Games)
+                {
+                    var canUpdate = false;
+                    var publishedGame = tournament.Children.FirstOrDefault(x => x.Name == scheduledGame.GameNumber.ToString() && x.ContentType.Alias == "game");
+
+                    var game = _contentService.GetById(publishedGame.Id);
+
+                    var currentHomeTeam = game.GetValue<string>("homeTeam");
+                    var currentAwayTeamTeam = game.GetValue<string>("awayTeam");
+
+                    if (currentHomeTeam != scheduledGame.HomeTeam)
+                    {
+                        game?.SetValue("homeTeam", scheduledGame.HomeTeam);
+                        canUpdate = true;
+                    }
+
+
+                    if (currentAwayTeamTeam != scheduledGame.AwayTeam)
+                    {
+                        game?.SetValue("awayTeam", scheduledGame.AwayTeam);
+                        canUpdate = true;
+                    }
+
+                    if (canUpdate)
+                    {
+                        _contentService.SaveAndPublish(game);
+
+                    }
+                }
+            });
         }
 
         public IContent CreateEventTeam(Team model, IPublishedContent tournament)
@@ -516,7 +618,6 @@ namespace IISHF.Core.Services
             }
 
 
-
             IPublishedContent nma = null;
 
             if (nmaTeam != null)
@@ -694,6 +795,24 @@ namespace IISHF.Core.Services
 
             // Read the file into a byte array
             return System.IO.File.Exists(fullPath) ? System.IO.File.ReadAllBytes(fullPath) : null;
+        }
+
+        private int EnsureFolderExists(string folderName)
+        {
+            // Check if the folder exists
+            var existingFolder = _umbracoMediaService.GetRootMedia().FirstOrDefault(x => x.Name == folderName && x.ContentType.Alias == Constants.Conventions.MediaTypes.Folder);
+
+            if (existingFolder != null)
+            {
+                // Return the existing folder's ID if found
+                return existingFolder.Id;
+            }
+
+            // If the folder does not exist, create it
+            var mediaFolder = _umbracoMediaService.CreateMedia(folderName, Constants.System.Root, Constants.Conventions.MediaTypes.Folder);
+            _umbracoMediaService.Save(mediaFolder);
+
+            return mediaFolder.Id; // Return the new folder's ID
         }
 
     }

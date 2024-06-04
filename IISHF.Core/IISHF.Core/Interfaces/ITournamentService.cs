@@ -1,4 +1,5 @@
 ﻿using IISHF.Core.Models;
+using Microsoft.AspNetCore.Http;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.PublishedContent;
 
@@ -9,6 +10,9 @@ namespace IISHF.Core.Interfaces
         int? CreateEvent(TournamentModel model);
 
         IContent CreateEventTeam(Team model, IPublishedContent tournament);
+
+        Task<IContent>? AddGameSheetToGame(IFormFile file, string name, IPublishedContent game);
+
 
         IPublishedContent? GetTournament(int id);
 
@@ -23,6 +27,8 @@ namespace IISHF.Core.Interfaces
         Task UpdateGameWithResults(UpdateTeamScores model, IPublishedContent tournament);
 
         Task CreateEventGame(CreateScheduleGames model, IPublishedContent tournament);
+
+        Task UpdateEventGame(CreateScheduleGames model, IPublishedContent tournament);
 
         Task UpdateTeamProperties(string propertyValue, string fieldName, IPublishedContent team);
 

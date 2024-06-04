@@ -2,7 +2,7 @@
 {
     public class TournamentBaseModel
     {
-        public int EventId { get; set; }
+        public int EventId { get; set; } = 0;
 
         public bool IsChampionships { get; set; }
 
