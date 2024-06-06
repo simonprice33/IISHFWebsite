@@ -1,0 +1,228 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    Layout = "main.cshtml";
+}
+
+
+<div class="container-fluid mt-2 mb-2">
+    <div class="row">
+        <div class="col-md-6 col-lg-6">
+            <div class="row">
+                <div class="col-12 col-sm-6 col-md-6 col-lg-6 mb-1">
+                    <div class="tab-pane fade shadow rounded bg-white show active" id="v-pills-groupa" role="tabpanel" aria-labelledby="v-pills-info-tab">
+                        <h6 class="text-center">Group A</h6>
+                        <div id="groupARankingsContainer"></div>
+                    </div>
+                
+                </div>
+                <div class="col-12 col-sm-6 col-md-6 col-lg-6 mb-1">
+                    <div class="tab-pane fade shadow rounded bg-white show active" id="v-pills-groupb" role="tabpanel" aria-labelledby="v-pills-info-tab">
+                        <h6 class="text-center">Group B</h6>
+                        <div id="groupBRankingsContainer"></div>
+                    </div>
+                
+                </div>
+                <div class="col-12 col-sm-7 col-md-6 col-lg-6">
+                    <div class="tab-pane fade shadow rounded bg-white show active" id="v-pills-stats" role="tabpanel" aria-labelledby="v-pills-info-tab">
+                        <h6 class="text-center">Player Stats - Top 5</h6>
+                        <div id="playerStats"></div>
+                    </div>
+                
+                </div>
+                <div class="col-12 col-sm-7 col-md-6 col-lg-6">
+                    <div class="tab-pane fade shadow rounded bg-white show active" id="v-pills-stats" role="tabpanel" aria-labelledby="v-pills-info-tab">
+                        <h6 class="text-center">Final Rankings</h6>
+                        <div id="eventPlacements"></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-6">
+            <div class="row">
+                <div class="col-12 col-sm-12 col-md-12 col-lg-12 ">
+                    <div class="tab-pane fade shadow rounded bg-white show active p-2" id="v-pills-schedule" role="tabpanel" aria-labelledby="v-pills-info-tab">
+                        <h6 class="text-center">Schedule</h6>
+                        <div id="scheduleResultsContainer"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+
+<div class="modal fade" id="mobileModal" tabindex="-1" aria-labelledby="mobileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mobileModalLabel">Mobile Device Detected</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h5 class="text-center">This page is not intended for mobile devices. </h5>
+                <h6 class="text-center">You will be redirected to the home page...</h6>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    $(document).ready(function () {
+
+        $("footer").slideUp()
+
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        if (isMobile()) {
+            var myModal = new bootstrap.Modal(document.getElementById('mobileModal'), {
+                keyboard: false
+            });
+            myModal.show();
+            // Redirect to the home page after 5 seconds
+            setTimeout(function () {
+                window.location.href = '/';
+            }, 5000);
+        }
+
+        function fetchEventData() {
+            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2023', titleEvent: 'U13', group: 'A' }, function (data) {
+                var $groupAContainer = $('#groupARankingsContainer');
+                $groupAContainer.html(data);
+
+                // Hide the column with class teamname within the groupA container
+                $groupAContainer.find('th.teamname, td.teamname').hide();
+                $groupAContainer.find('th.rank, td.rank').hide();
+                $groupAContainer.find('.standingheader').hide();
+                $groupAContainer.find('.mb-5').removeClass('mb-5');
+
+                // Reduce image size by 33% within the groupA container
+                $groupAContainer.find('img.img-fluid').each(function () {
+                    var currentHeight = $(this).height();
+                    var currentWidth = $(this).width();
+                    $(this).height(currentHeight * 0.50);
+                    $(this).width(currentWidth * 0.50);
+                });
+            });
+
+            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2023', titleEvent: 'U13', group: 'B' }, function (data) {
+                var $groupBContainer = $('#groupBRankingsContainer');
+                $groupBContainer.html(data);
+
+                // Hide the column with class teamname within the groupB container
+                $groupBContainer.find('th.teamname, td.teamname').hide();
+                $groupBContainer.find('th.rank, td.rank').hide();
+                $groupBContainer.find('.standingheader').hide();
+                $groupBContainer.find('.mb-5').removeClass('mb-5');
+
+                // Reduce image size by 33% within the groupB container
+                $groupBContainer.find('img.img-fluid').each(function () {
+                    var currentHeight = $(this).height();
+                    var currentWidth = $(this).width();
+                    $(this).height(currentHeight * 0.50);
+                    $(this).width(currentWidth * 0.50);
+                });
+            });
+
+            $.get('/umbraco/surface/events/getsheduleandresults', { year: '2023', titleEvent: 'U13', limit: '6', offset: '3' }, function (data) {
+                var scheduleResultsContainer = $('#scheduleResultsContainer');
+                scheduleResultsContainer.html(data);
+                scheduleResultsContainer.find('.title').hide();
+
+            });
+
+            $.get('/umbraco/surface/events/GetPlayerStats', { year: '2023', titleEvent: 'U13', limit: '5' }, function (data) {
+                var playerStats = $('#playerStats');
+                playerStats.html(data);
+                playerStats.find('.mb-5').removeClass('mb-5');
+                playerStats.find('.title').hide();
+                playerStats.find('.playerteam').hide();
+                
+                playerStats.find('th').each(function () {
+                    var th = $(this);
+                    switch (th.text().trim()) {
+                        case 'Goals':
+                            th.text('G');
+                            break;
+                        case 'Assists':
+                            th.text('A');
+                            break;
+                        case 'Games':
+                            th.text('GP');
+                            break;
+                        case 'Penalties':
+                            th.text('PIM');
+                            break;
+                        case 'Total':
+                            th.text('T');
+                            break;
+                        case 'Games Played':
+                            th.text('GP');
+                            break;
+                    }
+                });
+
+            });
+
+            $.get('/umbraco/surface/events/GetPlacements', { year: '2023', titleEvent: 'U13' }, function (data) {
+                var eventPlacements = $('#eventPlacements');
+                eventPlacements.html(data);
+                eventPlacements.find('.mb-3').removeClass('mb-3');
+                eventPlacements.find('.title').hide();
+
+
+                // Size reduction logic for img, h3, and h4 tags within .finalPlacement
+                $('.finalPlacement').each(function () {
+                    var $this = $(this);
+
+                    // Reduce font size for h3 and h4
+                    $this.find('h1, h3, h4').each(function () {
+                        var currentFontSize = parseFloat($(this).css('font-size'));
+                        $(this).css('font-size', (currentFontSize * 0.5) + 'px');
+                    });
+
+                    // Reduce dimensions for img
+                    $this.find('img').each(function () {
+                        var currentHeight = parseFloat($(this).css('height'));
+                        var currentWidth = parseFloat($(this).css('width'));
+
+                        if (!isNaN(currentHeight)) {
+                            $(this).css('height', '40px');
+                        }
+
+                        if (!isNaN(currentWidth)) {
+                            $(this).css('width', '40px');
+                        }
+                    });
+                });
+            });
+
+
+        }
+
+        // Initial fetch
+        fetchEventData();
+
+        // Set interval to fetch data every 2 minutes
+        setInterval(fetchEventData, 60000); // 120000 milliseconds = 2 minutes
+
+        $('a[data-bs-toggle="pill"]').on('shown.bs.tab', function (e) {
+            if ($(window).width() <= 768) { // Check if the screen width is 768px or less
+                var target = $(e.target).attr("href"); // Get the target pane
+                var offset = $(target).offset().top - 75; // Adjust by 75px
+                $('html, body').animate({
+                    scrollTop: offset
+                }, 500); // Scroll to the top of the target pane
+            }
+        });
+    });
+
+</script>

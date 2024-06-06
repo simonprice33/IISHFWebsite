@@ -10,7 +10,7 @@
 <div class="container">
     <div class="row">
         <div class="col-12">
-            <h1 class="text-center mb-5">Standings</h1>
+            <h1 class="text-center mb-5 standingheader">Standings</h1>
             @{
 
                 if (groups.Count() == 0)
@@ -24,8 +24,8 @@
                         <thead>
                             <tr>
                                 <th></th>
-                                <th></th>
-                                <th></th>
+                                <th class="rank"></th>
+                                <th class="teamname"></th>
                                 <th>G</th>
                                 <th>W</th>
                                 <th>L</th>
@@ -46,19 +46,19 @@
                     .ThenByDescending(x => x.Differnce))
                             {
                                 <tr>
-                                    <td class="align-middle">@team.GroupPlacement.ToOrdinal()</td>
+                                    <td class="align-middle rank">@team.GroupPlacement.ToOrdinal()</td>
 
                                     @{
                                         if (string.IsNullOrWhiteSpace(@team.TeamLogoUrl))
                                         {
-                                            <td colspan="2" class="align-middle"><strong>@team.TeamName</strong></td>
+                                            <td colspan="2" class="align-middle teamname"><strong>@team.TeamName</strong></td>
                                         }
                                         else
                                         {
                                             <td>
                                                 <img class="img img-fluid" style="height: 50px; width: 50px" src="@team.TeamLogoUrl" alt="@team.TeamName" />
                                             </td>
-                                            <td class="align-middle"><strong>@team.TeamName</strong></td>
+                                            <td class="align-middle teamname"><strong>@team.TeamName</strong></td>
                                         }
                                     }
 

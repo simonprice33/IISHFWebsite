@@ -2,6 +2,7 @@
 using IISHF.Core.Models;
 using Lucene.Net.Index;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Logging;
@@ -40,7 +41,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
         }
 
         [HttpGet]
-        public IActionResult GetGroupRankings(int year, string titleEvent)
+        public IActionResult GetGroupRankings(int year, string titleEvent, string group = "")
         {
             var teams = GetContent("team");
             var eventTeams = FilterData(year, titleEvent, teams);
@@ -68,6 +69,11 @@ namespace IISHF.Core.Controllers.SurfaceControllers
                 GroupPlacement = placementItem.Value<int>("groupPlacement"),
             }).ToList();
 
+            if (!string.IsNullOrWhiteSpace(group))
+            {
+                teamPlacements = teamPlacements.Where(x => string.Equals(x.Group, group, StringComparison.CurrentCultureIgnoreCase)).ToList();
+            }
+
             var model = new GroupRankingsViewModel
             {
                 Rankings = teamPlacements
@@ -77,7 +83,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
         }
 
         [HttpGet]
-        public IActionResult GetSheduleAndResults(int year, string titleEvent)
+        public IActionResult GetSheduleAndResults(int year, string titleEvent, int limit, int offset)
         {
             var teams = GetContent("game");
             var schedule = FilterData(year, titleEvent, teams);
@@ -121,12 +127,61 @@ namespace IISHF.Core.Controllers.SurfaceControllers
                         AwayTeamLogoUrl = awayLogo,
                         GameSheetUrl = gameSheet
                     });
+
+
+
                 }
                 catch (Exception)
                 {
                     Console.WriteLine($"Game {game.Name} has data issues");
                 }
             }
+
+            if (limit > 0)
+            {
+                var gamesWithScoreTake = Math.Ceiling((double)limit / (double)2);
+                var gamesWithoutScoreTake = Math.Floor((double)limit / (double)2);
+
+                var gamesWithScores = model.ScheduleAndResults
+                    .Where(g => !string.IsNullOrEmpty(g.HomeScore) && !string.IsNullOrEmpty(g.AwayScore))
+                    .OrderByDescending(x => x.GameNumber)
+                    .ToList();
+
+                var gamesWithoutScores = model.ScheduleAndResults
+                    .Where(g => string.IsNullOrEmpty(g.HomeScore) || string.IsNullOrEmpty(g.AwayScore))
+                    .ToList();
+
+                if (gamesWithScores.Count < gamesWithScoreTake && gamesWithoutScores.Count > gamesWithoutScoreTake)
+                {
+                    var withScoreTakeCount = gamesWithScores.Count;
+                    var withoutScoreTakeCount = gamesWithoutScores.Count;
+                    var requiredTotal = limit - withScoreTakeCount;
+
+                    gamesWithScores = gamesWithScores.Take(withScoreTakeCount).OrderBy(x => x.GameNumber).ToList();
+                    gamesWithoutScores = gamesWithoutScores.Take(requiredTotal).OrderBy(x => x.GameNumber).ToList();
+                }
+
+                if (gamesWithScores.Count >= gamesWithScoreTake && gamesWithoutScores.Count > gamesWithoutScoreTake)
+                {
+                    gamesWithScores = gamesWithScores.Take((int)gamesWithScoreTake).OrderBy(x => x.GameNumber).ToList();
+                    gamesWithoutScores = gamesWithoutScores.Take((int)gamesWithoutScoreTake).OrderBy(x => x.GameNumber).ToList();
+                }
+
+                if (gamesWithScores.Count >= gamesWithScoreTake && gamesWithoutScores.Count <= gamesWithoutScoreTake)
+                {
+                    var withScoreTakeCount = gamesWithScores.Count;
+                    var withoutScoreTakeCount = gamesWithoutScores.Count;
+                    var requiredTotal = limit - withoutScoreTakeCount;
+
+                    gamesWithScores = gamesWithScores.Take(requiredTotal).OrderBy(x => x.GameNumber).ToList();
+                    gamesWithoutScores = gamesWithoutScores.Take(withoutScoreTakeCount).OrderBy(x => x.GameNumber).ToList();
+                }
+
+
+                var result = gamesWithScores.Concat(gamesWithoutScores);
+                model.ScheduleAndResults = result.OrderBy(x => x.GameNumber).ToList();
+            }
+
 
             return PartialView("~/Views/Partials/Events/SchedulAndResults.cshtml", model);
         }
@@ -162,7 +217,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
         }
 
         [HttpGet]
-        public IActionResult GetPlayerStats(int year, string titleEvent)
+        public IActionResult GetPlayerStats(int year, string titleEvent, int limit)
         {
             var content = GetContent("team");
             var teams = FilterData(year, titleEvent, content);
@@ -189,9 +244,19 @@ namespace IISHF.Core.Controllers.SurfaceControllers
                         TeamLogoUrl = player.Parent.Value<IPublishedContent>("image")?.Url() ?? string.Empty,
                     })
                     .Where(x => x.GamesPlayed > 0)
+                    .OrderByDescending(x => x.Total)
+                    .ThenByDescending(x => x.Goals)
+                    .ThenByDescending(x => x.Assists)
+                    .ThenByDescending(x => x.GamesPlayed)
+                    .ThenByDescending(x => x.Penalties)
+                    .ThenByDescending(x => x.TeamName)
                     .ToList()
             };
 
+            if (limit > 0)
+            {
+                model.PlayerStatistics = model.PlayerStatistics.Take(limit).ToList();
+            }
 
             return PartialView("~/Views/Partials/Events/PlayerStatistics.cshtml", model);
         }

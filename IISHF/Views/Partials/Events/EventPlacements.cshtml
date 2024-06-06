@@ -5,7 +5,7 @@
 <div class="container">
     <div class="row">
         <div class="col-12">
-            <h1 class="text-center mb-5">Placements</h1>
+            <h1 class="text-center mb-5 title">Placements</h1>
 
             @{
                 if (Model.TeamPlacements.All(x => x.Placement == 0))
@@ -20,7 +20,7 @@
                 {
                     string boxClass = PlacementHelper.GetPlacementClass(result.Placement);
 
-                    <div class="container mb-3">
+                    <div class="container mb-3 finalPlacement">
                         <div class="row" style="margin: 5px;">
                             <div class="col-12 @boxClass">
                                 <div class="d-flex align-items-center justify-content-start row">

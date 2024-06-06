@@ -69,9 +69,15 @@ footer {
     width: 750px; /* Adjust this value based on your requirements */
 }
 
+#navbarDropdownMenuLink-1172 + .dropdown-menu {
+    width: 275px; /* Adjust this value based on your requirements */
+}
+
 #navbarDropdownMenuLink-2283 + .dropdown-menu {
     width: 350px; /* Adjust this value based on your requirements */
 }
+
+
 
 @media (max-width: 767px) {
     .h2-mobile {
