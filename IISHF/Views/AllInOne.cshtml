@@ -94,7 +94,7 @@
         }
 
         function fetchEventData() {
-            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2023', titleEvent: 'U13', group: 'A' }, function (data) {
+            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2024', titleEvent: 'U13', group: 'A' }, function (data) {
                 var $groupAContainer = $('#groupARankingsContainer');
                 $groupAContainer.html(data);
 
@@ -113,7 +113,7 @@
                 });
             });
 
-            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2023', titleEvent: 'U13', group: 'B' }, function (data) {
+            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2024', titleEvent: 'U13', group: 'B' }, function (data) {
                 var $groupBContainer = $('#groupBRankingsContainer');
                 $groupBContainer.html(data);
 
@@ -132,14 +132,14 @@
                 });
             });
 
-            $.get('/umbraco/surface/events/getsheduleandresults', { year: '2023', titleEvent: 'U13', limit: '6', offset: '3' }, function (data) {
+            $.get('/umbraco/surface/events/getsheduleandresults', { year: '2024', titleEvent: 'U13', limit: '6', offset: '3' }, function (data) {
                 var scheduleResultsContainer = $('#scheduleResultsContainer');
                 scheduleResultsContainer.html(data);
                 scheduleResultsContainer.find('.title').hide();
 
             });
 
-            $.get('/umbraco/surface/events/GetPlayerStats', { year: '2023', titleEvent: 'U13', limit: '5' }, function (data) {
+            $.get('/umbraco/surface/events/GetPlayerStats', { year: '2024', titleEvent: 'U13', limit: '5' }, function (data) {
                 var playerStats = $('#playerStats');
                 playerStats.html(data);
                 playerStats.find('.mb-5').removeClass('mb-5');
@@ -172,7 +172,7 @@
 
             });
 
-            $.get('/umbraco/surface/events/GetPlacements', { year: '2023', titleEvent: 'U13' }, function (data) {
+            $.get('/umbraco/surface/events/GetPlacements', { year: '2024', titleEvent: 'U13' }, function (data) {
                 var eventPlacements = $('#eventPlacements');
                 eventPlacements.html(data);
                 eventPlacements.find('.mb-3').removeClass('mb-3');
