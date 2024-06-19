@@ -31,7 +31,7 @@
                             }
                             else
                             {
-                                if (!string.IsNullOrWhiteSpace(game.Group))
+                                if (!string.IsNullOrWhiteSpace(game.Group.Trim()))
                                 {
                                     <div class="badge bg-secondary text-white text-center">Group : @game.Group - @game.GameDateTime.ToString("f")</div>
                                 }

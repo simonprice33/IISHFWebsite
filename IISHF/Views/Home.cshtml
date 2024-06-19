@@ -40,6 +40,7 @@
             e.Value<DateTime>("EventEndDate").Date >= today);
 
     List<IPublishedContent> liveFeed = null;
+    List<IPublishedContent> games = null;
     if (currentEvent != null)
     {
         liveFeed = currentEvent.Children()
@@ -47,6 +48,13 @@
             .Where(c => c.ContentType.Alias == "liveFeeds")
             .Where(c => c.Value<DateTime>("LiveFeedDateTime").Date == today)  // Filter by LiveFeedDateTime date
             .OrderByDescending(c => c.Value<DateTime>("LiveFeedDateTime"))
+            .ToList();
+
+        games = currentEvent.Children()
+            .OfType<IPublishedContent>()  // Ensure it's published content
+            .Where(c => c.ContentType.Alias == "game")
+            //Where(c => c.Value<DateTime>("LiveFeedDateTime").Date == today)  // Filter by LiveFeedDateTime date
+            .OrderByDescending(c => c.Value<DateTime>("ScheduleDateTime"))
             .ToList();
 
         if (liveFeed != null)
@@ -57,6 +65,71 @@
 
     var video = allEvents;
 }
+
+@* <section class="hone-event-section"> 
+    @{
+        if (games != null)
+        {
+            foreach (var game in games.OrderBy(x => x.Value<int>("gameNumber")))
+            {
+                var homeTeamContent = currentEvent.Children().Where(x => x.ContentType.Alias == "team").FirstOrDefault(x => x.Name == game.Value<string>("homeTeam"));
+
+                var awayTeamContent = currentEvent.Children().Where(x => x.ContentType.Alias == "team").FirstOrDefault(x => x.Name == game.Value<string>("awayTeam"));
+
+                var homeLogo = homeTeamContent?.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
+                var awayLogo = awayTeamContent?.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
+
+                var gameDate = game.Value<DateTime>("scheduleDateTime");
+                var formattedDateTime = gameDate.ToString("dd.MM.yyyy HH:mm");
+                var remarks = !string.IsNullOrWhiteSpace(game.Value<string>("group").Trim())
+                ? $"Group {game.Value<string>("group").Trim()}"
+                    : game.Value<string>("remarks").Trim();
+
+                var homeScore = game.Value<string>("homeScore");
+                var awayScore = game.Value<string>("awayScore");
+
+
+                if (homeTeamContent != null || awayTeamContent != null)
+                {
+                    <div class="row">
+                        <div class="card" style="width: 14rem;">
+                            <div class="card-body">
+                                <div>
+                                    <h6 class="card-title text-center">@formattedDateTime</h6>
+                                    <h6 class="card-title text-center">@remarks</h6>
+                                </div>
+                                <div class="container">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            @{
+                                                if (homeTeamContent != null)
+                                                {
+                                                    <img src="@homeLogo" alt="" style="height: 45px; width: 45px" />
+                                                }
+                                            }
+                                        </div>
+                                        <div class="col-6">@homeScore</div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            @{
+                                                if (awayTeamContent != null)
+                                                {
+                                                    <img src="@awayLogo" alt="" style="height: 45px; width: 45px"/>                                                    
+                                                }
+                                            }
+                                        </div>
+                                        <div class="col-6">@awayScore</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        }
+    }
+</section> *@
 
 <section class="home-header-section">
     <div class="container custom-container">
@@ -71,6 +144,71 @@
         </div>
     </div>
 </section>
+
+<section class="hone-event-section">
+    @{
+        if (games != null)
+        {
+            foreach (var game in games.OrderBy(x => x.Value<int>("gameNumber")))
+            {
+                var homeTeamContent = currentEvent.Children().Where(x => x.ContentType.Alias == "team").FirstOrDefault(x => x.Name == game.Value<string>("homeTeam"));
+
+                var awayTeamContent = currentEvent.Children().Where(x => x.ContentType.Alias == "team").FirstOrDefault(x => x.Name == game.Value<string>("awayTeam"));
+
+                var homeLogo = homeTeamContent?.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
+                var awayLogo = awayTeamContent?.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
+
+                var gameDate = game.Value<DateTime>("scheduleDateTime");
+                var formattedDateTime = gameDate.ToString("dd.MM.yyyy HH:mm");
+                var remarks = !string.IsNullOrWhiteSpace(game.Value<string>("group").Trim())
+                ? $"Group {game.Value<string>("group").Trim()}"
+                : game.Value<string>("remarks").Trim();
+
+                var homeScore = game.Value<string>("homeScore");
+                var awayScore = game.Value<string>("awayScore");
+
+                if (homeTeamContent != null || awayTeamContent != null)
+                {
+                    <div class="card">
+                        <div class="card-body">
+                            <div>
+                                <h6 class="card-title text-center">@formattedDateTime</h6>
+                                <h6 class="card-title text-center">@remarks</h6>
+                            </div>
+                            <div class="container">
+                                <div class="row">
+                                    <div class="col-6">
+                                        @{
+                                            if (homeTeamContent != null)
+                                            {
+                                                <img src="@homeLogo" alt="" style="height: 45px; width: 45px" />
+                                            }
+                                        }
+                                    </div>
+                                    <div class="col-6">@homeScore</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-6">
+                                        @{
+                                            if (awayTeamContent != null)
+                                            {
+                                                <img src="@awayLogo" alt="" style="height: 45px; width: 45px" />
+                                            }
+                                        }
+                                    </div>
+                                    <div class="col-6">@awayScore</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        }
+    }
+</section>
+
+
+
 
 @{
     if (currentEvent != null && liveFeed != null)
@@ -205,5 +343,39 @@
         updateVisibleFeeds(); // Initial update on page load
 
         setInterval(updateVisibleFeeds, 60000); // Update visibility every minute
+
+        const section = $('.hone-event-section');
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        section.mousedown(function (e) {
+            isDown = true;
+            section.addClass('active');
+            startX = e.pageX - section.offset().left;
+            scrollLeft = section.scrollLeft();
+            section.css('cursor', 'grabbing');
+        });
+
+        section.mouseleave(function () {
+            isDown = false;
+            section.removeClass('active');
+            section.css('cursor', 'grab');
+        });
+
+        section.mouseup(function () {
+            isDown = false;
+            section.removeClass('active');
+            section.css('cursor', 'grab');
+        });
+
+        section.mousemove(function (e) {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - section.offset().left;
+            const walk = (x - startX) * 3; // Adjust the scroll speed
+            section.scrollLeft(scrollLeft - walk);
+        });
+
     });
 </script>

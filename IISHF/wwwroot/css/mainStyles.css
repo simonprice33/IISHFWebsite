@@ -125,3 +125,21 @@ footer {
 .dropdown-item {
     white-space: normal !important;
 }
+
+.hone-event-section {
+    display: flex;
+    overflow-x: auto;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+    cursor: grab;  /* Indicate draggable area */
+}
+
+.hone-event-section::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+}
+
+.hone-event-section .card {
+    flex: 0 0 auto;
+    width: 14rem;
+    margin-right: 10px;  /* Adjust spacing between cards as needed */
+}
