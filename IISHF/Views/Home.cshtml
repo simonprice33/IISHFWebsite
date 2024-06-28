@@ -53,7 +53,6 @@
         games = currentEvent.Children()
             .OfType<IPublishedContent>()  // Ensure it's published content
             .Where(c => c.ContentType.Alias == "game")
-            //Where(c => c.Value<DateTime>("LiveFeedDateTime").Date == today)  // Filter by LiveFeedDateTime date
             .OrderByDescending(c => c.Value<DateTime>("ScheduleDateTime"))
             .ToList();
 
@@ -65,71 +64,6 @@
 
     var video = allEvents;
 }
-
-@* <section class="hone-event-section"> 
-    @{
-        if (games != null)
-        {
-            foreach (var game in games.OrderBy(x => x.Value<int>("gameNumber")))
-            {
-                var homeTeamContent = currentEvent.Children().Where(x => x.ContentType.Alias == "team").FirstOrDefault(x => x.Name == game.Value<string>("homeTeam"));
-
-                var awayTeamContent = currentEvent.Children().Where(x => x.ContentType.Alias == "team").FirstOrDefault(x => x.Name == game.Value<string>("awayTeam"));
-
-                var homeLogo = homeTeamContent?.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
-                var awayLogo = awayTeamContent?.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
-
-                var gameDate = game.Value<DateTime>("scheduleDateTime");
-                var formattedDateTime = gameDate.ToString("dd.MM.yyyy HH:mm");
-                var remarks = !string.IsNullOrWhiteSpace(game.Value<string>("group").Trim())
-                ? $"Group {game.Value<string>("group").Trim()}"
-                    : game.Value<string>("remarks").Trim();
-
-                var homeScore = game.Value<string>("homeScore");
-                var awayScore = game.Value<string>("awayScore");
-
-
-                if (homeTeamContent != null || awayTeamContent != null)
-                {
-                    <div class="row">
-                        <div class="card" style="width: 14rem;">
-                            <div class="card-body">
-                                <div>
-                                    <h6 class="card-title text-center">@formattedDateTime</h6>
-                                    <h6 class="card-title text-center">@remarks</h6>
-                                </div>
-                                <div class="container">
-                                    <div class="row">
-                                        <div class="col-6">
-                                            @{
-                                                if (homeTeamContent != null)
-                                                {
-                                                    <img src="@homeLogo" alt="" style="height: 45px; width: 45px" />
-                                                }
-                                            }
-                                        </div>
-                                        <div class="col-6">@homeScore</div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-6">
-                                            @{
-                                                if (awayTeamContent != null)
-                                                {
-                                                    <img src="@awayLogo" alt="" style="height: 45px; width: 45px"/>                                                    
-                                                }
-                                            }
-                                        </div>
-                                        <div class="col-6">@awayScore</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-            }
-        }
-    }
-</section> *@
 
 <section class="home-header-section">
     <div class="container custom-container">
@@ -145,7 +79,7 @@
     </div>
 </section>
 
-<section class="hone-event-section">
+<section class="home-event-section" style="display: none">
     @{
         if (games != null)
         {
@@ -206,9 +140,6 @@
         }
     }
 </section>
-
-
-
 
 @{
     if (currentEvent != null && liveFeed != null)
@@ -305,6 +236,13 @@
 
 <script>
     $(document).ready(function () {
+
+        // ToDo
+        // Move both video video feeds and home event section into their own 
+        // respective views show when fully rendered. 
+
+        // At a glance scores view needs to be pulled every minute as per events
+        // and all in one page. 
         function parseFeedTime(feedTimeStr) {
             // Directly parse the feed time string into a Date object
             let date = new Date(feedTimeStr);
@@ -344,7 +282,7 @@
 
         setInterval(updateVisibleFeeds, 60000); // Update visibility every minute
 
-        const section = $('.hone-event-section');
+        const section = $('.home-event-section');
         let isDown = false;
         let startX;
         let scrollLeft;

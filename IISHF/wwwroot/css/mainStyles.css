@@ -126,7 +126,7 @@ footer {
     white-space: normal !important;
 }
 
-.hone-event-section {
+.home-event-section {
     display: flex;
     overflow-x: auto;
     -ms-overflow-style: none;  /* IE and Edge */
@@ -134,11 +134,11 @@ footer {
     cursor: grab;  /* Indicate draggable area */
 }
 
-.hone-event-section::-webkit-scrollbar {
+.home-event-section::-webkit-scrollbar {
     display: none;  /* Chrome, Safari and Opera */
 }
 
-.hone-event-section .card {
+.home-event-section .card {
     flex: 0 0 auto;
     width: 14rem;
     margin-right: 10px;  /* Adjust spacing between cards as needed */

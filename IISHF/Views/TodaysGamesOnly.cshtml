@@ -1,0 +1,92 @@
+﻿@using Umbraco.Cms.Web.Common.PublishedModels;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    Layout = "main.cshtml";
+}
+
+
+<div class="container-fluid mt-2 mb-2" style="font-weight: 600 !important">
+    <div class="row">
+       
+        <div class="col-md-12 col-lg-12">
+            <div class="row">
+                <div class="col-12 col-sm-12 col-md-12 col-lg-12 ">
+                    <div class="tab-pane fade shadow rounded bg-white show active p-2" id="v-pills-schedule" role="tabpanel" aria-labelledby="v-pills-info-tab">
+                        <h6 class="text-center">Schedule</h6>
+                        <div id="scheduleResultsContainer"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="mobileModal" tabindex="-1" aria-labelledby="mobileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mobileModalLabel">Mobile Device Detected</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h5 class="text-center">This page is not intended for mobile devices. </h5>
+                <h6 class="text-center">You will be redirected to the home page...</h6>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    $(document).ready(function () {
+
+        $("footer").slideUp()
+
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        if (isMobile()) {
+            var myModal = new bootstrap.Modal(document.getElementById('mobileModal'), {
+                keyboard: false
+            });
+            myModal.show();
+            // Redirect to the home page after 5 seconds
+            setTimeout(function () {
+                window.location.href = '/';
+            }, 5000);
+        }
+
+        function fetchEventData() {
+            
+
+            $.get('/umbraco/surface/events/getsheduleandresults', { year: '2024', titleEvent: 'MENEC', todayOnly: true }, function (data) {
+                var scheduleResultsContainer = $('#scheduleResultsContainer');
+                scheduleResultsContainer.html(data);
+                scheduleResultsContainer.find('.title').hide();
+                scheduleResultsContainer.find('.mb-3').removeClass('mb-3');
+            });
+        }
+
+        // Initial fetch
+        fetchEventData();
+
+        // Set interval to fetch data every 2 minutes
+        setInterval(fetchEventData, 60000); // 120000 milliseconds = 2 minutes
+
+        $('a[data-bs-toggle="pill"]').on('shown.bs.tab', function (e) {
+            if ($(window).width() <= 768) { // Check if the screen width is 768px or less
+                var target = $(e.target).attr("href"); // Get the target pane
+                var offset = $(target).offset().top - 75; // Adjust by 75px
+                $('html, body').animate({
+                    scrollTop: offset
+                }, 500); // Scroll to the top of the target pane
+            }
+        });
+    });
+
+</script>

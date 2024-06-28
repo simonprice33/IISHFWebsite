@@ -22,18 +22,18 @@
                             {
                                     if (!string.IsNullOrWhiteSpace(game.Group))
                                     {
-                                        <div class="badge bg-secondary text-white text-center">Group : @game.Group - @game.GameDateTime.ToString("f") <br /> <a href="@game.GameSheetUrl" class="text-white" target="_blank">View Game Sheet </a></div>
+                                        <div class="badge bg-secondary text-white text-center">Game @game.GameNumber - Group : @game.Group - @game.GameDateTime.ToString("f") <br /> <a href="@game.GameSheetUrl" class="text-white" target="_blank">View Game Sheet </a></div>
                                     }
                                     else
                                     {
-                                        <div class="text-center badge bg-secondary text-white">@game.Remarks <br /> @game.GameDateTime.ToString("f") <br /> <a href="@game.GameSheetUrl" class="text-white" target="_blank">View Game Sheet </a></div>
+                                    <div class="text-center badge bg-secondary text-white">Game @game.GameNumber -@game.Remarks <br /> @game.GameDateTime.ToString("f") <br /> <a href="@game.GameSheetUrl" class="text-white" target="_blank">View Game Sheet </a></div>
                                     }
                             }
                             else
                             {
                                 if (!string.IsNullOrWhiteSpace(game.Group.Trim()))
                                 {
-                                    <div class="badge bg-secondary text-white text-center">Group : @game.Group - @game.GameDateTime.ToString("f")</div>
+                                    <div class="badge bg-secondary text-white text-center">Game @game.GameNumber - Group : @game.Group - @game.GameDateTime.ToString("f")</div>
                                 }
                                 else
                                 {
@@ -124,6 +124,28 @@
         // Adjust text size for all team name texts
         $('.team-name-text').each(function () {
             adjustTextSize($(this));
+        });
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@5.0.12/dist/browser/signalr.min.js"></script>
+<script>
+    $(document).ready(function () {
+        var connection = new signalR.HubConnectionBuilder()
+            .withUrl("/dataHub") // Ensure this matches your SignalR hub endpoint
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+        connection.start().then(function () {
+            console.log("SignalR connected");
+        }).catch(function (err) {
+            return console.error(err.toString());
+        });
+
+        connection.on("UpdateScores", function (gameNumber, homeScore, awayScore) {
+            // Update scores for the specified game number
+            $("#homeScore_" + gameNumber).text(homeScore);
+            $("#awayScore_" + gameNumber).text(awayScore);
         });
     });
 </script>

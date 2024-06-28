@@ -1,4 +1,5 @@
 using IISHF.Core.Configurations;
+using IISHF.Core.Hubs;
 using IISHF.Core.Interfaces;
 using IISHF.Core.Services;
 using IISHF.Core.Settings;
@@ -78,6 +79,8 @@ namespace IISHF
                 .AddComposers()
                 .Build();
 
+            services.AddSignalRCore();
+
             services.AddMvc()
            .AddViewOptions(options =>
            {
@@ -111,7 +114,19 @@ namespace IISHF
                     u.UseInstallerEndpoints();
                     u.UseBackOfficeEndpoints();
                     u.UseWebsiteEndpoints();
+                    // Map SignalR hubs
                 });
+
+            //// For SignalR
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller=Home}/{action=Index}/{id?}");
+
+                // Map SignalR hub endpoint
+                endpoints.MapHub<DataHub>("/dataHub");
+            });
         }
     }
 }

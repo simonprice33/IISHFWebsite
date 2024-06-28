@@ -83,7 +83,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
         }
 
         [HttpGet]
-        public IActionResult GetSheduleAndResults(int year, string titleEvent, int limit, int offset)
+        public IActionResult GetSheduleAndResults(int year, string titleEvent, int limit, int offset, bool todayOnly = false)
         {
             var teams = GetContent("game");
             var schedule = FilterData(year, titleEvent, teams);
@@ -179,10 +179,15 @@ namespace IISHF.Core.Controllers.SurfaceControllers
 
 
                 var result = gamesWithScores.Concat(gamesWithoutScores);
+
+
                 model.ScheduleAndResults = result.OrderBy(x => x.GameNumber).ToList();
             }
 
-
+            if (todayOnly)
+            {
+                model.ScheduleAndResults = model.ScheduleAndResults.ToList().Where(x => x.GameDateTime.Date == DateTime.Today.Date).ToList();
+            }
             return PartialView("~/Views/Partials/Events/SchedulAndResults.cshtml", model);
         }
 

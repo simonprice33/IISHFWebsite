@@ -5,7 +5,7 @@
 }
 
 
-<div class="container-fluid mt-2 mb-2">
+<div class="container-fluid mt-2 mb-2" style="font-weight: 600 !important">
     <div class="row">
         <div class="col-md-6 col-lg-6">
             <div class="row">
@@ -30,7 +30,7 @@
                     </div>
                 
                 </div>
-                <div class="col-12 col-sm-7 col-md-6 col-lg-6">
+                <div class="col-12 col-sm-7 col-md-6 col-lg-6" style="font-weight: 600 !important">
                     <div class="tab-pane fade shadow rounded bg-white show active" id="v-pills-stats" role="tabpanel" aria-labelledby="v-pills-info-tab">
                         <h6 class="text-center">Final Rankings</h6>
                         <div id="eventPlacements"></div>
@@ -94,7 +94,7 @@
         }
 
         function fetchEventData() {
-            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2024', titleEvent: 'U13', group: 'A' }, function (data) {
+            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2024', titleEvent: 'MENEC', group: 'A' }, function (data) {
                 var $groupAContainer = $('#groupARankingsContainer');
                 $groupAContainer.html(data);
 
@@ -113,7 +113,7 @@
                 });
             });
 
-            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2024', titleEvent: 'U13', group: 'B' }, function (data) {
+            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2024', titleEvent: 'MENEC', group: 'B' }, function (data) {
                 var $groupBContainer = $('#groupBRankingsContainer');
                 $groupBContainer.html(data);
 
@@ -132,14 +132,14 @@
                 });
             });
 
-            $.get('/umbraco/surface/events/getsheduleandresults', { year: '2024', titleEvent: 'U13', limit: '6', offset: '3' }, function (data) {
+            $.get('/umbraco/surface/events/getsheduleandresults', { year: '2024', titleEvent: 'MENEC', limit: '6', offset: '3' }, function (data) {
                 var scheduleResultsContainer = $('#scheduleResultsContainer');
                 scheduleResultsContainer.html(data);
                 scheduleResultsContainer.find('.title').hide();
 
             });
 
-            $.get('/umbraco/surface/events/GetPlayerStats', { year: '2024', titleEvent: 'U13', limit: '5' }, function (data) {
+            $.get('/umbraco/surface/events/GetPlayerStats', { year: '2024', titleEvent: 'MENEC', limit: '5' }, function (data) {
                 var playerStats = $('#playerStats');
                 playerStats.html(data);
                 playerStats.find('.mb-5').removeClass('mb-5');
@@ -172,7 +172,7 @@
 
             });
 
-            $.get('/umbraco/surface/events/GetPlacements', { year: '2024', titleEvent: 'U13' }, function (data) {
+            $.get('/umbraco/surface/events/GetPlacements', { year: '2024', titleEvent: 'MENEC' }, function (data) {
                 var eventPlacements = $('#eventPlacements');
                 eventPlacements.html(data);
                 eventPlacements.find('.mb-3').removeClass('mb-3');
