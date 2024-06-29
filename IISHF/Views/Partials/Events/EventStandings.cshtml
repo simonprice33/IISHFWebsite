@@ -147,3 +147,28 @@
         $(document).trigger("enhance.tablesaw");
     });
 </script>
+
+
+<script>
+    $(document).ready(function () {
+        var connection = new signalR.HubConnectionBuilder()
+            .withUrl("/dataHub") // Ensure this matches your SignalR hub endpoint
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+        connection.start().then(function () {
+            console.log("SignalR connected");
+        }).catch(function (err) {
+            return console.error(err.toString());
+        });
+
+        connection.on("UpdatePlayerStats", function (year, shortCode, group) {
+
+            //Triggers a GET of the schedule and results again,
+            //ToDo GET teams and logo url sent back instead
+            $.get('/umbraco/surface/events/GetGroupRankings', { year: year, titleEvent: shortCode }, function (data) {
+                $('#groupRankingsContainer').html(data);
+            });
+        });
+    });
+</script>

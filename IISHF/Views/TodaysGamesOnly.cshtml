@@ -76,7 +76,7 @@
         fetchEventData();
 
         // Set interval to fetch data every 2 minutes
-        setInterval(fetchEventData, 60000); // 120000 milliseconds = 2 minutes
+        //setInterval(fetchEventData, 60000); // 120000 milliseconds = 2 minutes
 
         $('a[data-bs-toggle="pill"]').on('shown.bs.tab', function (e) {
             if ($(window).width() <= 768) { // Check if the screen width is 768px or less
@@ -89,4 +89,37 @@
         });
     });
 
+</script>
+
+<script>
+    $(document).ready(function () {
+        var connection = new signalR.HubConnectionBuilder()
+            .withUrl("/dataHub") // Ensure this matches your SignalR hub endpoint
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+        connection.start().then(function () {
+            console.log("SignalR connected");
+        }).catch(function (err) {
+            return console.error(err.toString());
+        });
+
+        connection.on("UpdateScores", function (gameNumber, homeScore, awayScore) {
+            // Update scores for the specified game number
+            $("#homeScore_" + gameNumber).text(homeScore);
+            $("#awayScore_" + gameNumber).text(awayScore);
+
+            console.log("Updating scores")
+        }); 
+        
+        connection.on("UpdateGamesWithTeams", function (year, shortCode) {
+
+            //Triggers a GET of the schedule and results again, 
+            //ToDo GET teams and logo url sent back instead
+            debugger
+            $.get('/umbraco/surface/events/getsheduleandresults', { year:  year , titleEvent: shortCode  }, function (data) {
+                $('#scheduleResultsContainer').html(data);
+            });
+        });
+    });
 </script>

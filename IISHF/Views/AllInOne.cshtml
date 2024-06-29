@@ -93,26 +93,8 @@
             }, 5000);
         }
 
-        function fetchEventData() {
-            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2024', titleEvent: 'MENEC', group: 'A' }, function (data) {
-                var $groupAContainer = $('#groupARankingsContainer');
-                $groupAContainer.html(data);
 
-                // Hide the column with class teamname within the groupA container
-                $groupAContainer.find('th.teamname, td.teamname').hide();
-                $groupAContainer.find('th.rank, td.rank').hide();
-                $groupAContainer.find('.standingheader').hide();
-                $groupAContainer.find('.mb-5').removeClass('mb-5');
-
-                // Reduce image size by 33% within the groupA container
-                $groupAContainer.find('img.img-fluid').each(function () {
-                    var currentHeight = $(this).height();
-                    var currentWidth = $(this).width();
-                    $(this).height(currentHeight * 0.50);
-                    $(this).width(currentWidth * 0.50);
-                });
-            });
-
+        function GetGroupBRankings() {
             $.get('/umbraco/surface/events/GetGroupRankings', { year: '2024', titleEvent: 'MENEC', group: 'B' }, function (data) {
                 var $groupBContainer = $('#groupBRankingsContainer');
                 $groupBContainer.html(data);
@@ -131,21 +113,47 @@
                     $(this).width(currentWidth * 0.50);
                 });
             });
+        }
 
+        function GetGroupARankings() {
+            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2024', titleEvent: 'MENEC', group: 'A' }, function (data) {
+                var $groupAContainer = $('#groupARankingsContainer');
+                $groupAContainer.html(data);
+
+                // Hide the column with class teamname within the groupA container
+                $groupAContainer.find('th.teamname, td.teamname').hide();
+                $groupAContainer.find('th.rank, td.rank').hide();
+                $groupAContainer.find('.standingheader').hide();
+                $groupAContainer.find('.mb-5').removeClass('mb-5');
+
+                // Reduce image size by 33% within the groupA container
+                $groupAContainer.find('img.img-fluid').each(function () {
+                    var currentHeight = $(this).height();
+                    var currentWidth = $(this).width();
+                    $(this).height(currentHeight * 0.50);
+                    $(this).width(currentWidth * 0.50);
+                });
+            });
+        
+        }
+
+        function GetScheduleAndResults() {
             $.get('/umbraco/surface/events/getsheduleandresults', { year: '2024', titleEvent: 'MENEC', limit: '6', offset: '3' }, function (data) {
                 var scheduleResultsContainer = $('#scheduleResultsContainer');
                 scheduleResultsContainer.html(data);
                 scheduleResultsContainer.find('.title').hide();
 
             });
+        }
 
+        function GetPlayerStats() {
             $.get('/umbraco/surface/events/GetPlayerStats', { year: '2024', titleEvent: 'MENEC', limit: '5' }, function (data) {
                 var playerStats = $('#playerStats');
                 playerStats.html(data);
                 playerStats.find('.mb-5').removeClass('mb-5');
                 playerStats.find('.title').hide();
                 playerStats.find('.playerteam').hide();
-                
+
                 playerStats.find('th').each(function () {
                     var th = $(this);
                     switch (th.text().trim()) {
@@ -171,7 +179,9 @@
                 });
 
             });
+        }
 
+        function GetPlacements() {
             $.get('/umbraco/surface/events/GetPlacements', { year: '2024', titleEvent: 'MENEC' }, function (data) {
                 var eventPlacements = $('#eventPlacements');
                 eventPlacements.html(data);
@@ -204,15 +214,22 @@
                     });
                 });
             });
+        }
 
+        function fetchEventData() {
 
+            GetGroupARankings();
+            GetGroupBRankings();
+            GetScheduleAndResults();
+            GetPlayerStats()
+            GetPlacements()
         }
 
         // Initial fetch
         fetchEventData();
 
         // Set interval to fetch data every 2 minutes
-        setInterval(fetchEventData, 60000); // 120000 milliseconds = 2 minutes
+        //setInterval(fetchEventData, 60000); // 120000 milliseconds = 2 minutes
 
         $('a[data-bs-toggle="pill"]').on('shown.bs.tab', function (e) {
             if ($(window).width() <= 768) { // Check if the screen width is 768px or less
@@ -223,6 +240,38 @@
                 }, 500); // Scroll to the top of the target pane
             }
         });
-    });
 
+        var connection = new signalR.HubConnectionBuilder()
+            .withUrl("/dataHub") // Ensure this matches your SignalR hub endpoint
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+        connection.start().then(function () {
+            console.log("SignalR connected");
+        }).catch(function (err) {
+            return console.error(err.toString());
+        });
+
+        connection.on("UpdateScores", function (gameNumber, homeScore, awayScore) {
+            // Update scores for the specified game number
+            $("#homeScore_" + gameNumber).text(homeScore);
+            $("#awayScore_" + gameNumber).text(awayScore);
+
+            console.log("Updating scores")
+        }); 
+        
+        connection.on("UpdateGamesWithTeams", function (year, shortCode) {
+            GetScheduleAndResults();
+        });
+
+        connection.on("UpdateGroupRanking", function (year, shortCode) {
+
+                GetGroupARankings()
+                GetGroupBRankings()
+        });
+
+        connection.on("UpdateFinalPlacement", function (year, shortCode) {
+            GetPlacements()
+        });
+    });
 </script>

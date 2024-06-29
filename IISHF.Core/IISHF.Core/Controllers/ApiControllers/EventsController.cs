@@ -18,7 +18,10 @@ using Microsoft.AspNetCore.Mvc;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using IISHF.Core.Models.ServiceBusMessage;
 using Lucene.Net.Index;
+using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Umbraco.Extensions;
+using Microsoft.AspNetCore.SignalR;
+using IISHF.Core.Hubs;
 
 namespace IISHF.Core.Controllers.ApiControllers
 {
@@ -39,6 +42,7 @@ namespace IISHF.Core.Controllers.ApiControllers
         private readonly IEmailService _emailService;
         private readonly INMAService _nmaService;
         private readonly ILogger<EventsController> _logger;
+        private readonly IHubContext<DataHub> _hubContext;
         private readonly JsonSerializerOptions _options;
 
         public EventsController(
@@ -54,7 +58,8 @@ namespace IISHF.Core.Controllers.ApiControllers
             IHttpContextAccessor httpContextAccessor,
             IEmailService emailService,
             INMAService nmaService,
-            ILogger<EventsController> logger)
+            ILogger<EventsController> logger,
+            IHubContext<DataHub> hubContext)
         {
             _contentQuery = contentQuery;
             _contentService = contentService;
@@ -69,6 +74,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             _emailService = emailService;
             _nmaService = nmaService;
             _logger = logger;
+            _hubContext = hubContext;
 
             _options = new JsonSerializerOptions
             {
@@ -133,6 +139,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             }
 
             await _eventResultsService.UpdatePlayerStatistics(model, tournament);
+            await _hubContext.Clients.All.SendAsync("UpdatePlayerStats", model.EventYear, model.TitleEvent);
 
             return NoContent();
         }
@@ -152,6 +159,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             }
 
             _eventResultsService.UpdateGroupRanking(model, tournament);
+            await _hubContext.Clients.All.SendAsync("UpdateGroupRanking", model.EventYear, model.TitleEvent);
 
             return NoContent();
         }
@@ -171,6 +179,8 @@ namespace IISHF.Core.Controllers.ApiControllers
             }
 
             _eventResultsService.UpdateFinalPlacement(model, tournament);
+            await _hubContext.Clients.All.SendAsync("UpdateFinalPlacement", model.EventYear, model.TitleEvent);
+
 
             return NoContent();
         }
@@ -191,6 +201,10 @@ namespace IISHF.Core.Controllers.ApiControllers
             try
             {
                 await _tournamentService.UpdateGameWithResults(model, tournament);
+                foreach (var score in model.Scores)
+                {
+                    await _hubContext.Clients.All.SendAsync("UpdateScores", score.GameNumber, score.HomeScore, score.AwayScore);
+                }
             }
             catch (NullReferenceException nEx)
             {
@@ -221,6 +235,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             try
             {
                 await _tournamentService.UpdateEventGame(model, tournament);
+                await _hubContext.Clients.All.SendAsync("UpdateGamesWithTeams", model.EventYear, model.TitleEvent);
             }
             catch (NullReferenceException nEx)
             {

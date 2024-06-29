@@ -48,20 +48,34 @@
                     <div class="col team home-team text-center">
                         <div class="col-sm-2 col-lg-2 text-start">
                             <img class="img img-fluid" style="height: 45px; width: 45px" src="@game.HomeTeamLogoUrl" alt="@game.HomeTeam" />
-                            <div class="col-sm-12 team-name-text text-center">@game.HomeTeam</div>
+                            <div class="col-sm-12 team-name-text text-center">
+                                <span id="homeTeam_a_@game.GameNumber">@game.HomeTeam</span>
+                            </div>
                         </div>
-                        <div id="homeTeamName" class="col-sm-9 col-md-6 col-lg-6 text-center">@game.HomeTeam</div>
-                        <div class="col-sm-1 col-md-4 score-center">@game.HomeScore</div>
+                        <div id="homeTeamName" class="col-sm-9 col-md-6 col-lg-6 text-center">
+                            <span id="homeTeam_@game.GameNumber">@game.HomeTeam</span>
+
+                        </div>
+                        <div class="col-sm-1 col-md-4 score-center">
+                            <span id="homeScore_@game.GameNumber">@game.HomeScore</span>
+                        </div>
                     </div>
                     <div class="col-auto team trapezoid">
                         vs.
                     </div>
                     <div class="col team away-team text-center">
-                        <div class="col-sm-1 col-md-4 col-lg-4 score-center">@game.AwayScore</div>
-                        <div id="awayTeamName" class="col-sm-9 col-md-6 col-lg-6 text-center">@game.AwayTeam</div>
+                        <div class="col-sm-1 col-md-4 col-lg-4 score-center">
+                            <span id="awayScore_@game.GameNumber">@game.AwayScore</span>
+                        </div>
+                        <div id="awayTeamName" class="col-sm-9 col-md-6 col-lg-6 text-center">
+                            <span id="awayTeam_@game.GameNumber">@game.AwayTeam</span>
+
+                        </div>
                         <div class="col-sm-2 col-lg-2 text-end">
                             <img class="img img-fluid" style="height: 45px; width: 45px" src="@game.AwayTeamLogoUrl" alt="@game.AwayTeam" />
-                            <div class="team-name-text col-sm-12 text-center">@game.AwayTeam</div>
+                            <div class="team-name-text col-sm-12 text-center">
+                                <span id="awayTeam_a_@game.GameNumber">@game.AwayTeam</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -128,7 +142,7 @@
     });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@5.0.12/dist/browser/signalr.min.js"></script>
+
 <script>
     $(document).ready(function () {
         var connection = new signalR.HubConnectionBuilder()
@@ -146,6 +160,18 @@
             // Update scores for the specified game number
             $("#homeScore_" + gameNumber).text(homeScore);
             $("#awayScore_" + gameNumber).text(awayScore);
+
+            console.log("Updating scores")
+        }); 
+        
+        connection.on("UpdateGamesWithTeams", function (year, shortCode) {
+
+            //Triggers a GET of the schedule and results again, 
+            //ToDo GET teams and logo url sent back instead
+            debugger
+            $.get('/umbraco/surface/events/getsheduleandresults', { year:  year , titleEvent: shortCode  }, function (data) {
+                $('#scheduleResultsContainer').html(data);
+            });
         });
     });
 </script>
