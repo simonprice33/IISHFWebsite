@@ -22,6 +22,10 @@ using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Umbraco.Extensions;
 using Microsoft.AspNetCore.SignalR;
 using IISHF.Core.Hubs;
+using DocumentFormat.OpenXml.Bibliography;
+using DocumentFormat.OpenXml.Drawing;
+using DocumentFormat.OpenXml.Math;
+using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 
 namespace IISHF.Core.Controllers.ApiControllers
 {
@@ -231,11 +235,19 @@ namespace IISHF.Core.Controllers.ApiControllers
             {
                 return NotFound("Tournament not found");
             }
-
             try
             {
                 await _tournamentService.UpdateEventGame(model, tournament);
-                await _hubContext.Clients.All.SendAsync("UpdateGamesWithTeams", model.EventYear, model.TitleEvent);
+
+                var outModel = await _tournamentService.GetScheduleAndResults(model.EventYear, model.TitleEvent, 0, 0, false);
+
+                var gameNumbers = model.Games.Select(x => x.GameNumber).ToList();
+
+                outModel.ScheduleAndResults = outModel.ScheduleAndResults
+                    .Where(x => gameNumbers.Contains(x.GameNumber))
+                    .ToList();
+
+                await _hubContext.Clients.All.SendAsync("UpdateSelectedGamesWithTeams", outModel);
             }
             catch (NullReferenceException nEx)
             {
@@ -300,6 +312,8 @@ namespace IISHF.Core.Controllers.ApiControllers
             }
 
             await _tournamentService.AddGameSheetToGame(model.GamesSheet, model.GameNumber.ToString(), game);
+            await _hubContext.Clients.All.SendAsync("UpdateGamesWithTeams", model.EventYear, model.TitleEvent);
+
 
             return NoContent();
         }

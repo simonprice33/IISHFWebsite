@@ -22,6 +22,10 @@ namespace IISHF.Core.Hubs
             // Broadcast the updated scores to all clients
             await Clients.All.SendAsync("UpdateGamesWithTeams", year, shortCode);
         }
+        public async Task UpdateSelectedGamesWithTeams(ScheduleAndResultsViewModel scheduledGames)
+        {
+            await Clients.All.SendAsync("UpdateSelectedGamesWithTeams", scheduledGames);
+        }
 
         public async Task UpdatePlayerStats(int year, int shortCode)
         {

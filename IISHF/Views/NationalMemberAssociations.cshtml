@@ -1,12 +1,24 @@
 ﻿@using Umbraco.Cms.Web.Common.PublishedModels;
 @inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.NationalMemberAssociations>
 @using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@using Umbraco.Cms.Core.Services
+
+@inject IMediaService MediaService;
+
 @{
     Layout = "Main.cshtml";
     var id = Model.Id;
     var nationalMemberAssociations = Umbraco.Content(id).Children();
     var heroImageObj = Model.HeroImage;
     var heroImage = heroImageObj != null ? heroImageObj.Url() : "";
+
+    nationalMemberAssociations = nationalMemberAssociations.OrderByDescending(x => x.Value<bool>("nmaIsActive")).ThenBy(x => x.Name).ToList();
+    var images = MediaService.GetRootMedia().FirstOrDefault(x => x.Name == "General");
+    var suspeneded = MediaService.GetPagedChildren(images.Id, 0, int.MaxValue, out var totalChildren).FirstOrDefault(x => x.Name == "Suspended");
+    var suspendedImage = Umbraco.Media(suspeneded.Id);
+    var b = true;
+    
+
 }
 
 <div class="jumbotron jumbotron-fluid hero hero-large" style="background-image: url('@heroImage')">
@@ -31,11 +43,17 @@
                         <!-- Adjust this for your desired column width -->
                         <div class="card">
                             @{
+                                var hidden = !child.Value<bool>("nmaIsActive") ? "hidden" : "";
+                                var relaventStoryUrl = string.Empty;
+                                if (child.Value<IPublishedContent>("relaventCommunicationLetter") != null)
+                                {
+                                    relaventStoryUrl = child.Value<IPublishedContent>("relaventCommunicationLetter").Url();
+                                }
                                 var alt = $"{@child.Name} - Logo";
                                 if (child.Children.Any(x => x.ContentType.Alias == "nMAContactsAndTeams"))
                                 {
                                     var path = $"{child.UrlSegment}/nma-contact-and-teams/";
-                                    
+
                                     <a href="@path"><img src="@child.GetProperty("image").GetValue()" class="card-img-top p-2" alt="@alt"></a>
                                 }
                                 else
@@ -44,9 +62,17 @@
                                 }
                             }
                             <div class="card-body">
+                               
                                 <h5 class="text-center">@child.Value("title")</h5>
                                 <h6 class="text-center">@child.Value("country") - (@child.Value("iso3"))</h6>
+                                @if (!child.Value<bool>("nmaIsActive"))
+                                {
+                                    <a href="@relaventStoryUrl">
+                                        <img src="@suspendedImage.Url()" class="img img-fluid mb-3"/>
+                                    </a>
+                                }
                                 <div class="col-12 text-center">
+
                                     @if (@child.Value("web") != null && !string.IsNullOrWhiteSpace(@child.Value("web").ToString()))
                                     {
                                         var link = child.Value<Umbraco.Cms.Core.Models.Link>("web");
@@ -99,14 +125,14 @@
 
                                     }
                                     @{if (child.Children.Any(x => x.ContentType.Alias == "nMAContactsAndTeams"))
-                                        {
-                                            var path = $"{child.UrlSegment}/nma-contact-and-teams/";
-                                            <a href="@path" style="text-decoration: none;">
-                                                <i class="fa-duotone fa-solid fa-hockey-sticks text-black fa-lg m-2"></i>
-                                            </a>
-                                        }
+                                      {
+                                          var path = $"{child.UrlSegment}/nma-contact-and-teams/";
+                                          <a href="@path" style="text-decoration: none;">
+                                              <i class="fa-duotone fa-solid fa-hockey-sticks text-black fa-lg m-2"></i>
+                                          </a>
+                                      }
                                     }
-                                    
+
                                 </div>
                             </div>
                         </div>

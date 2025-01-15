@@ -1,0 +1,63 @@
+﻿@using IISHF.Core.Controllers
+@using MailKit.Search
+@model IISHF.Core.Models.PlayerStatisticsViewModel
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-5 title">Player Statistics</h1>
+            @{
+
+
+                <table class="table table-condensed table-striped table-hover mb-5 tablesaw" data-tablesaw-mode="stack">
+                    <thead>
+                        <tr>
+                            <th class="text-center">Team</th>
+                            <th class="text-center">Player Name</th>
+                            <th class="text-center">G</th>
+                            <th class="text-center">A</th>
+                            <th class="text-center">T</th>
+                            <th class="text-center">PIM</th>
+                            <th class="text-center">GP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var team in Model.PlayerStatistics
+                    .OrderByDescending(x => x.Total)
+                    .ThenByDescending(x => x.Goals)
+                    .ThenByDescending(x => x.Assists)
+                    .ThenByDescending(x => x.GamesPlayed)
+                    .ThenByDescending(x => x.Penalties)
+                    .ThenByDescending(x => x.TeamName))
+                        {
+                            <tr>
+                                <td>
+                                    <img class="img img-fluid" style="height: 40px; width:40px" src="@team.TeamLogoUrl" alt="@team.TeamName" />
+                                </td>
+                                <td class="align-middle ">@team.PlayerName</td>
+                                <td class="align-middle text-center">@team.Goals</td>
+                                <td class="align-middle text-center">@team.Assists</td>
+                                <td class="align-middle text-center">@team.Total</td>
+                                <td class="align-middle text-center">@team.Penalties</td>
+                                <td class="align-middle text-center">@team.GamesPlayed</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        // Initialize Tablesaw
+        $(document).trigger("enhance.tablesaw");
+
+        if (@Model.PlayerStatistics.Count === 0) {
+            $("#v-pills-player-stats-tab").hide()
+        }
+    });
+</script>
+
+

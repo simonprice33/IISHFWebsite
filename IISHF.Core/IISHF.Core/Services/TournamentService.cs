@@ -196,7 +196,7 @@ namespace IISHF.Core.Services
                 // This will print the value between the square brackets
                 name = match.Groups[1].Value;
             }
-            
+
             var mediaItem = await CreateMediaAsync(file, $"{game.Parent.Parent.Name}-{game.Parent.Name}");
             var document = _contentService.GetById(game.Id);
 
@@ -230,8 +230,6 @@ namespace IISHF.Core.Services
             }
         }
 
-
-        
         public Task CreateEventGame(CreateScheduleGames model, IPublishedContent tournament)
         {
             foreach (var scheduledGame in model.Games)
@@ -813,6 +811,134 @@ namespace IISHF.Core.Services
             _umbracoMediaService.Save(mediaFolder);
 
             return mediaFolder.Id; // Return the new folder's ID
+        }
+
+        public async Task<ScheduleAndResultsViewModel> GetScheduleAndResults(int year, string titleEvent, int limit, int offset, bool todayOnly = false)
+        {
+            var teams = GetContent("game");
+            var schedule = FilterData(year, titleEvent, teams);
+
+            var model = new ScheduleAndResultsViewModel();
+            foreach (var game in schedule)
+            {
+
+                try
+                {
+                    var homeTeam =
+                        game.Parent.Children.FirstOrDefault(x => x.Name == game.Value<string>("homeTeam")) ?? game.Parent.Children.FirstOrDefault(x => x.Name.Trim().Contains(game.Value<string>("homeTeam").Trim()));
+
+                    var awayTeam =
+                        game.Parent.Children.FirstOrDefault(x => x.Name == game.Value<string>("awayTeam")) ?? game.Parent.Children.FirstOrDefault(x => x.Name.Trim().Contains(game.Value<string>("awayTeam").Trim()));
+
+                    var homeLogo = homeTeam?.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
+                    var awayLogo = awayTeam?.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
+                    var gameSheet = game?.Value<IPublishedContent>("gameSheet")?.Url() ?? string.Empty;
+
+                    var gameDateTime = game.Value<DateTime>("scheduleDateTime");
+
+                    var remarks = game.Value<string>("remarks").Split("(").FirstOrDefault();
+
+                    if (!string.IsNullOrWhiteSpace(gameSheet))
+                    {
+                        gameSheet = $"https://events.iishf.com{gameSheet}";
+                    }
+
+                    model.ScheduleAndResults.Add(new ScheduleAndResults()
+                    {
+                        HomeTeam = game.Value<string>("homeTeam"),
+                        AwayTeam = game.Value<string>("awayTeam"),
+                        HomeScore = game.Value<string>("homeScore"),
+                        AwayScore = game.Value<string>("awayScore"),
+                        GameNumber = game.Value<int>("gameNumber"),
+                        GameDateTime = gameDateTime,
+                        Group = game.Value<string>("group"),
+                        Remarks = remarks,
+                        HomeTeamLogoUrl = homeLogo,
+                        AwayTeamLogoUrl = awayLogo,
+                        GameSheetUrl = gameSheet
+                    });
+
+
+
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine($"Game {game.Name} has data issues");
+                }
+            }
+
+            if (limit > 0)
+            {
+                var gamesWithScoreTake = Math.Ceiling((double)limit / (double)2);
+                var gamesWithoutScoreTake = Math.Floor((double)limit / (double)2);
+
+                var gamesWithScores = model.ScheduleAndResults
+                    .Where(g => !string.IsNullOrEmpty(g.HomeScore) && !string.IsNullOrEmpty(g.AwayScore))
+                    .OrderByDescending(x => x.GameNumber)
+                    .ToList();
+
+                var gamesWithoutScores = model.ScheduleAndResults
+                    .Where(g => string.IsNullOrEmpty(g.HomeScore) || string.IsNullOrEmpty(g.AwayScore))
+                    .ToList();
+
+                if (gamesWithScores.Count < gamesWithScoreTake && gamesWithoutScores.Count > gamesWithoutScoreTake)
+                {
+                    var withScoreTakeCount = gamesWithScores.Count;
+                    var withoutScoreTakeCount = gamesWithoutScores.Count;
+                    var requiredTotal = limit - withScoreTakeCount;
+
+                    gamesWithScores = gamesWithScores.Take(withScoreTakeCount).OrderBy(x => x.GameNumber).ToList();
+                    gamesWithoutScores = gamesWithoutScores.Take(requiredTotal).OrderBy(x => x.GameNumber).ToList();
+                }
+
+                if (gamesWithScores.Count >= gamesWithScoreTake && gamesWithoutScores.Count > gamesWithoutScoreTake)
+                {
+                    gamesWithScores = gamesWithScores.Take((int)gamesWithScoreTake).OrderBy(x => x.GameNumber).ToList();
+                    gamesWithoutScores = gamesWithoutScores.Take((int)gamesWithoutScoreTake).OrderBy(x => x.GameNumber).ToList();
+                }
+
+                if (gamesWithScores.Count >= gamesWithScoreTake && gamesWithoutScores.Count <= gamesWithoutScoreTake)
+                {
+                    var withScoreTakeCount = gamesWithScores.Count;
+                    var withoutScoreTakeCount = gamesWithoutScores.Count;
+                    var requiredTotal = limit - withoutScoreTakeCount;
+
+                    gamesWithScores = gamesWithScores.Take(requiredTotal).OrderBy(x => x.GameNumber).ToList();
+                    gamesWithoutScores = gamesWithoutScores.Take(withoutScoreTakeCount).OrderBy(x => x.GameNumber).ToList();
+                }
+
+
+                var result = gamesWithScores.Concat(gamesWithoutScores);
+
+
+                model.ScheduleAndResults = result.OrderBy(x => x.GameNumber).ToList();
+            }
+
+            if (todayOnly)
+            {
+                model.ScheduleAndResults = model.ScheduleAndResults.ToList().Where(x => x.GameDateTime.Date == DateTime.Today.Date).ToList();
+            }
+
+            return model;
+        }
+
+        private static List<IPublishedContent> FilterData(int year, string titleEvent, List<IPublishedContent> rootContent)
+        {
+            var eventTeams = rootContent.Where(x =>
+                    x.Parent != null &&
+                    x.Parent.Name == year.ToString() &&
+                    x.Parent.Parent != null &&
+                    x.Parent.Parent.Value<string>("EventShotCode") == titleEvent)
+                .ToList();
+            return eventTeams;
+        }
+
+        private List<IPublishedContent> GetContent(string type)
+        {
+            var teams = _contentQuery.ContentAtRoot()
+                .DescendantsOrSelfOfType(type)
+                .ToList();
+            return teams;
         }
 
     }

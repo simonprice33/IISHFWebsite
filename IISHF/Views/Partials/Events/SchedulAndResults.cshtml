@@ -47,7 +47,7 @@
                     
                     <div class="col team home-team text-center">
                         <div class="col-sm-2 col-lg-2 text-start">
-                            <img class="img img-fluid" style="height: 45px; width: 45px" src="@game.HomeTeamLogoUrl" alt="@game.HomeTeam" />
+                            <img id="homeTeamImg_@game.GameNumber" class="img img-fluid" style="height: 45px; width: 45px" src="@game.HomeTeamLogoUrl" alt="@game.HomeTeam" />
                             <div class="col-sm-12 team-name-text text-center">
                                 <span id="homeTeam_a_@game.GameNumber">@game.HomeTeam</span>
                             </div>
@@ -72,7 +72,7 @@
 
                         </div>
                         <div class="col-sm-2 col-lg-2 text-end">
-                            <img class="img img-fluid" style="height: 45px; width: 45px" src="@game.AwayTeamLogoUrl" alt="@game.AwayTeam" />
+                            <img id="awayTeamImg_@game.GameNumber" class="img img-fluid" style="height: 45px; width: 45px" src="@game.AwayTeamLogoUrl" alt="@game.AwayTeam" />
                             <div class="team-name-text col-sm-12 text-center">
                                 <span id="awayTeam_a_@game.GameNumber">@game.AwayTeam</span>
                             </div>
@@ -145,9 +145,11 @@
 
 <script>
     $(document).ready(function () {
+
         var connection = new signalR.HubConnectionBuilder()
             .withUrl("/dataHub") // Ensure this matches your SignalR hub endpoint
             .configureLogging(signalR.LogLevel.Information)
+            .withAutomaticReconnect([0, 2000, 10000, 30000, 60000, 120000, 300000, 600000, 1800000, 3600000, 7200000]) // Retry intervals up to 2 hours
             .build();
 
         connection.start().then(function () {
@@ -156,22 +158,83 @@
             return console.error(err.toString());
         });
 
-        connection.on("UpdateScores", function (gameNumber, homeScore, awayScore) {
+        connection.onreconnecting(function (error) {
+            console.assert(connection.state === signalR.HubConnectionState.Reconnecting);
+            console.log("Connection lost due to error. Reconnecting...", error);
+        });
+
+        connection.onreconnected(function (connectionId) {
+            console.assert(connection.state === signalR.HubConnectionState.Connected);
+            console.log("Connection reestablished. Connected with connectionId: " + connectionId);
+        });
+
+        connection.onclose(function (error) {
+            console.assert(connection.state === signalR.HubConnectionState.Disconnected);
+            console.log("Connection closed due to error. Try refreshing this page to restart the connection.", error);
+        });
+
+        connection.on("UpdateSelectedGamesWithTeams", function (scheduledGames) {
+            console.log(scheduledGames);
+            if (scheduledGames && scheduledGames.scheduleAndResults) {
+                scheduledGames.scheduleAndResults.forEach(function (game) {
+                    console.log(game);
+                    updateTeamAndLogo(game);
+                });
+            } else {
+                console.error("ScheduledGames does not contain scheduleAndResults");
+            }
+        });
+
+
+               connection.on("UpdateScores", function (gameNumber, homeScore, awayScore) {
             // Update scores for the specified game number
             $("#homeScore_" + gameNumber).text(homeScore);
             $("#awayScore_" + gameNumber).text(awayScore);
 
             console.log("Updating scores")
         }); 
-        
-        connection.on("UpdateGamesWithTeams", function (year, shortCode) {
 
-            //Triggers a GET of the schedule and results again, 
-            //ToDo GET teams and logo url sent back instead
-            debugger
-            $.get('/umbraco/surface/events/getsheduleandresults', { year:  year , titleEvent: shortCode  }, function (data) {
-                $('#scheduleResultsContainer').html(data);
-            });
-        });
+        function updateTeamAndLogo(game) {
+            // Update team names and logos based on game number
+            $("#homeTeam_" + game.gameNumber).text(game.homeTeam);
+            $("#homeTeam_a_" + game.gameNumber).text(game.homeTeam);
+            $("#awayTeam_" + game.gameNumber).text(game.awayTeam);
+            $("#awayTeam_a_" + game.gameNumber).text(game.awayTeam);
+
+
+            // Update team logos
+            var homeTeamImg = $("#homeTeamImg_" + game.gameNumber);
+            var awayTeamImg = $("#awayTeamImg_" + game.gameNumber);
+
+            homeTeamImg.attr("src", game.homeTeamLogoUrl).attr("alt", game.homeTeam);
+            awayTeamImg.attr("src", game.awayTeamLogoUrl).attr("alt", game.awayTeam);
+
+            // Remove display: none if present
+            if (homeTeamImg.is(":hidden")) {
+                homeTeamImg.show();
+            }
+            if (awayTeamImg.is(":hidden")) {
+                awayTeamImg.show();
+            }
+
+            // Update team logos
+            var $homeTeamImg = $("#homeTeamImg_" + game.gameNumber);
+            if ($homeTeamImg.length > 0) {
+                $homeTeamImg.attr("src", game.homeTeamLogoUrl).attr("alt", game.homeTeam);
+            } else {
+                // Optionally handle the case where the image element does not exist
+                console.warn("Home team image element not found for game number " + game.gameNumber);
+            }
+
+            var $awayTeamImg = $("#awayTeamImg_" + game.gameNumber);
+            if ($awayTeamImg.length > 0) {
+                $awayTeamImg.attr("src", game.awayTeamLogoUrl).attr("alt", game.awayTeam);
+            } else {
+                // Optionally handle the case where the image element does not exist
+                console.warn("Away team image element not found for game number " + game.gameNumber);
+            }
+        }
     });
+
+
 </script>

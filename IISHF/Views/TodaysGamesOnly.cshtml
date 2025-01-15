@@ -96,6 +96,7 @@
         var connection = new signalR.HubConnectionBuilder()
             .withUrl("/dataHub") // Ensure this matches your SignalR hub endpoint
             .configureLogging(signalR.LogLevel.Information)
+            .withAutomaticReconnect([0, 2000, 10000, 30000, 60000, 120000, 300000, 600000, 1800000, 3600000, 7200000]) // Retry intervals up to 2 hours
             .build();
 
         connection.start().then(function () {
@@ -103,6 +104,22 @@
         }).catch(function (err) {
             return console.error(err.toString());
         });
+
+        connection.onreconnecting(function (error) {
+            console.assert(connection.state === signalR.HubConnectionState.Reconnecting);
+            console.log("Connection lost due to error. Reconnecting...", error);
+        });
+
+        connection.onreconnected(function (connectionId) {
+            console.assert(connection.state === signalR.HubConnectionState.Connected);
+            console.log("Connection reestablished. Connected with connectionId: " + connectionId);
+        });
+
+        connection.onclose(function (error) {
+            console.assert(connection.state === signalR.HubConnectionState.Disconnected);
+            console.log("Connection closed due to error. Try refreshing this page to restart the connection.", error);
+        });
+
 
         connection.on("UpdateScores", function (gameNumber, homeScore, awayScore) {
             // Update scores for the specified game number

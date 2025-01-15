@@ -63,5 +63,7 @@ namespace IISHF.Core.Interfaces
         byte[] GenerateItcAsPdfFile(byte[] itcBytes);
 
         Task<byte[]> GenerateItcAsExcelFile(IPublishedContent team, IPublishedContent tournament);
+
+        Task<ScheduleAndResultsViewModel> GetScheduleAndResults(int year, string titleEvent, int limit, int offset, bool todayOnly = false);
     }
 }

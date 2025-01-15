@@ -5,8 +5,6 @@
 <div class="container">
     <div class="row">
         <div class="col-12">
-            <h1 class="text-center mb-5 title">Placements</h1>
-
             @{
                 if (Model.TeamPlacements.All(x => x.Placement == 0))
                 {
@@ -20,15 +18,15 @@
                 {
                     string boxClass = PlacementHelper.GetPlacementClass(result.Placement);
 
-                    <div class="container mb-3 finalPlacement">
+                    <div class="container finalPlacement">
                         <div class="row" style="margin: 5px;">
                             <div class="col-12 @boxClass">
                                 <div class="d-flex align-items-center justify-content-start row">
                                     <div class="col-12 col-sm-6 col-md-2 col-lg-2">
-                                        <h1>@result.Placement.ToOrdinal()</h1>
+                                        <h6>@result.Placement.ToOrdinal()</h6>
                                     </div>
                                     <div class="col-12 col-sm-6 col-md-6 col-lg-6">
-                                        <h3>@result.TeamName</h3>
+                                        <h6>@result.TeamName</h6>
                                     </div>
 
                                     <div class="col-12 col-sm-6 col-md-2 col-lg-2">
@@ -36,13 +34,13 @@
                                             if (!string.IsNullOrWhiteSpace(@result.TeamLogoUrl))
                                             {
 
-                                                <img class="img img-fluid" style="height: 75px; width: 75px" src="@result.TeamLogoUrl" alt="@result.TeamName" />
+                                                <img class="img img-fluid" style="height: 40px; width: 40px" src="@result.TeamLogoUrl" alt="@result.TeamName" />
                                             }
                                         }
                                     </div>
 
                                     <div class="col-12 col-sm-6 col-md-2 col-lg-2">
-                                        <h3>@result.Iso3</h3>
+                                        <h6>@result.Iso3</h6>
                                     </div>
                                 </div>
                             </div>
@@ -90,7 +88,7 @@
 
             //Triggers a GET of the schedule and results again,
             //ToDo GET teams and logo url sent back instead
-            $.get('/umbraco/surface/events/GetPlacements', { year: year, titleEvent: shortCode }, function (data) {
+            $.get('/umbraco/surface/events/GetPlacementsThin', { year: year, titleEvent: shortCode }, function (data) {
                 $('#eventPlacements').html(data);
             });
         });

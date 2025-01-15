@@ -83,111 +83,9 @@ namespace IISHF.Core.Controllers.SurfaceControllers
         }
 
         [HttpGet]
-        public IActionResult GetSheduleAndResults(int year, string titleEvent, int limit, int offset, bool todayOnly = false)
+        public async Task<IActionResult> GetSheduleAndResults(int year, string titleEvent, int limit, int offset, bool todayOnly = false)
         {
-            var teams = GetContent("game");
-            var schedule = FilterData(year, titleEvent, teams);
-
-            var model = new ScheduleAndResultsViewModel();
-            foreach (var game in schedule)
-            {
-
-                try
-                {
-                    var homeTeam =
-                        game.Parent.Children.FirstOrDefault(x => x.Name == game.Value<string>("homeTeam")) ?? game.Parent.Children.FirstOrDefault(x => x.Name.Trim().Contains(game.Value<string>("homeTeam").Trim()));
-
-                    var awayTeam =
-                        game.Parent.Children.FirstOrDefault(x => x.Name == game.Value<string>("awayTeam")) ?? game.Parent.Children.FirstOrDefault(x => x.Name.Trim().Contains(game.Value<string>("awayTeam").Trim()));
-
-                    var homeLogo = homeTeam?.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
-                    var awayLogo = awayTeam?.Value<IPublishedContent>("image")?.Url() ?? string.Empty;
-                    var gameSheet = game?.Value<IPublishedContent>("gameSheet")?.Url() ?? string.Empty;
-
-                    var gameDateTime = game.Value<DateTime>("scheduleDateTime");
-
-                    var remarks = game.Value<string>("remarks").Split("(").FirstOrDefault();
-
-                    if (!string.IsNullOrWhiteSpace(gameSheet))
-                    {
-                        gameSheet = $"https://events.iishf.com{gameSheet}";
-                    }
-
-                    model.ScheduleAndResults.Add(new ScheduleAndResults()
-                    {
-                        HomeTeam = game.Value<string>("homeTeam"),
-                        AwayTeam = game.Value<string>("awayTeam"),
-                        HomeScore = game.Value<string>("homeScore"),
-                        AwayScore = game.Value<string>("awayScore"),
-                        GameNumber = game.Value<int>("gameNumber"),
-                        GameDateTime = gameDateTime,
-                        Group = game.Value<string>("group"),
-                        Remarks = remarks,
-                        HomeTeamLogoUrl = homeLogo,
-                        AwayTeamLogoUrl = awayLogo,
-                        GameSheetUrl = gameSheet
-                    });
-
-
-
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine($"Game {game.Name} has data issues");
-                }
-            }
-
-            if (limit > 0)
-            {
-                var gamesWithScoreTake = Math.Ceiling((double)limit / (double)2);
-                var gamesWithoutScoreTake = Math.Floor((double)limit / (double)2);
-
-                var gamesWithScores = model.ScheduleAndResults
-                    .Where(g => !string.IsNullOrEmpty(g.HomeScore) && !string.IsNullOrEmpty(g.AwayScore))
-                    .OrderByDescending(x => x.GameNumber)
-                    .ToList();
-
-                var gamesWithoutScores = model.ScheduleAndResults
-                    .Where(g => string.IsNullOrEmpty(g.HomeScore) || string.IsNullOrEmpty(g.AwayScore))
-                    .ToList();
-
-                if (gamesWithScores.Count < gamesWithScoreTake && gamesWithoutScores.Count > gamesWithoutScoreTake)
-                {
-                    var withScoreTakeCount = gamesWithScores.Count;
-                    var withoutScoreTakeCount = gamesWithoutScores.Count;
-                    var requiredTotal = limit - withScoreTakeCount;
-
-                    gamesWithScores = gamesWithScores.Take(withScoreTakeCount).OrderBy(x => x.GameNumber).ToList();
-                    gamesWithoutScores = gamesWithoutScores.Take(requiredTotal).OrderBy(x => x.GameNumber).ToList();
-                }
-
-                if (gamesWithScores.Count >= gamesWithScoreTake && gamesWithoutScores.Count > gamesWithoutScoreTake)
-                {
-                    gamesWithScores = gamesWithScores.Take((int)gamesWithScoreTake).OrderBy(x => x.GameNumber).ToList();
-                    gamesWithoutScores = gamesWithoutScores.Take((int)gamesWithoutScoreTake).OrderBy(x => x.GameNumber).ToList();
-                }
-
-                if (gamesWithScores.Count >= gamesWithScoreTake && gamesWithoutScores.Count <= gamesWithoutScoreTake)
-                {
-                    var withScoreTakeCount = gamesWithScores.Count;
-                    var withoutScoreTakeCount = gamesWithoutScores.Count;
-                    var requiredTotal = limit - withoutScoreTakeCount;
-
-                    gamesWithScores = gamesWithScores.Take(requiredTotal).OrderBy(x => x.GameNumber).ToList();
-                    gamesWithoutScores = gamesWithoutScores.Take(withoutScoreTakeCount).OrderBy(x => x.GameNumber).ToList();
-                }
-
-
-                var result = gamesWithScores.Concat(gamesWithoutScores);
-
-
-                model.ScheduleAndResults = result.OrderBy(x => x.GameNumber).ToList();
-            }
-
-            if (todayOnly)
-            {
-                model.ScheduleAndResults = model.ScheduleAndResults.ToList().Where(x => x.GameDateTime.Date == DateTime.Today.Date).ToList();
-            }
+            var model = await _tournamentService.GetScheduleAndResults(year, titleEvent, limit, offset, todayOnly);
             return PartialView("~/Views/Partials/Events/SchedulAndResults.cshtml", model);
         }
 
@@ -222,14 +120,101 @@ namespace IISHF.Core.Controllers.SurfaceControllers
         }
 
         [HttpGet]
+        public IActionResult GetPlacementsThin(int year, string titleEvent)
+        {
+            var teams = GetContent("team");
+            var eventTeams = FilterData(year, titleEvent, teams);
+
+            if (!eventTeams.Any())
+            {
+                // Handle not found situation
+                return PartialView("~/Views/Partials/Events/EventPlacementsThin.cshtml", new FinalPlacementsViewModel());
+            }
+
+            var teamPlacements = eventTeams.Select(placementItem => new TeamPlacement
+            {
+                Placement = placementItem.Value<int>("FinalRanking"),
+                Iso3 = placementItem.Value<string>("countryIso3"),
+                TeamName = placementItem.Value<string>("eventTeam"),
+                TeamLogoUrl = placementItem.Value<IPublishedContent>("image")?.Url() ?? string.Empty,
+                EventYear = year,
+                TitleEvent = titleEvent
+            }).ToList();
+
+            var model = new FinalPlacementsViewModel
+            {
+                TeamPlacements = teamPlacements
+            };
+
+            return PartialView("~/Views/Partials/Events/EventPlacementsThin.cshtml", model);
+        }
+
+
+        [HttpGet]
         public IActionResult GetPlayerStats(int year, string titleEvent, int limit)
+        {
+            try
+            {
+                var content = GetContent("team");
+                var teams = FilterData(year, titleEvent, content);
+
+                if (!teams.Any())
+                {
+                    return PartialView("~/Views/Partials/Events/PlayerStatistics.cshtml",
+                        new PlayerStatisticsViewModel());
+                }
+
+                var model = new PlayerStatisticsViewModel
+                {
+                    PlayerStatistics = teams
+                        .SelectMany(x => x.Children)
+                        .Select(player => new PlayerStatistics
+                        {
+                            TeamName = player.Parent.Name,
+                            PlayerName = player.Value<string>("playerName"),
+                            Role = player.Value<string>("role"),
+                            JerseyNumber = player.Value<int>("jerseyNumber"),
+                            GamesPlayed = player.Value<int>("gamesPlayed"),
+                            Goals = player.Value<int>("goals"),
+                            Assists = player.Value<int>("assists"),
+                            Penalties = player.Value<int>("penalties"),
+                            TeamLogoUrl = player.Parent.Value<IPublishedContent>("image")?.Url() ?? string.Empty,
+                        })
+                        .Where(x => x.GamesPlayed > 0)
+                        .OrderByDescending(x => x.Total)
+                        .ThenByDescending(x => x.Goals)
+                        .ThenByDescending(x => x.Assists)
+                        .ThenByDescending(x => x.GamesPlayed)
+                        .ThenByDescending(x => x.Penalties)
+                        .ThenByDescending(x => x.TeamName)
+                        .ToList()
+                };
+
+                if (limit > 0)
+                {
+                    model.PlayerStatistics = model.PlayerStatistics.Take(limit).ToList();
+                    return PartialView("~/Views/Partials/Events/PlayerStatisticsThin.cshtml", model);
+
+                }
+
+                return PartialView("~/Views/Partials/Events/PlayerStatistics.cshtml", model);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
+        [HttpGet]
+        public IActionResult GetPlayerStatsThin(int year, string titleEvent, int limit = 5)
         {
             var content = GetContent("team");
             var teams = FilterData(year, titleEvent, content);
 
             if (!teams.Any())
             {
-                return PartialView("~/Views/Partials/Events/PlayerStatistics.cshtml", new PlayerStatisticsViewModel());
+                return PartialView("~/Views/Partials/Events/PlayerStatisticsThin.cshtml", new PlayerStatisticsViewModel());
             }
 
             var model = new PlayerStatisticsViewModel
@@ -258,12 +243,9 @@ namespace IISHF.Core.Controllers.SurfaceControllers
                     .ToList()
             };
 
-            if (limit > 0)
-            {
-                model.PlayerStatistics = model.PlayerStatistics.Take(limit).ToList();
-            }
+            model.PlayerStatistics = model.PlayerStatistics.Take(limit).ToList();
 
-            return PartialView("~/Views/Partials/Events/PlayerStatistics.cshtml", model);
+            return PartialView("~/Views/Partials/Events/PlayerStatisticsThin.cshtml", model);
         }
 
         [HttpGet]
