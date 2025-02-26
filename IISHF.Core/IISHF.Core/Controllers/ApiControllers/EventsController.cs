@@ -492,16 +492,23 @@ namespace IISHF.Core.Controllers.ApiControllers
             {
                 await _tournamentService.SetTeamItcIISHFApprovalDate(team);
 
+                var pdfFileName =
+                    $"ITC_${tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-hhmmss")}.pdf";
+                var excelFileName =
+                    $"ITC_${tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-hhmmss")}.pdf";
+
                 var itcExcel = await _tournamentService.GenerateItcAsExcelFile(team, tournament);
                 await _emailService.SendItc("thf@iishf.com", new List<string>(), "THF Manager", "IISHF Event Name", "ITCApprovedInternalInternalTemplate.html",
-                    $"{tournament.Name} ITC Approved - {team.Name}", team.Name, itcExcel);
+                    $"{tournament.Name} ITC Approved - {team.Name}", team.Name, itcExcel, excelFileName);
+
                 var excelStream = new MemoryStream(itcExcel);
                 await _teamService.AddItcToTeam(excelStream, $"ITC_${tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-hhmmss")}.xlsx", team);
 
 
                 var itcPdf = _tournamentService.GenerateItcAsPdfFile(itcExcel);
                 var pfdStream = new MemoryStream(itcPdf);
-                await _teamService.AddItcToTeam(pfdStream, $"ITC_${tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-hhmmss")}.pdf", team);
+
+                await _teamService.AddItcToTeam(pfdStream, pdfFileName, team);
 
                 var nmaKey = team.Value<string>("nmaKey");
                 var itcApprovers = await _nmaService.GetNMAITCApprovers(Guid.Parse(nmaKey));
@@ -513,8 +520,8 @@ namespace IISHF.Core.Controllers.ApiControllers
 
                 cc.AddRange(itcApprovers.Select(itcApprover => itcApprover.NmaApproverEmail));
 
-                await _emailService.SendItc(tournament.Value<string>("hostEmail"), cc, tournament.Value<string>("hostContact"), "IISHF Event Name", "ITCApprovedInternalExternalTemplate.html",
-                    $"{tournament.Name} ITC Approved - {team.Name}", team.Name, itcPdf);
+                await _emailService.SendItc(tournament.Value<string>("hostEmail"), cc, tournament.Value<string>("hostContact"), "IISHF Event Name", "ITCApprovedSendToHost.html",
+                    $"{tournament.Name} ITC Approved - {team.Name}", team.Name, itcPdf, pdfFileName);
 
                 return NoContent();
             }

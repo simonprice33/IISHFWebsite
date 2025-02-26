@@ -12,6 +12,7 @@ namespace IISHF.Core.Interfaces
 
         Task SendUserInvitation(IMember member, string email, string recipientName, Uri uri, string templateName, string subject);
 
-        Task SendItc(string email, List<string> ccEmails, string recipientName, string eventName, string templateName, string subject, string teamName, byte[] attachment);
+        Task SendItc(string email, List<string> ccEmails, string recipientName, string eventName, string templateName,
+            string subject, string teamName, byte[] attachment, string fileName);
     }
 }

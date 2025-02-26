@@ -50,7 +50,21 @@
                                                         // Loop through each great-grandchild and display under grandchild
                                                         foreach (var greatGrandChild in grandChild.Children().Where(x => x.IsVisible()))
                                                         {
+
+                                                            if (grandChild.Name == "None Title Events")
+                                                            {
+                                                                var eventYear = DateTime.Parse(greatGrandChild.Value("EventStartDate").ToString()).Year;
+                                                                if(eventYear >= DateTime.Now.Year)
+                                                                {
+                                                                    <a class="dropdown-item ml-3" href="@greatGrandChild.Url()">@greatGrandChild.Name</a>
+                                                                }
+                                                            }
+                                                            else
+                                                            {
                                                             <a class="dropdown-item ml-3" href="@greatGrandChild.Url()">@greatGrandChild.Name</a>
+
+                                                            }
+                                                            
                                                         }
                                                     }
                                                 </div>

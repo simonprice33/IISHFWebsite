@@ -41,10 +41,6 @@ public class FileService : IFileService
         // Convert the memory stream to byte array
         byte[] bytes = memoryStream.ToArray();
 
-        ////// Send the Excel file as an attachment via SendGrid
-        ////await SendEmailWithAttachment(bytes, "itc.xlsx");
-        ///
-
         return bytes;
     }
 

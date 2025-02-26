@@ -121,7 +121,6 @@ namespace IISHF.Core.Services
 
         public IPublishedContent? GetTournament(int id)
         {
-            var rootContent = _contentQuery.ContentAtRoot().ToList();
             var tournament = _contentQuery.ContentAtRoot()
                 .DescendantsOrSelfOfType("event")
                 .Where(x => x.Id == id).FirstOrDefault();

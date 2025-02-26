@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using SendGrid;
 using SendGrid.Helpers.Errors.Model;
 using SendGrid.Helpers.Mail;
+using System;
 using Umbraco.Cms.Core.Models;
 using Member = IISHF.Core.Models.Member;
 
@@ -69,12 +70,37 @@ namespace IISHF.Core.Services
             await SendEmail(string.Empty, renderedEmail, sender, recipients, subject);
         }
 
-        public Task SendItc(string email, List<string> ccEmails, string recipientName, string eventName, string templateName, string subject,
-            string teamName, byte[] attachment)
+        public async Task SendItc(string email, List<string> ccEmails, string recipientName, string eventName,
+            string templateName, string subject, string teamName, byte[] attachment, string fileName)
         {
-            // ToDo
-            // SendEmail with attachment
-            throw new NotImplementedException();
+            var invitationObject = new
+            {
+                Name = recipientName,
+            };
+
+            var attachments = new List<EmailAttachment>()
+            {
+                new EmailAttachment()
+                {
+                    Extension = ".xlsx",
+                    FileBytes = attachment,
+                    FileName = fileName
+                }
+            };
+
+            var renderedEmail = await GetHtmlTemplate(invitationObject, templateName);
+
+            var sender = new EmailAddress(_iishfOptions.NoReplyEmailAdddress, _iishfOptions.DisplayName);
+
+            var recipients = new List<EmailAddress>()
+            {
+                new EmailAddress(email),
+            };
+
+            var ccRecipients = new List<EmailAddress>();
+            ccRecipients.AddRange(ccEmails.Select(cc => new EmailAddress(cc)));
+
+            await SendEmail(string.Empty, renderedEmail, sender, recipients, ccRecipients, subject, true, attachments);
         }
 
         public async Task SendContactFormMessage(ContactFormViewModel contactModel)
