@@ -80,7 +80,7 @@ namespace IISHF.Core.Services
             {
                 // Find the team
                 var selectedTeam = tournament.Children.FirstOrDefault(x =>
-                    x.Name == player.TeamName && x.ContentType.Alias == "team");
+                    x.Name == player.TeamName.Trim() && x.ContentType.Alias == "team");
                 if (selectedTeam == null)
                 {
                     continue;

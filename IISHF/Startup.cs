@@ -5,6 +5,7 @@ using IISHF.Core.Services;
 using IISHF.Core.Settings;
 using IISHF.ExcelToPdf.Interfaces;
 using Umbraco.Cms.Core.Services;
+using Umbraco.StorageProviders.AzureBlob;
 using FileService = IISHF.Core.Services.FileService;
 using HttpClient = IISHF.Core.Services.HttpClient;
 using IMediaService = IISHF.Core.Interfaces.IMediaService;
@@ -77,6 +78,8 @@ namespace IISHF
                 .AddWebsite()
                 .AddDeliveryApi()
                 .AddComposers()
+                .AddAzureBlobMediaFileSystem()
+                .AddAzureBlobImageSharpCache()
                 .Build();
 
             services.AddSignalRCore();

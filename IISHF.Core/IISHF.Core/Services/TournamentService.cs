@@ -259,6 +259,13 @@ namespace IISHF.Core.Services
 
                     var currentHomeTeam = game.GetValue<string>("homeTeam");
                     var currentAwayTeamTeam = game.GetValue<string>("awayTeam");
+                    var remarks = game.GetValue<string>("remarks");
+
+                    if (remarks != scheduledGame.Remarks)
+                    {
+                        game?.SetValue("remarks", scheduledGame.Remarks);
+                        canUpdate = true;
+                    }
 
                     if (currentHomeTeam != scheduledGame.HomeTeam)
                     {
