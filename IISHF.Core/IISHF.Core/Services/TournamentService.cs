@@ -844,10 +844,10 @@ namespace IISHF.Core.Services
 
                     var remarks = game.Value<string>("remarks").Split("(").FirstOrDefault();
 
-                    if (!string.IsNullOrWhiteSpace(gameSheet))
-                    {
-                        gameSheet = $"https://events.iishf.com{gameSheet}";
-                    }
+                    //if (!string.IsNullOrWhiteSpace(gameSheet))
+                    //{
+                    //    gameSheet = $"https://www.iishf.com{gameSheet}";
+                    //}
 
                     model.ScheduleAndResults.Add(new ScheduleAndResults()
                     {
@@ -926,6 +926,24 @@ namespace IISHF.Core.Services
             }
 
             return model;
+        }
+
+        public async Task SetTeamsInGroup(GroupInformation model, IPublishedContent tournament)
+        {
+            foreach (var groupInfo in model.TeamGroups)
+            {
+                var eventTeam = GetTournamentTeamByName(groupInfo.TeamName, tournament);
+
+                var team = _contentService.GetById(eventTeam.Id);
+                if (team == null)
+                {
+                    continue;
+                }
+
+                team.SetValue("Group", groupInfo.Group.ToString().ToUpper());
+                _contentService.SaveAndPublish(team);
+
+            }
         }
 
         private static List<IPublishedContent> FilterData(int year, string titleEvent, List<IPublishedContent> rootContent)

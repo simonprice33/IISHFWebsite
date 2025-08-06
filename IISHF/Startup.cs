@@ -19,34 +19,24 @@ namespace IISHF
         private readonly IWebHostEnvironment _env;
         private readonly IConfiguration _config;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Startup" /> class.
-        /// </summary>
-        /// <param name="webHostEnvironment">The web hosting environment.</param>
-        /// <param name="config">The configuration.</param>
-        /// <remarks>
-        /// Only a few services are possible to be injected here https://github.com/dotnet/aspnetcore/issues/9337.
-        /// </remarks>
         public Startup(IWebHostEnvironment webHostEnvironment, IConfiguration config)
         {
             _env = webHostEnvironment ?? throw new ArgumentNullException(nameof(webHostEnvironment));
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }
 
-        /// <summary>
-        /// Configures the services.
-        /// </summary>
-        /// <param name="services">The services.</param>
-        /// <remarks>
-        /// This method gets called by the runtime. Use this method to add services to the container.
-        /// For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940.
-        /// </remarks>
         public void ConfigureServices(IServiceCollection services)
         {
+            // Bind and register settings
             var apiKeySettings = new ApiKeySettings();
             _config.Bind("ApiKeySettings", apiKeySettings);
             services.AddSingleton(apiKeySettings);
 
+            services.Configure<SendGridConfiguration>(_config.GetSection("SendGridConfiguration"));
+            services.Configure<EmailConfiguration>(_config.GetSection("EmailSettings"));
+            services.Configure<ServiceBusSettings>(_config.GetSection("ServiceBusSettings"));
+
+            // Dependency injection for services
             services.AddScoped<IHttpClient, HttpClient>();
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IApprovals, ApprovalService>();
@@ -64,15 +54,7 @@ namespace IISHF
             services.AddScoped<Core.Interfaces.IFileService, FileService>();
             services.AddScoped<IExcelToPdf, ExcelToPdf.Services.ExcelToPdf>();
 
-            services.Configure<SendGridConfiguration>
-                (_config.GetSection("SendGridConfiguration"));
-
-            services.Configure<EmailConfiguration>
-                (_config.GetSection("EmailSettings"));
-
-            services.Configure<ServiceBusSettings>
-                (_config.GetSection("ServiceBusSettings"));
-
+            // Umbraco and Azure Blob integration
             services.AddUmbraco(_env, _config)
                 .AddBackOffice()
                 .AddWebsite()
@@ -82,30 +64,34 @@ namespace IISHF
                 .AddAzureBlobImageSharpCache()
                 .Build();
 
-            services.AddSignalRCore();
-
-            services.AddMvc()
-           .AddViewOptions(options =>
-           {
-               options.HtmlHelperOptions.ClientValidationEnabled = true;
-           });
+            // MVC and SignalR
+            services.AddControllersWithViews();
+            services.AddSignalR();
         }
 
-        /// <summary>
-        /// Configures the application.
-        /// </summary>
-        /// <param name="app">The application builder.</param>
-        /// <param name="env">The web hosting environment.</param>
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            // Exception handling and HTTPS
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseHttpsRedirection();
             }
 
             app.UseHttpsRedirection();
 
+            // Forwarded headers (important for NGINX/Azure)
+            app.UseForwardedHeaders(new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
+                                   Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto,
+                KnownProxies = { System.Net.IPAddress.Parse("127.0.0.1") } // adjust if needed
+            });
+
+            // Static files and routing
+            app.UseStaticFiles();
+            app.UseRouting();
+
+            // Umbraco & SignalR endpoints
             app.UseUmbraco()
                 .WithMiddleware(u =>
                 {
@@ -117,19 +103,10 @@ namespace IISHF
                     u.UseInstallerEndpoints();
                     u.UseBackOfficeEndpoints();
                     u.UseWebsiteEndpoints();
-                    // Map SignalR hubs
+
+                    // Azure SignalR Hub
+                    u.EndpointRouteBuilder.MapHub<DataHub>("/dataHub");
                 });
-
-            //// For SignalR
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllerRoute(
-                    name: "default",
-                    pattern: "{controller=Home}/{action=Index}/{id?}");
-
-                // Map SignalR hub endpoint
-                endpoints.MapHub<DataHub>("/dataHub");
-            });
         }
     }
 }

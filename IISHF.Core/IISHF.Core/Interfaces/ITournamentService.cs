@@ -65,5 +65,7 @@ namespace IISHF.Core.Interfaces
         Task<byte[]> GenerateItcAsExcelFile(IPublishedContent team, IPublishedContent tournament);
 
         Task<ScheduleAndResultsViewModel> GetScheduleAndResults(int year, string titleEvent, int limit, int offset, bool todayOnly = false);
+        
+        Task SetTeamsInGroup(GroupInformation model, IPublishedContent tournament);
     }
 }

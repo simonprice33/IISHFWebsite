@@ -104,6 +104,24 @@ namespace IISHF.Core.Controllers.ApiControllers
             return Created(new Uri(teamId.Id.ToString(), UriKind.RelativeOrAbsolute), teamId.Id.ToString());
         }
 
+        [HttpPut("Group")]
+        public async Task<IActionResult> GroupTeams([FromBody]GroupInformation model )
+        {
+            var tournament = _tournamentService.GetTournament(
+                model.IsChampionships,
+                model.TitleEvent,
+                model.EventYear.ToString());
+
+            if (tournament == null)
+            {
+                return NotFound();
+            }
+
+            await _tournamentService.SetTeamsInGroup(model, tournament);
+
+            return Ok();
+        }
+
         [HttpPost("Roster")]
         public async Task<IActionResult> PostRosterMember([FromBody] RosterMembers model)
         {

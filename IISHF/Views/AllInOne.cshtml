@@ -95,7 +95,7 @@
 
 
         function GetGroupBRankings() {
-            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2024', titleEvent: 'MENCH', group: 'B' }, function (data) {
+            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2025', titleEvent: 'U19', group: 'B' }, function (data) {
                 var $groupBContainer = $('#groupBRankingsContainer');
                 $groupBContainer.html(data);
 
@@ -116,7 +116,7 @@
         }
 
         function GetGroupARankings() {
-            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2024', titleEvent: 'MENCH', group: 'A' }, function (data) {
+            $.get('/umbraco/surface/events/GetGroupRankings', { year: '2025', titleEvent: 'U19', group: 'A' }, function (data) {
                 var $groupAContainer = $('#groupARankingsContainer');
                 $groupAContainer.html(data);
 
@@ -138,7 +138,7 @@
         }
 
         function GetScheduleAndResults() {
-            $.get('/umbraco/surface/events/getsheduleandresults', { year: '2024', titleEvent: 'MENCH', limit: '8', offset: '3' }, function (data) {
+            $.get('/umbraco/surface/events/getsheduleandresults', { year: '2025', titleEvent: 'U19', limit: '8', offset: '3', todayOnly : true }, function (data) {
                 var scheduleResultsContainer = $('#scheduleResultsContainer');
                 scheduleResultsContainer.html(data);
                 scheduleResultsContainer.find('.title').hide();
@@ -157,7 +157,7 @@
         // }
 
         function GetPlacements() {
-            $.get('/umbraco/surface/events/GetPlacementsThin', { year: '2024', titleEvent: 'MENCH' }, function (data) {
+            $.get('/umbraco/surface/events/GetPlacementsThin', { year: '2025', titleEvent: 'U19' }, function (data) {
                 var eventPlacements = $('#eventPlacements');
                 eventPlacements.html(data);
 
@@ -221,6 +221,7 @@
             $("#homeScore_" + gameNumber).text(homeScore);
             $("#awayScore_" + gameNumber).text(awayScore);
 
+            GetScheduleAndResults();
             console.log("Updating scores")
         }); 
         
