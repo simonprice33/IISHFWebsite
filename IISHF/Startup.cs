@@ -60,8 +60,8 @@ namespace IISHF
                 .AddWebsite()
                 .AddDeliveryApi()
                 .AddComposers()
-                .AddAzureBlobMediaFileSystem()
-                .AddAzureBlobImageSharpCache()
+                //.AddAzureBlobMediaFileSystem()
+                //.AddAzureBlobImageSharpCache()
                 .Build();
 
             // MVC and SignalR

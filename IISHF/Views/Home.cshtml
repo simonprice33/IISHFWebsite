@@ -170,21 +170,21 @@
                             </div>
                         }
 
-                        if (link.Url.ToLower().Contains("sportdeutschland"))
+                        if (link.Url.ToLower().Contains("sportdeutschland") || link.Url.ToLower().Contains("sporteurope"))
                         {
                             <iframe src="@link.Url" width=640 height="420" frameborder=0 allowfullscreen></iframe>
                         }
-                        
+
                         if (link.Url.ToLower().Contains("twitch.tv"))
                         {
                             var lower = link.Url.ToLower();
                             string twitchSrc;
-					
+
                             // Try to extract a VOD ID from ".../videos/1234567890"
                             var vodIdPart = lower.Contains("/videos/")
-                                ? lower.Split("/videos/")[1].Split('?')[0]  // take number before query string
-                                : null;
-					
+                            ? lower.Split("/videos/")[1].Split('?')[0]  // take number before query string
+                            : null;
+
                             if (!string.IsNullOrWhiteSpace(vodIdPart) && long.TryParse(vodIdPart, out var vodId))
                             {
                                 // Specific VOD embed
@@ -196,15 +196,14 @@
                                 // Channel name is always the part after twitch.tv/
                                 var parts = lower.Split(new[] { "twitch.tv/" }, StringSplitOptions.None);
                                 var channelName = parts.Length > 1 ? parts[1].Split('/')[0] : "wolfpack_ternitz";
-					
+
                                 twitchSrc = $"https://player.twitch.tv/?channel={channelName}&parent=iishf.com&parent=www.iishf.com&autoplay=true&muted=true";
                             }
-					
+
                             <div class="row mb-5">
                                 <iframe width="640" height="420" src="@twitchSrc" title="Twitch player" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
                             </div>
                         }
-
 
                     }
                     else
@@ -224,7 +223,7 @@
                                         var src = $"https://www.youtube.com/embed/{@link.Url.Split('/').Last()}";
                                         <iframe width="100%" height="210" src="@src" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                                     }
-                                    else if (link.Url.ToLower().Contains("sportdeutschland"))
+                                    else if (link.Url.ToLower().Contains("sportdeutschland") || link.Url.ToLower().Contains("sporteurope"))
                                     {
                                         <iframe src="@link.Url" width="100%" height="210" frameborder="0" allowfullscreen></iframe>
                                     }
