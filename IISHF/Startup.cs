@@ -1,9 +1,11 @@
 using IISHF.Core.Configurations;
 using IISHF.Core.Hubs;
+using IISHF.Core.Infrastructure.Mail;
 using IISHF.Core.Interfaces;
 using IISHF.Core.Services;
 using IISHF.Core.Settings;
 using IISHF.ExcelToPdf.Interfaces;
+using Umbraco.Cms.Core.Mail;
 using Umbraco.Cms.Core.Services;
 using Umbraco.StorageProviders.AzureBlob;
 using FileService = IISHF.Core.Services.FileService;
@@ -63,6 +65,9 @@ namespace IISHF
                 //.AddAzureBlobMediaFileSystem()
                 //.AddAzureBlobImageSharpCache()
                 .Build();
+
+            services.AddSingleton<IEmailSender, UmbracoMailSender>();
+
 
             // MVC and SignalR
             services.AddControllersWithViews();

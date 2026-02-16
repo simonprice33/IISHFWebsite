@@ -289,13 +289,13 @@ namespace IISHF.Core.Controllers.SurfaceControllers
             var cups = tournaments
                 .FirstOrDefault(x => x.Name == "European Cups")
                 .Children()
-                .Select(x => x.Children.FirstOrDefault(x => x.Name == "2024"))
+                .Select(x => x.Children.FirstOrDefault(x => x.Name == DateTime.Now.Year.ToString()))
                 .ToList();
 
             var championships = tournaments
                 .FirstOrDefault(x => x.Name == "European Championships")
                 .Children()
-                .Select(x => x.Children.FirstOrDefault(x => x.Name == "2024"))
+                .Select(x => x.Children.FirstOrDefault(x => x.Name == DateTime.Now.Year.ToString()))
                 .ToList();
 
             var nonTitle = tournaments
