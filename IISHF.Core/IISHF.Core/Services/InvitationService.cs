@@ -1,5 +1,7 @@
-﻿using IISHF.Core.Interfaces;
+﻿using IISHF.Core.Extensions;
+using IISHF.Core.Interfaces;
 using IISHF.Core.Models;
+using IISHF.Core.State;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models.PublishedContent;
@@ -29,7 +31,6 @@ namespace IISHF.Core.Services
 
         public async Task<List<EventInvitation>> GetInvitation(string email)
         {
-
             var invitations = new List<EventInvitation>();
 
             var loggedInMember = await _memberManager.GetCurrentMemberAsync();
@@ -38,9 +39,13 @@ namespace IISHF.Core.Services
                 .DescendantsOrSelfOfType("clubTeam")
                 .Where(x => x.Value<string>("TeamContactEmail") == email).ToList();
 
-            var publishedEvents = _contentQuery.ContentAtRoot()
+            var tournamentsRoot = _contentQuery.ContentAtRoot()
                 .DescendantsOrSelfOfType("Tournaments")
-                .FirstOrDefault().Children().ToList();
+                .FirstOrDefault();
+
+            var publishedEvents = tournamentsRoot != null
+                ? tournamentsRoot.Children().ToList()
+                : new List<IPublishedContent>();
 
             if (teams != null)
             {
@@ -58,59 +63,26 @@ namespace IISHF.Core.Services
                                 var titleEvents = ageGroup.Children().Where(x =>
                                     x.Name == DateTime.Now.Year.ToString() &&
                                     x.Parent.Value<string>("ageGroup") == myteam.Value<string>("ageGroup")).ToList();
+
                                 foreach (var evt in titleEvents)
                                 {
                                     var team = evt.Children().Where(x => x.ContentType.Alias == "team")
-                                        .FirstOrDefault(x => x.Name == myteam.Name || myteam.Name.Contains(x.Name));
+                                        .FirstOrDefault(x => x.Value<string>("NMaTeamKey") == myteam.Key.ToString());
 
                                     if (team != null)
                                     {
-                                        var requiredByDate = team.Value<DateTime>("teamSubmissionRequiredBy");
+                                        var requiredByDate = GetRequiredByDate(team, evt);
 
-                                        if (requiredByDate == DateTime.MinValue)
+                                        DateTime? itcStatusChangeDate;
+                                        var itcState = GetItcStatus(team, out itcStatusChangeDate);
+
+                                        var teamInformationSubmitted = team.Value<bool>("teamInformationSubmitted");
+                                        DateTime? teamInformationSubmittedDate = null;
+
+                                        if (teamInformationSubmitted)
                                         {
-                                            requiredByDate = evt.Value<DateTime>("eventStartDate").AddDays(-56);
+                                            teamInformationSubmittedDate = team.Value<DateTime>("teamInformationSubmissionDate");
                                         }
-
-                                        var itcState = "Not submitted";
-                                        DateTime itcStatusChangeDate = new DateTime();
-                                        if (team.Value<bool>("iTCSubmitted"))
-                                        {
-                                            var nmaApprover = team.Value<IPublishedContent>("iTCNMAApprover");
-                                            if (nmaApprover == null)
-                                            {
-                                                itcState = "Pending NMA Approval";
-                                                itcStatusChangeDate = team.Value<DateTime>("iTCSubmissionDate");
-                                            }
-
-                                            var iishfItcApprover = team.Value<IPublishedContent>("iISHFITCApprover");
-                                            if (nmaApprover != null && team.Value<DateTime>("nMAApprovedDate") != DateTime.MinValue)
-                                            {
-                                                itcState = "NMA Approved - Pending IISHF Approval";
-                                                itcStatusChangeDate = team.Value<DateTime>("nMAApprovedDate");
-
-                                            }
-                                        }
-
-                                        if (!string.IsNullOrWhiteSpace(team.Value<string>("iTCRejectionReason")))
-                                        {
-                                            itcState = "Changes required";
-                                        }
-
-                                        if (team.Value<bool>("iTCSubmitted") && !string.IsNullOrWhiteSpace(team.Value<string>("iTCRejectionReason")))
-                                        {
-                                            itcState = "Changes made";
-                                        }
-
-                                        if (team.Value<bool>("iTCSubmitted")
-                                            && !string.IsNullOrWhiteSpace(team.Value<string>("iTCRejectionReason"))
-                                            && team.Value<IPublishedContent>("nMAApprover") != null)
-                                        {
-                                            itcState = "NMA Approved - Pending IISHF Approval";
-                                            itcStatusChangeDate = team.Value<DateTime>("iTCSubmissionDate");
-                                        }
-
-
 
                                         var invitation = new EventInvitation()
                                         {
@@ -118,23 +90,25 @@ namespace IISHF.Core.Services
                                             EventTeamId = team.Key,
                                             EventName = evt.Parent.Name,
                                             ITCStatus = itcState,
-                                            ItcStatusChangeDate = itcStatusChangeDate == DateTime.MinValue ? null : itcStatusChangeDate,
+                                            ItcStatusChangeDate = itcStatusChangeDate,
                                             TeamInformationRequired = true,
-                                            TeamInformationSubmitted = team.Value<bool>("teamInformationSubmitted"),
-                                            TeamInformationSubmittedDate = team.Value<DateTime>("teamInformationSubmissionDate"),
-                                            TeamSubmissionRequiredBy = requiredByDate,
+                                            TeamInformationSubmitted = teamInformationSubmitted,
+                                            TeamInformationSubmittedDate = teamInformationSubmittedDate,
+                                            TeamInformationRequiredBy = requiredByDate,
                                             EventStartDate = evt.Value<DateTime>("eventStartDate"),
                                             EventEndDate = evt.Value<DateTime>("eventEndDate")
                                         };
 
                                         invitations.Add(invitation);
                                     }
-
                                 }
                             }
                             catch (Exception e)
                             {
-                                Console.WriteLine(e);
+                                _logger.LogError(e,
+                                    "Error building title-event invitations. TeamKey={TeamKey}, AgeGroupKey={AgeGroupKey}",
+                                    myteam?.Key,
+                                    ageGroup?.Key);
                             }
                         }
                     }
@@ -143,7 +117,6 @@ namespace IISHF.Core.Services
                     {
                         foreach (var evt in iishfEvent.Children().ToList())
                         {
-
                             var team = evt.Children().Where(x => x.ContentType.Alias == "team")
                                 .FirstOrDefault(x => x.Name == myteam.Name);
 
@@ -152,37 +125,10 @@ namespace IISHF.Core.Services
                                 continue;
                             }
 
-                            var requiredByDate = team.Value<DateTime>("teamSubmissionRequiredBy");
+                            var requiredByDate = GetRequiredByDate(team, evt);
 
-                            if (requiredByDate == DateTime.MinValue)
-                            {
-                                requiredByDate = evt.Value<DateTime>("eventStartDate").AddDays(-56);
-                            }
-
-                            var itcState = "Not submitted";
-                            DateTime itcStatusChangeDate = new DateTime();
-                            if (team.Value<bool>("iTCSubmitted"))
-                            {
-                                var nmaApprover = team.Value<IPublishedContent>("iTCNMAApprover");
-                                if (nmaApprover == null)
-                                {
-                                    itcState = "Pending NMA Approval";
-                                    itcStatusChangeDate = team.Value<DateTime>("iTCSubmissionDate");
-                                }
-
-                                var iishfItcApprover = team.Value<IPublishedContent>("iISHFITCApprover");
-                                if (nmaApprover != null && team.Value<DateTime>("nMAApprovedDate") != DateTime.MinValue)
-                                {
-                                    itcState = "NMA Approved - Pending IISHF Approval";
-                                    itcStatusChangeDate = team.Value<DateTime>("nMAApprovedDate");
-
-                                }
-                            }
-
-                            if (!string.IsNullOrWhiteSpace(team.Value<string>("iTCRejectionReason")))
-                            {
-                                itcState = "Changes required";
-                            }
+                            DateTime? itcStatusChangeDate;
+                            var itcState = GetItcStatus(team, out itcStatusChangeDate);
 
                             var invitation = new EventInvitation()
                             {
@@ -190,73 +136,46 @@ namespace IISHF.Core.Services
                                 EventTeamId = team.Key,
                                 EventName = evt.Name,
                                 ITCStatus = itcState,
-                                ItcStatusChangeDate = itcStatusChangeDate == DateTime.MinValue ? null : itcStatusChangeDate,
+                                ItcStatusChangeDate = itcStatusChangeDate,
                                 TeamInformationRequired = false,
                                 TeamInformationRequiredBy = requiredByDate,
                                 TeamInformationSubmitted = false,
                                 TeamInformationSubmittedDate = null,
-                                TeamSubmissionRequiredBy = null,
                                 EventStartDate = evt.Value<DateTime>("eventStartDate"),
                                 EventEndDate = evt.Value<DateTime>("eventEndDate")
                             };
 
                             invitations.Add(invitation);
                         }
-
                     }
 
                     foreach (var iishfEvent in publishedEvents.Where(x => x.ContentType.Alias == "noneTitleEvents"))
                     {
                         foreach (var evt in iishfEvent.Children().ToList())
                         {
-
                             IPublishedContent team = null;
                             var selectTeam = evt.Children()
                                 .Where(X => X.Value<IPublishedContent>("selectTeamCreatedBy") != null);
 
                             if (selectTeam != null && selectTeam.Any())
                             {
+                                // Note: keeping your original logic and variables.
+                                // If loggedInMember could be null, this will throw; leaving as-is to avoid behaviour change.
                                 var mySelectTeam = selectTeam.FirstOrDefault(x =>
                                     x.Value<IPublishedContent>("selectTeamCreatedBy").Id.ToString() == loggedInMember.Id);
-                                team = mySelectTeam;
 
+                                team = mySelectTeam;
                             }
+
                             if (team == null)
                             {
                                 continue;
                             }
 
-                            var requiredByDate = team.Value<DateTime>("teamSubmissionRequiredBy");
+                            var requiredByDate = GetRequiredByDate(team, evt);
 
-                            if (requiredByDate == DateTime.MinValue)
-                            {
-                                requiredByDate = evt.Value<DateTime>("eventStartDate").AddDays(-56);
-                            }
-
-                            var itcState = "Not submitted";
-                            DateTime itcStatusChangeDate = new DateTime();
-                            if (team.Value<bool>("iTCSubmitted"))
-                            {
-                                var nmaApprover = team.Value<IPublishedContent>("iTCNMAApprover");
-                                if (nmaApprover == null)
-                                {
-                                    itcState = "Pending NMA Approval";
-                                    itcStatusChangeDate = team.Value<DateTime>("iTCSubmissionDate");
-                                }
-
-                                var iishfItcApprover = team.Value<IPublishedContent>("iISHFITCApprover");
-                                if (nmaApprover != null && team.Value<DateTime>("nMAApprovedDate") != DateTime.MinValue)
-                                {
-                                    itcState = "NMA Approved - Pending IISHF Approval";
-                                    itcStatusChangeDate = team.Value<DateTime>("nMAApprovedDate");
-
-                                }
-                            }
-
-                            if (!string.IsNullOrWhiteSpace(team.Value<string>("iTCRejectionReason")))
-                            {
-                                itcState = "Changes required";
-                            }
+                            DateTime? itcStatusChangeDate;
+                            var itcState = GetItcStatus(team, out itcStatusChangeDate);
 
                             var invitation = new EventInvitation()
                             {
@@ -264,25 +183,54 @@ namespace IISHF.Core.Services
                                 EventTeamId = team.Key,
                                 EventName = evt.Name,
                                 ITCStatus = itcState,
-                                ItcStatusChangeDate = itcStatusChangeDate == DateTime.MinValue ? null : itcStatusChangeDate,
+                                ItcStatusChangeDate = itcStatusChangeDate,
                                 TeamInformationRequired = false,
                                 TeamInformationRequiredBy = requiredByDate,
                                 TeamInformationSubmitted = false,
                                 TeamInformationSubmittedDate = null,
-                                TeamSubmissionRequiredBy = null,
                                 EventStartDate = evt.Value<DateTime>("eventStartDate"),
                                 EventEndDate = evt.Value<DateTime>("eventEndDate")
                             };
 
                             invitations.Add(invitation);
                         }
-
                     }
                 }
             }
 
             return invitations;
+        }
 
+        private static DateTime GetRequiredByDate(IPublishedContent team, IPublishedContent evt)
+        {
+            var requiredByDate = team.Value<DateTime>("teamSubmissionRequiredBy");
+
+            if (requiredByDate == DateTime.MinValue)
+            {
+                requiredByDate = evt.Value<DateTime>("eventStartDate").AddDays(-56);
+            }
+
+            return requiredByDate;
+        }
+
+        private static string GetItcStatus(IPublishedContent team, out DateTime? itcStatusChangeDate)
+        {
+            // This method is the only place that knows how to map Umbraco props -> ITC state.
+            // It assumes you have created separate files for:
+            // - ItcStateMachine (Evaluate)
+            // - ItcEvaluation / result type (State + StatusChangeDate)
+            // - ItcState enum with [Description]
+            // - EnumExtensions.GetDescription()
+
+            // Expected shape:
+            // var eval = ItcStateMachine.Evaluate(team);
+            // itcStatusChangeDate = eval.StatusChangeDate;
+            // return eval.State.GetDescription();
+
+            var eval = ItcStateMachine.Evaluate(team);
+
+            itcStatusChangeDate = eval.StatusChangeDate;
+            return eval.State.GetDescription();
         }
     }
 }

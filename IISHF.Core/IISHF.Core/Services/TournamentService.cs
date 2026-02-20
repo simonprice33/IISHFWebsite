@@ -946,6 +946,25 @@ namespace IISHF.Core.Services
             }
         }
 
+        public async Task LinkNmaTeamToTournamentTeam(IPublishedContent tournament, int teamId, int tournamentTeamId)
+        {
+            var tournamentTeam = _contentService.GetById(tournamentTeamId);
+            var nmaTeam = _contentService.GetById(teamId);
+
+            if (tournament == null || nmaTeam == null)
+            {
+                throw new ArgumentNullException("NMA or Tournament team cannot be null");
+            }
+
+            var nma = _contentQuery.Content(teamId).Parent.Parent;
+
+            tournamentTeam.SetValue("teamId", nmaTeam.Id);
+            tournamentTeam.SetValue("nMATeamKey", nmaTeam.Key);
+            tournamentTeam.SetValue("nmaKey", nma.Key);
+
+            _contentService.SaveAndPublish(tournamentTeam);
+        }
+
         private static List<IPublishedContent> FilterData(int year, string titleEvent, List<IPublishedContent> rootContent)
         {
             var eventTeams = rootContent.Where(x =>

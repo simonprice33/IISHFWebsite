@@ -1,31 +1,32 @@
-﻿using IISHF.Core.Interfaces;
+﻿using DocumentFormat.OpenXml.Bibliography;
+using DocumentFormat.OpenXml.Drawing;
+using DocumentFormat.OpenXml.EMMA;
+using DocumentFormat.OpenXml.Math;
+using IISHF.Core.Hubs;
+using IISHF.Core.Interfaces;
 using IISHF.Core.Models;
+using IISHF.Core.Models.ServiceBusMessage;
+using Lucene.Net.Index;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.TagHelpers;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Filters;
-using IMediaService = IISHF.Core.Interfaces.IMediaService;
-using Microsoft.AspNetCore.Mvc;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
-using IISHF.Core.Models.ServiceBusMessage;
-using Lucene.Net.Index;
-using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Umbraco.Extensions;
-using Microsoft.AspNetCore.SignalR;
-using IISHF.Core.Hubs;
-using DocumentFormat.OpenXml.Bibliography;
-using DocumentFormat.OpenXml.Drawing;
-using DocumentFormat.OpenXml.Math;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
+using IMediaService = IISHF.Core.Interfaces.IMediaService;
 
 namespace IISHF.Core.Controllers.ApiControllers
 {
@@ -683,8 +684,8 @@ namespace IISHF.Core.Controllers.ApiControllers
 
 
         [HttpDelete]
-        [Route("itc/team/titel-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/roster-member/{rosterId}/")]
-        [Route("team-submission/team/titel-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/roster-member/{rosterId}/")]
+        [Route("itc/team/title-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/roster-member/{rosterId}/")]
+        [Route("team-submission/team/title-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/roster-member/{rosterId}/")]
         public async Task<IActionResult> DeleteFromRoster(string titleEvent, bool isChampionship, int eventYear, string teamName, int rosterId)
         {
             // Check we have the tournament
@@ -759,7 +760,7 @@ namespace IISHF.Core.Controllers.ApiControllers
         }
 
         [HttpDelete]
-        [Route("team-submission/team/titel-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/sponsor/{sponsorId}/media/{mediaId}")]
+        [Route("team-submission/team/title-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/sponsor/{sponsorId}/media/{mediaId}")]
         public async Task<IActionResult> DeleteSponsorImage(string titleEvent, bool isChampionship, int eventYear, string teamName, int sponsorId, int mediaId)
         {
 
@@ -820,6 +821,29 @@ namespace IISHF.Core.Controllers.ApiControllers
                 .ToList();
             _logger.LogInformation(searchText);
             return Ok(teams);
+        }
+
+        [HttpPost]
+        [Route("tournament/{tournamentId}/nma-team/{teamId}/tournament-team/{tournamentTeamId}")]
+        public async Task<IActionResult> LinkTeamToTournamentTeam([FromRoute] int tournamentId, [FromRoute] int teamId, [FromRoute] int tournamentTeamId, [FromBody] TournamentBaseModel model)
+        {
+            var tournament = _tournamentService.GetTournament(tournamentId);
+            if (tournament == null)
+            {
+                return NotFound("Tournament not found");
+            }
+
+            try
+            {
+                await _tournamentService.LinkNmaTeamToTournamentTeam(tournament, teamId, tournamentTeamId);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+
+            return Ok();
         }
     }
 }

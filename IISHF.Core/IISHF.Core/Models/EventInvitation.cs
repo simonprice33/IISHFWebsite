@@ -16,8 +16,6 @@
 
         public DateTime? TeamInformationSubmittedDate { get; set; }
 
-        public DateTime? TeamSubmissionRequiredBy { get; set; }
-
         public DateTime EventStartDate { get; set; }
 
         public DateTime EventEndDate { get; set; }

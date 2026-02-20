@@ -635,7 +635,7 @@
             return;
         }
 
-        var url = `/api/events/itc/team/titel-event/${titleEvent}/championship/${isChampionship}/year/${eventYear}/team/${teamName}/roster-member/${rosterId}`
+        var url = `/api/events/itc/team/title-event/${titleEvent}/championship/${isChampionship}/year/${eventYear}/team/${teamName}/roster-member/${rosterId}`
         var encodedUrl = encodeURI(url);
         $.ajax({
             url: encodedUrl,
@@ -674,7 +674,7 @@
 
         var teamName = $("#teamName").val()
 
-        var url = `/api/events/team-submission/team/titel-event/${titleEvent}/championship/${isChampionship}/year/${eventYear}/team/${teamName}/sponsor/${id}/media/${mediaId}`
+        var url = `/api/events/team-submission/team/title-event/${titleEvent}/championship/${isChampionship}/year/${eventYear}/team/${teamName}/sponsor/${id}/media/${mediaId}`
         var encodedUrl = encodeURI(url);
         $.ajax({
             url: encodedUrl,
