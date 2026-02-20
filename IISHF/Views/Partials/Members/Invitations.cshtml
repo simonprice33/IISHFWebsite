@@ -1,170 +1,323 @@
 ﻿@model IEnumerable<IISHF.Core.Models.EventInvitation>
 
 <div id="myInvitations" class="col-12 col-sm-12 col-md-12 col-lg-12 mb-3">
-    <div class="tab-content" id="v-pills-tabContent">
-        <div class="tab-pane fade shadow rounded bg-white show active p-5" id="v-pills-team" role="tabpanel" aria-labelledby="v-pills-team-tab">
-            <div class="col-12">
+    <div class="col-12">
 
-                <h2 class="mb-3 text-center">My Teams Invitations</h2>
-                <div class="table-responsive">
+        <h2 class="mb-3 text-center">My Teams Invitations</h2>
 
+        @* =========================
+           DESKTOP/TABLE (md+)
+           ========================= *@
+        <div class="table-responsive d-none d-md-block">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Event Name</th>
+                        <th>Event Dates</th>
+                        <th>Team Information Submission Status</th>
+                        <th>ITC Status</th>
+                        <th>ITC Status Change Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var invitation in Model)
+                    {
+                        string teamInformationSubmissionStatus = "Not Submitted";
+                        string teamInformationSubmittedDate = null;
 
-                    <div class="flex-table">
-                        <!-- Header -->
-                        <div class="flex-table-header">
-                            <div class="flex-cell">Event Name</div>
-                            <div class="flex-cell">Event Dates</div>
-                            <div class="flex-cell">Team Information Submission Status</div>
-                            <div class="flex-cell">ITC Status</div>
-                            <div class="flex-cell">ITC Status Change Date</div>
-                        </div>
-                        <!-- Body -->
-                        <div class="flex-table-body">
-                            @foreach (var invitation in Model)
-                            {
-                                string teamInformationSubmissionStatus = "Not Submitted";
-                                string teamInformationSubmittedDate = null;
-                                if (invitation.TeamInformationRequired && invitation.TeamInformationSubmitted)
+                        if (invitation.TeamInformationRequired && invitation.TeamInformationSubmitted)
+                        {
+                            teamInformationSubmissionStatus = "Submitted";
+                            teamInformationSubmittedDate = invitation.TeamInformationSubmittedDate.Value.ToString("dd.MM.yyyy - HH:mm");
+                        }
+
+                        TimeSpan submissionRequiredByDays = invitation.TeamInformationRequired
+                        ? invitation.TeamInformationRequiredBy - invitation.EventStartDate.AddDays(-14)
+                        : new TimeSpan();
+
+                        TimeSpan daysFromEvent = invitation.EventStartDate - DateTime.Now;
+                        bool dueSoon = daysFromEvent.Days < submissionRequiredByDays.Days;
+
+                        <tr>
+                            <td>@invitation.EventName</td>
+                            <td>@invitation.EventStartDate.ToString("dd.MM.yyyy") - @invitation.EventEndDate.ToString("dd.MM.yyyy")</td>
+
+                            <td>
+                                @* Team info column *@
+                                @if (teamInformationSubmittedDate != null)
                                 {
-                                    teamInformationSubmissionStatus = "Submitted";
-                                    teamInformationSubmittedDate = invitation.TeamInformationSubmittedDate.Value.ToString("dd.MM.yyyy - HH:mm");
+                                    <span class="badge bg-success">@teamInformationSubmissionStatus @teamInformationSubmittedDate</span>
+                                    <a href="/team-information-submission?team=@invitation.EventTeamId" class="badge bg-success text-white">View Submission</a>
                                 }
-                                TimeSpan submissionRequiredByDays = invitation.TeamInformationRequired ? invitation.TeamInformationRequiredBy - invitation.EventStartDate.AddDays(-14) : new TimeSpan();
-                                TimeSpan daysFromEvent = invitation.EventStartDate - DateTime.Now;
-                                bool dueSoon = daysFromEvent.Days < submissionRequiredByDays.Days;
+                                else if (invitation.TeamInformationRequired && !dueSoon)
+                                {
+                                    <a href="/team-information-submission?team=@invitation.EventTeamId" class="badge bg-warning text-dark">Create / Update</a>
+                                }
+                                else if (invitation.TeamInformationRequired && dueSoon)
+                                {
+                                    <a href="/team-information-submission?team=@invitation.EventTeamId" class="badge bg-warning text-dark">Create / Update - Due soon</a>
+                                }
+                                else if (DateTime.UtcNow > invitation.TeamInformationSubmittedDate)
+                                {
+                                    int lateDays = (DateTime.UtcNow - invitation.TeamInformationSubmittedDate.Value).Days;
+                                    string lateText = lateDays == 1 ? "day" : "days";
+                                    <a href="/team-information-submission?team=@invitation.EventTeamId" class="badge bg-danger text-white">Create / Update - @lateDays @lateText Late</a>
+                                }
+                                else if (invitation.TeamInformationRequired && invitation.TeamInformationSubmittedDate.HasValue)
+                                {
+                                    <a href="/team-information-submission?team=@invitation.EventTeamId" class="badge bg-success text-white">Create / Update - Required by @invitation.TeamInformationSubmittedDate.Value.ToString("dd.MM.yyyy")</a>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success text-white">Team information not required</span>
+                                }
+                            </td>
 
-                                <div class="flex-row">
-                                    <div class="flex-cell">@invitation.EventName</div>
-                                    <div class="flex-cell">@invitation.EventStartDate.ToString("dd.MM.yyyy") - @invitation.EventEndDate.ToString("dd.MM.yyyy")</div>
-                                    <div class="flex-cell">
-                                        @if (teamInformationSubmittedDate != null)
-                                        {
-                                            <span class="badge bg-success">@teamInformationSubmissionStatus @teamInformationSubmittedDate</span>
-                                            <a href="/team-information-submission?team=@invitation.EventTeamId" class="badge bg-success text-white">View Submission</a>
-                                        }
-                                        else if (invitation.TeamInformationRequired && !dueSoon)
-                                        {
-                                            <a href="/team-information-submission?team=@invitation.EventTeamId" class="badge bg-warning text-dark">Create / Update</a>
-                                        }
-                                        else if (invitation.TeamInformationRequired && dueSoon)
-                                        {
-                                            <a href="/team-information-submission?team=@invitation.EventTeamId" class="badge bg-warning text-dark">Create / Update - Due soon</a>
-                                        }
-                                        else if (DateTime.UtcNow > invitation.TeamInformationSubmittedDate)
-                                        {
-                                            int lateDays = (DateTime.UtcNow - invitation.TeamInformationSubmittedDate.Value).Days;
-                                            string lateText = lateDays == 1 ? "day" : "days";
-                                            <a href="/team-information-submission?team=@invitation.EventTeamId" class="badge bg-danger text-white">Create / Update - @lateDays @lateText Late</a>
-                                        }
-                                        else if (invitation.TeamInformationRequired && @invitation.TeamInformationSubmittedDate.HasValue)
-                                        {
-                                            <a href="/team-information-submission?team=@invitation.EventTeamId" class="badge bg-success text-white">Create / Update - Required by @invitation.TeamInformationSubmittedDate.Value.ToString("dd.MM.yyyy")</a>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-success text-white">Team information not required</span>
-                                        }
-                                    </div>
-                                    <div class="flex-cell">
-                                        @if (invitation.TeamInformationRequired && teamInformationSubmittedDate != null)
-                                        {
-                                            if (teamInformationSubmittedDate != null && invitation.ITCStatus == "Changes required")
-                                            {
-                                                var link = $"/itc?team={invitation.EventTeamId}";
-                                                <span class="badge bg-danger white">
-                                                    <a href="@link" class="text-white" style="text-decoration: none">Resolve issues</a>
-                                                </span>
-                                            }
+                            <td>
+                                @* ITC column *@
+                                @if (invitation.TeamInformationRequired && teamInformationSubmittedDate != null)
+                                {
+                                    if (invitation.ITCStatus == "Changes required")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}";
+                                        <span class="badge bg-danger">
+                                            <a href="@link" class="text-white" style="text-decoration: none">Resolve issues</a>
+                                        </span>
+                                    }
 
-                                            if (teamInformationSubmittedDate != null && invitation.ITCStatus == "Changes made")
-                                            {
-                                                var link = $"/itc?team={invitation.EventTeamId}";
-                                                <span class="badge bg-warning black">
-                                                    <span href="@link" class="text-black" style="text-decoration: none">Revision passed to NMA</span>
-                                                </span>
-                                            }
+                                    if (invitation.ITCStatus == "Changes made")
+                                    {
+                                        <span class="badge bg-warning">
+                                            <span class="text-dark" style="text-decoration: none">Revision passed to NMA</span>
+                                        </span>
+                                    }
 
-                                            if (teamInformationSubmittedDate != null && invitation.ITCStatus == "Not submitted")
-                                            {
-                                                var link = $"/itc?team={invitation.EventTeamId}";
-                                                <span class="badge bg-success white">
-                                                    <a href="@link" class="text-white" style="text-decoration: none">Create \ Update</a>
-                                                </span>
-                                            }
-                                            if (teamInformationSubmittedDate != null && invitation.ITCStatus == "Pending NMA Approval")
-                                            {
-                                                var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
-                                                <span class="badge bg-success white">
-                                                    Submitted
-                                                </span>
-                                                <span class="badge bg-warning white">
-                                                    <a href="@link" class="black" style="text-decoration: none">Unsubmit and Create New</a>
-                                                </span>
-                                            }
-                                            if (teamInformationSubmittedDate != null && invitation.ITCStatus == "NMA Approved - Pending IISHF Approval")
-                                            {
-                                                var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
-                                                <span class="badge bg-success white">
-                                                    Submitted
-                                                </span>
-                                                <span class="badge bg-warning white">
-                                                    <a href="@link" class="black" style="text-decoration: none">Unsubmit and Create New</a>
-                                                </span>
-                                            }
-                                        }
-                                        else
-                                        {
-                                            if (!invitation.TeamInformationRequired && invitation.ITCStatus == "Changes required")
-                                            {
-                                                var link = $"/itc?team={invitation.EventTeamId}";
-                                                <span class="badge bg-danger white">
-                                                    <a href="@link" class="text-white" style="text-decoration: none">Resolve issues</a>
-                                                </span>
-                                            }
+                                    if (invitation.ITCStatus == "Not submitted")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}";
+                                        <span class="badge bg-success">
+                                            <a href="@link" class="text-white" style="text-decoration: none">Create \ Update</a>
+                                        </span>
+                                    }
 
-                                            if (!invitation.TeamInformationRequired && invitation.ITCStatus == "Not submitted")
-                                            {
-                                                var link = $"/itc?team={invitation.EventTeamId}";
-                                                <span class="badge bg-success white">
-                                                    <a href="@link" class="text-white" style="text-decoration: none">Create \ Update</a>
-                                                </span>
-                                            }
-                                            if (!invitation.TeamInformationRequired && invitation.ITCStatus == "Pending NMA Approval")
-                                            {
-                                                var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
-                                                <span class="badge bg-success white">
-                                                    Submitted
-                                                </span>
-                                                <span class="badge bg-warning white">
-                                                    <a href="@link" class="black" style="text-decoration: none">Unsubmit and Create New</a>
-                                                </span>
-                                            }
-                                            if (!invitation.TeamInformationRequired && invitation.ITCStatus == "NMA Approved - Pending IISHF Approval")
-                                            {
-                                                var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
-                                                <span class="badge bg-success white">
-                                                    Submitted
-                                                </span>
-                                                <span class="badge bg-warning white">
-                                                    <a href="@link" class="black" style="text-decoration: none">Unsubmit and Create New</a>
-                                                </span>
-                                            }
-                                        }
-                                    </div>
-                                    <div class="flex-cell">
-                                        @if (invitation.ItcStatusChangeDate != null)
-                                        {
-                                            @invitation.ItcStatusChangeDate.Value.ToString("dd.MM.yyyy")
-                                        }
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
+                                    if (invitation.ITCStatus == "Pending NMA Approval")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
+                                        <span class="badge bg-success">Submitted</span>
+                                        <span class="badge bg-warning">
+                                            <a href="@link" class="text-dark" style="text-decoration: none">Unsubmit and Create New</a>
+                                        </span>
+                                    }
 
+                                    if (invitation.ITCStatus == "NMA Approved - Pending IISHF Approval")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
+                                        <span class="badge bg-success">Submitted</span>
+                                        <span class="badge bg-warning">
+                                            <a href="@link" class="text-dark" style="text-decoration: none">Unsubmit and Create New</a>
+                                        </span>
+                                    }
+                                }
+                                else
+                                {
+                                    if (!invitation.TeamInformationRequired && invitation.ITCStatus == "Changes required")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}";
+                                        <span class="badge bg-danger">
+                                            <a href="@link" class="text-white" style="text-decoration: none">Resolve issues</a>
+                                        </span>
+                                    }
 
-                </div>
-            </div>
+                                    if (!invitation.TeamInformationRequired && invitation.ITCStatus == "Not submitted")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}";
+                                        <span class="badge bg-success">
+                                            <a href="@link" class="text-white" style="text-decoration: none">Create \ Update</a>
+                                        </span>
+                                    }
+
+                                    if (!invitation.TeamInformationRequired && invitation.ITCStatus == "Pending NMA Approval")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
+                                        <span class="badge bg-success">Submitted</span>
+                                        <span class="badge bg-warning">
+                                            <a href="@link" class="text-dark" style="text-decoration: none">Unsubmit and Create New</a>
+                                        </span>
+                                    }
+
+                                    if (!invitation.TeamInformationRequired && invitation.ITCStatus == "NMA Approved - Pending IISHF Approval")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
+                                        <span class="badge bg-success">Submitted</span>
+                                        <span class="badge bg-warning">
+                                            <a href="@link" class="text-dark" style="text-decoration: none">Unsubmit and Create New</a>
+                                        </span>
+                                    }
+                                }
+                            </td>
+
+                            <td>
+                                @if (invitation.ItcStatusChangeDate != null)
+                                {
+                                    @invitation.ItcStatusChangeDate.Value.ToString("dd.MM.yyyy")
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
+
+        @* =========================
+           MOBILE/CARDS (sm and down)
+           ========================= *@
+        <div class="d-md-none">
+            @foreach (var invitation in Model)
+            {
+                string teamInformationSubmissionStatus = "Not Submitted";
+                string teamInformationSubmittedDate = null;
+
+                if (invitation.TeamInformationRequired && invitation.TeamInformationSubmitted)
+                {
+                    teamInformationSubmissionStatus = "Submitted";
+                    teamInformationSubmittedDate = invitation.TeamInformationSubmittedDate.Value.ToString("dd.MM.yyyy - HH:mm");
+                }
+
+                TimeSpan submissionRequiredByDays = invitation.TeamInformationRequired
+                ? invitation.TeamInformationRequiredBy - invitation.EventStartDate.AddDays(-14)
+                : new TimeSpan();
+
+                TimeSpan daysFromEvent = invitation.EventStartDate - DateTime.Now;
+                bool dueSoon = daysFromEvent.Days < submissionRequiredByDays.Days;
+
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title mb-2">@invitation.EventName</h5>
+
+                        <div class="mb-2">
+                            <div class="small text-muted">Event Dates</div>
+                            <div>@invitation.EventStartDate.ToString("dd.MM.yyyy") - @invitation.EventEndDate.ToString("dd.MM.yyyy")</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="small text-muted">Team Information</div>
+                            <div>
+                                @if (teamInformationSubmittedDate != null)
+                                {
+                                    <span class="badge bg-success me-1">@teamInformationSubmissionStatus @teamInformationSubmittedDate</span>
+                                    <a href="/team-information-submission?team=@invitation.EventTeamId" class="btn btn-sm btn-success mt-2">View Submission</a>
+                                }
+                                else if (invitation.TeamInformationRequired && !dueSoon)
+                                {
+                                    <a href="/team-information-submission?team=@invitation.EventTeamId" class="btn btn-sm btn-warning mt-2">Create / Update</a>
+                                }
+                                else if (invitation.TeamInformationRequired && dueSoon)
+                                {
+                                    <a href="/team-information-submission?team=@invitation.EventTeamId" class="btn btn-sm btn-warning mt-2">Create / Update (Due soon)</a>
+                                }
+                                else if (DateTime.UtcNow > invitation.TeamInformationSubmittedDate)
+                                {
+                                    int lateDays = (DateTime.UtcNow - invitation.TeamInformationSubmittedDate.Value).Days;
+                                    string lateText = lateDays == 1 ? "day" : "days";
+                                    <a href="/team-information-submission?team=@invitation.EventTeamId" class="btn btn-sm btn-danger mt-2">Create / Update (@lateDays @lateText late)</a>
+                                }
+                                else if (invitation.TeamInformationRequired && invitation.TeamInformationSubmittedDate.HasValue)
+                                {
+                                    <span class="badge bg-success me-1">Required by @invitation.TeamInformationSubmittedDate.Value.ToString("dd.MM.yyyy")</span>
+                                    <a href="/team-information-submission?team=@invitation.EventTeamId" class="btn btn-sm btn-success mt-2">Create / Update</a>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Team information not required</span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="small text-muted">ITC</div>
+                            <div>
+                                @if (invitation.TeamInformationRequired && teamInformationSubmittedDate != null)
+                                {
+                                    if (invitation.ITCStatus == "Changes required")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}";
+                                        <a href="@link" class="btn btn-sm btn-danger mt-2">Resolve issues</a>
+                                    }
+
+                                    if (invitation.ITCStatus == "Changes made")
+                                    {
+                                        <span class="badge bg-warning text-dark mt-2">Revision passed to NMA</span>
+                                    }
+
+                                    if (invitation.ITCStatus == "Not submitted")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}";
+                                        <a href="@link" class="btn btn-sm btn-success mt-2">Create / Update</a>
+                                    }
+
+                                    if (invitation.ITCStatus == "Pending NMA Approval")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
+                                        <span class="badge bg-success mt-2 me-1">Submitted</span>
+                                        <a href="@link" class="btn btn-sm btn-warning mt-2">Unsubmit &amp; Create New</a>
+                                    }
+
+                                    if (invitation.ITCStatus == "NMA Approved - Pending IISHF Approval")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
+                                        <span class="badge bg-success mt-2 me-1">Submitted</span>
+                                        <a href="@link" class="btn btn-sm btn-warning mt-2">Unsubmit &amp; Create New</a>
+                                    }
+                                }
+                                else
+                                {
+                                    if (!invitation.TeamInformationRequired && invitation.ITCStatus == "Changes required")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}";
+                                        <a href="@link" class="btn btn-sm btn-danger mt-2">Resolve issues</a>
+                                    }
+
+                                    if (!invitation.TeamInformationRequired && invitation.ITCStatus == "Not submitted")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}";
+                                        <a href="@link" class="btn btn-sm btn-success mt-2">Create / Update</a>
+                                    }
+
+                                    if (!invitation.TeamInformationRequired && invitation.ITCStatus == "Pending NMA Approval")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
+                                        <span class="badge bg-success mt-2 me-1">Submitted</span>
+                                        <a href="@link" class="btn btn-sm btn-warning mt-2">Unsubmit &amp; Create New</a>
+                                    }
+
+                                    if (!invitation.TeamInformationRequired && invitation.ITCStatus == "NMA Approved - Pending IISHF Approval")
+                                    {
+                                        var link = $"/itc?team={invitation.EventTeamId}&create-new=true";
+                                        <span class="badge bg-success mt-2 me-1">Submitted</span>
+                                        <a href="@link" class="btn btn-sm btn-warning mt-2">Unsubmit &amp; Create New</a>
+                                    }
+                                }
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="small text-muted">ITC Status Change Date</div>
+                            <div>
+                                @if (invitation.ItcStatusChangeDate != null)
+                                {
+                                    @invitation.ItcStatusChangeDate.Value.ToString("dd.MM.yyyy")
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            }
+        </div>
+
     </div>
 </div>

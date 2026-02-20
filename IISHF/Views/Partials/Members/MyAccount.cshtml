@@ -5,56 +5,160 @@
 @model IISHF.Core.Models.AccountViewModel
 @inject IMemberManager MemberManager
 @inject IMemberService MemberService
-@{
-    
 
-   var user = await MemberManager.GetCurrentMemberAsync();
+@{
+    var user = await MemberManager.GetCurrentMemberAsync();
     var member = MemberService.GetById(int.Parse(user.Id));
 
     var isNmaApprover = member.GetValue<bool>("nMAITCApprover");
-
     var isIsshfApprover = member.GetValue<bool>("iISHFITCApprover");
     var isTeamAdministrator = member.GetValue<bool>("teamAdministrator");
 
     var isNMA = member.GetValue<bool>("isNMA");
-
     var isIISHF = member.GetValue<bool>("isIISHF");
     var isClubContact = member.GetValue<bool>("isClubContact");
 
     var canInvite = isNMA || isIISHF || isClubContact;
-
 }
 
 <div class="container custom-container mt-5">
     <div class="row">
 
-        @await Html.PartialAsync("UserInformation.cshtml", Model)
-        @{
-            if (canInvite)
-            {
-                @await Html.PartialAsync("UserInvitation.cshtml", null)
-            }
-        }
-        @* 
-            <!-- Re-enable when using notification -->
-        @await Html.PartialAsync("Notifications.cshtml", null) 
-        *@
+        <div class="col-md-3">
+            <div class="nav flex-column nav-pills nav-pills-custom"
+                 id="v-pills-tab"
+                 role="tablist"
+                 aria-orientation="vertical">
 
-        @{
-            if (isTeamAdministrator)
-            {
-                @await Html.PartialAsync("Invitations.cshtml", Model.Invitations)
-            }
-        }
+                <a class="nav-link mb-3 p-3 shadow active"
+                   id="v-pills-details-tab"
+                   data-bs-toggle="pill"
+                   href="#v-pills-details"
+                   role="tab"
+                   aria-controls="v-pills-details"
+                   aria-selected="true">
+                    <span class="font-weight-bold small text-uppercase">My Details</span>
+                </a>
 
-        @{
-            if (isNmaApprover || isIsshfApprover)
-            {
-                @await Html.PartialAsync("Approvals.cshtml", Model.Approvals)
-            }
-        }
+                @if (canInvite)
+                {
+                    <a class="nav-link mb-3 p-3 shadow"
+                       id="v-pills-invite-tab"
+                       data-bs-toggle="pill"
+                       href="#v-pills-invite"
+                       role="tab"
+                       aria-controls="v-pills-invite"
+                       aria-selected="false">
+                        <span class="font-weight-bold small text-uppercase">Invite Users</span>
+                    </a>
+                }
 
-        
+                @if (isTeamAdministrator)
+                {
+                    <a class="nav-link mb-3 p-3 shadow"
+                       id="v-pills-invitations-tab"
+                       data-bs-toggle="pill"
+                       href="#v-pills-invitations"
+                       role="tab"
+                       aria-controls="v-pills-invitations"
+                       aria-selected="false">
+                        <span class="font-weight-bold small text-uppercase">Invitations</span>
+                    </a>
+                }
+
+                @if (isNmaApprover || isIsshfApprover)
+                {
+                    <a class="nav-link mb-3 p-3 shadow"
+                       id="v-pills-approvals-tab"
+                       data-bs-toggle="pill"
+                       href="#v-pills-approvals"
+                       role="tab"
+                       aria-controls="v-pills-approvals"
+                       aria-selected="false">
+                        <span class="font-weight-bold small text-uppercase">Approvals</span>
+                    </a>
+                }
+
+                @*
+                    <!-- Re-enable when using notification -->
+                    <a class="nav-link mb-3 p-3 shadow"
+                       id="v-pills-notifications-tab"
+                       data-bs-toggle="pill"
+                       href="#v-pills-notifications"
+                       role="tab"
+                       aria-controls="v-pills-notifications"
+                       aria-selected="false">
+                        <span class="font-weight-bold small text-uppercase">Notifications</span>
+                    </a>
+                *@
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="tab-content" id="v-pills-tabContent">
+
+                <div class="tab-pane fade shadow rounded bg-white show active p-5"
+                     id="v-pills-details"
+                     role="tabpanel"
+                     aria-labelledby="v-pills-details-tab">
+                    @await Html.PartialAsync("UserInformation.cshtml", Model)
+                </div>
+
+                @if (canInvite)
+                {
+                    <div class="tab-pane fade shadow rounded bg-white p-5"
+                         id="v-pills-invite"
+                         role="tabpanel"
+                         aria-labelledby="v-pills-invite-tab">
+                        @await Html.PartialAsync("UserInvitation.cshtml", null)
+                    </div>
+                }
+
+                @if (isTeamAdministrator)
+                {
+                    <div class="tab-pane fade shadow rounded bg-white p-5"
+                         id="v-pills-invitations"
+                         role="tabpanel"
+                         aria-labelledby="v-pills-invitations-tab">
+                        @await Html.PartialAsync("Invitations.cshtml", Model.Invitations)
+                    </div>
+                }
+
+                @if (isNmaApprover || isIsshfApprover)
+                {
+                    <div class="tab-pane fade shadow rounded bg-white p-5"
+                         id="v-pills-approvals"
+                         role="tabpanel"
+                         aria-labelledby="v-pills-approvals-tab">
+                        @await Html.PartialAsync("Approvals.cshtml", Model.Approvals)
+                    </div>
+                }
+
+                @*
+                    <!-- Re-enable when using notification -->
+                    <div class="tab-pane fade shadow rounded bg-white p-5"
+                         id="v-pills-notifications"
+                         role="tabpanel"
+                         aria-labelledby="v-pills-notifications-tab">
+                        @await Html.PartialAsync("Notifications.cshtml", null)
+                    </div>
+                *@
+
+            </div>
+        </div>
+
     </div>
 </div>
 
+<script>
+    // Same UX behaviour as Events: on mobile, scroll tab content into view when a tab is selected.
+    $(document).ready(function () {
+        $('a[data-bs-toggle="pill"]').on('shown.bs.tab', function (e) {
+            if ($(window).width() <= 768) {
+                var target = $(e.target).attr("href");
+                var offset = $(target).offset().top - 75;
+                $('html, body').animate({ scrollTop: offset }, 500);
+            }
+        });
+    });
+</script>
