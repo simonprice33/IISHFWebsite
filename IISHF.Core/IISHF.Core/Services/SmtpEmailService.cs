@@ -2,10 +2,15 @@
 using IISHF.Core.Configurations;
 using IISHF.Core.Interfaces;
 using IISHF.Core.Models;
+using MailKit;
 using MailKit.Net.Smtp;
+using Microsoft.AspNetCore.Builder.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using MimeKit;
+using System.Threading;
 using Umbraco.Cms.Core.Configuration.Models;
+using Umbraco.Cms.Core.Models.ContentEditing;
 using IMember = Umbraco.Cms.Core.Models.IMember;
 using Member = IISHF.Core.Models.Member;
 
@@ -199,6 +204,18 @@ namespace IISHF.Core.Services
 
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
+
+                using var imap = new MailKit.Net.Imap.ImapClient();
+                imap.CheckCertificateRevocation = false;
+
+                await imap.ConnectAsync(smtp.Host, 993, MailKit.Security.SecureSocketOptions.SslOnConnect);
+                await imap.AuthenticateAsync(smtp.Username, smtp.Password);
+
+                var sent = await imap.GetFolderAsync("Sent Items");
+                await sent.OpenAsync(MailKit.FolderAccess.ReadWrite);
+                await sent.AppendAsync(message);
+
+                await imap.DisconnectAsync(true);
             }
             catch (Exception ex)
             {
@@ -212,6 +229,7 @@ namespace IISHF.Core.Services
             if (smtp.Port == 587) return MailKit.Security.SecureSocketOptions.StartTls;
             return MailKit.Security.SecureSocketOptions.Auto;
         }
+
 
         private async Task<string> GetHtmlTemplate(object data, string templateName)
         {
