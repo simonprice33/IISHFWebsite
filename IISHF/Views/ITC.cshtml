@@ -920,10 +920,12 @@
 
         var teamName = $("#teamName").val()
 
-        var url = `/api/events/itc/team/tournament/${eventSelectValue}/team/${teamName}/roster-member/${rosterId}`
-        var encodedUrl = encodeURI(url);
+        var encodedTeamName = encodeURIComponent(teamName);
+        var url = `/api/events/itc/team/tournament/${eventSelectValue}/team/${encodedTeamName}/roster-member/${rosterId}`
+        // var url = `/api/events/itc/team/tournament/${eventSelectValue}/team/${teamName}/roster-member/${rosterId}`
+        // var encodedUrl = encodeURI(url);
         $.ajax({
-            url: encodedUrl,
+            url: url,
             type: 'DELETE',
             success: function (data) {
                 // Remove the row from the table
@@ -2108,18 +2110,19 @@ $('#dateOfBirth').datepicker({
         // Ajax call here to approve roster members
         // On success <a href="#"></a>
 
-         var tournamentId = $("#eventSelect").val();
-          var teamName = $("#teamName").val()
-
-          var url = `/api/events/itc/approve/${identifier}/tournament/${tournamentId}/team/${teamName}`
-          var encodedUrl = encodeURI(url);
+        var tournamentId = $("#eventSelect").val();
+        var teamName = $("#teamName").val()
+        var encodedTeamName = encodeURIComponent(teamName);
+        var url = `/api/events/itc/approve/${identifier}/tournament/${tournamentId}/team/${encodedTeamName}`
+        // var url = `/api/events/itc/approve/${identifier}/tournament/${tournamentId}/team/${teamName}`
+        // var encodedUrl = encodeURI(url);
 
        var json = {
        RosterApprovals : approvedRosterMembers}
 
          $.ajax({
             type: "PUT",
-            url: encodedUrl,
+            url: url,
             data: JSON.stringify(json),
             contentType: "application/json; charset=utf-8",
             dataType: "json",

@@ -1,0 +1,234 @@
+﻿@using System.Text.Encodings.Web
+
+    <div id="userManagementRoot" class="col-12 col-sm-12 col-md-12 col-lg-12 mb-5">
+    <div class="tab-content" id="v-pills-tabContent">
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <h4 class="mb-0">User Management</h4>
+
+        <div class="ms-auto d-flex flex-wrap gap-2 align-items-center">
+            <input type="text" id="umSearch" class="form-control" style="max-width:320px;" placeholder="Search login or email..." />
+            <button type="button" id="umSearchBtn" class="btn btn-primary">Search</button>
+            <button type="button" id="umRefreshBtn" class="btn btn-outline-secondary">Refresh</button>
+        </div>
+    </div>
+
+    <div id="umError" class="alert alert-danger d-none"></div>
+
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead>
+                <tr>
+                    <th>Login</th>
+                    <th>Email</th>
+                    <th>Member group(s)</th>
+                    <th>Approved</th>
+                    <th>Locked out</th>
+                    <th style="width:240px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="umRows">
+                <tr><td colspan="6">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex align-items-center justify-content-between mt-3">
+        <div class="small text-muted" id="umPagingInfo"></div>
+        <div class="d-flex gap-2">
+            <button type="button" id="umPrev" class="btn btn-outline-secondary btn-sm">Prev</button>
+            <button type="button" id="umNext" class="btn btn-outline-secondary btn-sm">Next</button>
+        </div>
+    </div>
+
+</div>
+</div>
+
+<script>
+    (function () {
+        var page = 1;
+        var pageSize = 25;
+        var total = 0;
+        var roles = [];
+        var loading = false;
+
+        function showError(msg) {
+            var el = $("#umError");
+            el.text(msg || "An error occurred.");
+            el.removeClass("d-none");
+        }
+
+        function clearError() {
+            $("#umError").addClass("d-none").text("");
+        }
+
+        function escapeHtml(text) {
+            return $("<div/>").text(text ?? "").html();
+        }
+
+            function buildRolesSelect(selected) {
+        selected = selected || [];
+
+        // Pick a single "default" role. If they have multiple, we take the first.
+        var selectedRole = selected.length > 0 ? selected[0] : "";
+
+        var html = '<select class="form-select form-select-sm umRole">';
+        html += '<option value="">-- Select role --</option>';
+
+        roles.forEach(function (r) {
+            var isSel = (r || "").toLowerCase() === (selectedRole || "").toLowerCase();
+            html += '<option value="' + escapeHtml(r) + '"' + (isSel ? ' selected' : '') + '>' + escapeHtml(r) + '</option>';
+        });
+
+        html += '</select>';
+        return html;
+    }
+
+        function render(rows) {
+            var tbody = $("#umRows");
+            if (!rows || rows.length === 0) {
+                tbody.html('<tr><td colspan="6">No users found.</td></tr>');
+                return;
+            }
+
+            var html = "";
+            rows.forEach(function (u) {
+                var groupsText = (u.roles || []).join(", ");
+
+                html += '<tr data-userid="' + escapeHtml(u.userId) + '">';
+                html += '  <td>' + escapeHtml(u.userName) + '</td>';
+                html += '  <td>' + escapeHtml(u.email) + '</td>';
+                html += '  <td>' + buildRolesSelect(u.roles) + '</td>';
+                html += '  <td><input type="checkbox" class="form-check-input umApproved" ' + (u.isApproved ? "checked" : "") + ' /></td>';
+                html += '  <td><input type="checkbox" class="form-check-input umLockedOut" ' + (u.isLockedOut ? "checked" : "") + ' /></td>';
+                html += '  <td class="d-flex gap-2 flex-wrap">';
+                html += '     <button type="button" class="btn btn-sm btn-success umSave">Save</button>';
+                html += '     <button type="button" class="btn btn-sm btn-outline-primary umResetPw">Start password reset</button>';
+                html += '  </td>';
+                html += '</tr>';
+            });
+
+            tbody.html(html);
+        }
+
+        function setPagingInfo() {
+            var from = total === 0 ? 0 : ((page - 1) * pageSize) + 1;
+            var to = Math.min(page * pageSize, total);
+            $("#umPagingInfo").text("Showing " + from + "–" + to + " of " + total);
+            $("#umPrev").prop("disabled", page <= 1);
+            $("#umNext").prop("disabled", page * pageSize >= total);
+        }
+
+        function loadRoles() {
+            return $.ajax({
+                url: "/umbraco/api/accountusers/member-groups",
+                method: "GET"
+            }).then(function (res) {
+                roles = res && res.roles ? res.roles : [];
+            });
+        }
+
+        function loadUsers() {
+            if (loading) return;
+            loading = true;
+            clearError();
+
+            var q = ($("#umSearch").val() || "").trim();
+            $("#umRows").html('<tr><td colspan="6">Loading...</td></tr>');
+
+            return $.ajax({
+                url: "/umbraco/api/accountusers/members",
+                method: "GET",
+                data: { page: page, pageSize: pageSize, query: q }
+            }).then(function (res) {
+                total = res.total || 0;
+                render(res.items || []);
+                setPagingInfo();
+            }).fail(function (xhr) {
+                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to load users.");
+            }).always(function () {
+                loading = false;
+            });
+        }
+
+        function getSelectedRoles($tr) {
+            var selected = [];
+            $tr.find("select.umRoles option:selected").each(function () {
+                selected.push($(this).val());
+            });
+            return selected;
+        }
+
+        function updateRolesText($tr) {
+            var selected = getSelectedRoles($tr);
+            $tr.find(".umRolesText").text(selected.join(", "));
+        }
+
+        function saveRow($tr) {
+            clearError();
+
+            var userId = $tr.data("userid");
+            var payload = {
+                userId: userId,
+                isApproved: $tr.find(".umApproved").is(":checked"),
+                isLockedOut: $tr.find(".umLockedOut").is(":checked"),
+                roles: getSelectedRoles($tr)
+            };
+
+            return $.ajax({
+                url: "/umbraco/api/accountusers/members",
+                method: "PUT",
+                contentType: "application/json",
+                data: JSON.stringify(payload)
+            }).then(function () {
+                updateRolesText($tr);
+            }).fail(function (xhr) {
+                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to save user.");
+            });
+        }
+
+        function startPasswordReset($tr) {
+            clearError();
+            var userId = $tr.data("userid");
+
+            return $.ajax({
+                url: "/umbraco/api/accountusers/members/" + encodeURIComponent(userId) + "/password-reset",
+                method: "POST"
+            }).then(function () {
+                alert("Password reset email sent (if email is configured).");
+            }).fail(function (xhr) {
+                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to start password reset.");
+            });
+        }
+
+        // Lazy-load when the tab is first opened
+        var initialised = false;
+        $('a[data-bs-toggle="pill"][href="#v-pills-users"]').on('shown.bs.tab', function () {
+            if (initialised) return;
+            initialised = true;
+
+            loadRoles().then(loadUsers).fail(function (xhr) {
+                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to initialise user management.");
+            });
+        });
+
+        $("#umSearchBtn").on("click", function () { page = 1; loadUsers(); });
+        $("#umRefreshBtn").on("click", function () { loadRoles().then(loadUsers); });
+        $("#umPrev").on("click", function () { if (page > 1) { page--; loadUsers(); } });
+        $("#umNext").on("click", function () { if (page * pageSize < total) { page++; loadUsers(); } });
+
+        $(document).on("change", "select.umRoles", function () {
+            updateRolesText($(this).closest("tr"));
+        });
+
+        $(document).on("click", ".umSave", function () {
+            var $tr = $(this).closest("tr");
+            saveRow($tr);
+        });
+
+        $(document).on("click", ".umResetPw", function () {
+            var $tr = $(this).closest("tr");
+            startPasswordReset($tr);
+        });
+
+    })();
+</script>
