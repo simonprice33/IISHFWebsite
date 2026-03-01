@@ -15,6 +15,7 @@ using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Web;
 using Umbraco.Cms.Infrastructure.Persistence;
+using IMediaService = IISHF.Core.Interfaces.IMediaService;
 using Member = IISHF.Core.Models.Member;
 
 namespace IISHF.Core.Services
@@ -33,6 +34,7 @@ namespace IISHF.Core.Services
         private readonly IMemberManager _memberManager;
         private readonly IEmailService _emailService;
         private readonly ILogger<UserService> _logger;
+        private readonly IMediaService _iishfMediaService;
 
         public UserService(IUmbracoContextAccessor umbracoContextAccessor,
             IUmbracoDatabaseFactory databaseFactory,
@@ -45,7 +47,9 @@ namespace IISHF.Core.Services
             IHttpContextAccessor httpContextAccessor,
             IMemberManager memberManager,
             IEmailService emailService,
-            ILogger<UserService> logger)
+            ILogger<UserService> logger,
+            IMediaService iishfMediaService
+            )
         {
             _umbracoContextAccessor = umbracoContextAccessor;
             _databaseFactory = databaseFactory;
@@ -59,6 +63,7 @@ namespace IISHF.Core.Services
             _memberManager = memberManager;
             _emailService = emailService;
             _logger = logger;
+            _iishfMediaService = iishfMediaService;
         }
 
         public async Task<IMember> RegisterUser(RegisterViewModel model)
@@ -85,13 +90,16 @@ namespace IISHF.Core.Services
                 SetMemberInvitationValues(model, invitation, newMember);
             }
 
+            var template = _iishfMediaService.GetMediaTemplate("MemberRegistration");
+            var templateUri = _iishfMediaService.GetTemplateUrl(template);
+
             await _emailService.SendRegistrationConfirmation(new Member()
             {
                 Name = $"{model.FirstName} {model.LastName}",
                 EmailAddress = model.EmailAddress,
                 Token = token,
                 TokenUrl = new Uri($"{_httpContextAccessor.HttpContext.Request.Scheme}://{_httpContextAccessor.HttpContext.Request.Host}/verify?token={token}")
-            }, "MemberRegistration.html", "IISHF Membership registration");
+            }, templateUri, "IISHF Membership registration");
 
             newMember.SetValue("verificationEmailSentDate", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
             _services.MemberService.Save(newMember);

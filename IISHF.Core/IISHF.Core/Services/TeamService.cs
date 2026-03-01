@@ -193,7 +193,7 @@ namespace IISHF.Core.Services
             {
                 var content = _contentService.GetById(sponsorId);
                 var media = _umbracoMediaService.GetById(mediaId);
-
+                
                 _contentService.Delete(content);
                 _umbracoMediaService.Delete(media);
             });

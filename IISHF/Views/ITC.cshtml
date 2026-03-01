@@ -28,9 +28,24 @@
     if (teamInformationKey != Guid.Empty)
     {
         // build itc information from team information for event
+        // // team = Umbraco.Content(teamInformationKey);
+        // // selectedTournament = Umbraco.Content(team.Parent.Id);
+        // // isSubmitted = team.Value<bool>("iTCSubmitted");
+
         team = Umbraco.Content(teamInformationKey);
-        selectedTournament = Umbraco.Content(team.Parent.Id);
-        isSubmitted = team.Value<bool>("iTCSubmitted");
+
+        // FIX: guard null team / null parent
+        if (team != null && team.Parent != null)
+        {
+            selectedTournament = Umbraco.Content(team.Parent.Id);
+            isSubmitted = team.Value<bool>("iTCSubmitted");
+        }
+        else
+        {
+            team = null;
+            selectedTournament = null;
+            isSubmitted = false;
+        }
     }
 
 
@@ -102,49 +117,131 @@
         .ThenBy(x => x.Country);
 
     // Retrieve user details
+    // // // user = await MemberManager.GetCurrentMemberAsync();
+    // // // Guid.TryParse(Context.Request.Query["approver"], out var approver);
+    // // // var member = MemberService.GetById(int.Parse(user.Id));
+
+    // // // if (approver != Guid.Empty && team != null)
+    // // // {
+    // // //     isNmaApprover = member.GetValue<bool>("nMAITCApprover");
+
+    // // //     isIsshfApprover = member.GetValue<bool>("iISHFITCApprover");
+
+    // // //     var userMatchesKey = user.Key.Equals(approver);
+
+    // // //     var nma = Umbraco.Content(team.Value<Guid>("nmaKey"));
+
+    // // //     var approverIsWithNma = nma.Children()
+    // // //         .Where(x => x.ContentType.Alias == "nMAContact")
+    // // //         .Any(x => x.Value<string>("nMAContactEmail") == member.Email);
+
+    // // //     if (!userMatchesKey && !approverIsWithNma)
+    // // //     {
+    // // //         isNmaApprover = false;
+    // // //         // Redirect to an forbidden page
+    // // //     }
+    // // // }
+
+    // // // if (team != null)
+    // // // {
+    // // //     var nmaTeam = Umbraco.Content(team.Value<Guid>("nMATeamKey"));
+    // // //     var userIsWithTeam = false;
+
+    // // //     if (!isNmaApprover && !isIsshfApprover)
+    // // //     {
+    // // //         userIsWithTeam = user.Email == nmaTeam?.Value<string>("teamContactEmail") || team.Value<IPublishedContent>("selectTeamCreatedBy").Id == member.Id; // user is team contact
+    // // //     }
+
+    // // //     // // var userIsClubContact = user.Email == null;
+    // // //     if (!userIsWithTeam && !isNmaApprover && !isIsshfApprover)
+    // // //     {
+    // // //         players.Clear();
+    // // //         benchOfficials.Clear();
+    // // //         team = null;
+    // // //         selectedTournament = null;
+    // // //         isSubmitted = false;
+    // // //     }
+    // // // }
+
+    // Retrieve user details
     user = await MemberManager.GetCurrentMemberAsync();
     Guid.TryParse(Context.Request.Query["approver"], out var approver);
-    var member = MemberService.GetById(int.Parse(user.Id));
 
-    if (approver != Guid.Empty && team != null)
+    // FIX: guard null member identity
+    if (user == null)
     {
-        isNmaApprover = member.GetValue<bool>("nMAITCApprover");
-
-        isIsshfApprover = member.GetValue<bool>("iISHFITCApprover");
-
-        var userMatchesKey = user.Key.Equals(approver);
-
-        var nma = Umbraco.Content(team.Value<Guid>("nmaKey"));
-
-        var approverIsWithNma = nma.Children()
-            .Where(x => x.ContentType.Alias == "nMAContact")
-            .Any(x => x.Value<string>("nMAContactEmail") == member.Email);
-
-        if (!userMatchesKey && !approverIsWithNma)
-        {
-            isNmaApprover = false;
-            // Redirect to an forbidden page
-        }
+        players.Clear();
+        benchOfficials.Clear();
+        team = null;
+        selectedTournament = null;
+        isSubmitted = false;
     }
-
-    if (team != null)
+    else
     {
-        var nmaTeam = Umbraco.Content(team.Value<Guid>("nMATeamKey"));
-        var userIsWithTeam = false;
+        // FIX: guard non-int identity id
+        var memberIdOk = int.TryParse(user.Id, out var memberId);
+        var member = memberIdOk ? MemberService.GetById(memberId) : null;
 
-        if (!isNmaApprover && !isIsshfApprover)
-        {
-            userIsWithTeam = user.Email == nmaTeam?.Value<string>("teamContactEmail") || team.Value<IPublishedContent>("selectTeamCreatedBy").Id == member.Id; // user is team contact
-        }
-
-        // // var userIsClubContact = user.Email == null;
-        if (!userIsWithTeam && !isNmaApprover && !isIsshfApprover)
+        // If we cannot resolve member, fail closed (no roster leak)
+        if (member == null)
         {
             players.Clear();
             benchOfficials.Clear();
             team = null;
             selectedTournament = null;
             isSubmitted = false;
+        }
+        else
+        {
+            if (approver != Guid.Empty && team != null)
+            {
+                isNmaApprover = member.GetValue<bool>("nMAITCApprover");
+                isIsshfApprover = member.GetValue<bool>("iISHFITCApprover");
+
+                var userMatchesKey = user.Key.Equals(approver);
+
+                var nma = Umbraco.Content(team.Value<Guid>("nmaKey"));
+
+                // FIX: guard null nma + case-insensitive email compare
+                var approverIsWithNma =
+                    nma != null &&
+                    nma.Children()
+                        .Where(x => x.ContentType.Alias == "nMAContact")
+                        .Any(x => string.Equals(
+                            x.Value<string>("nMAContactEmail"),
+                            member.Email,
+                            StringComparison.OrdinalIgnoreCase));
+
+                if (!userMatchesKey && !approverIsWithNma)
+                {
+                    isNmaApprover = false;
+                }
+            }
+
+            if (team != null)
+            {
+                var nmaTeam = Umbraco.Content(team.Value<Guid>("nMATeamKey"));
+                var userIsWithTeam = false;
+
+                if (!isNmaApprover && !isIsshfApprover)
+                {
+                    // FIX: guard null selectTeamCreatedBy + case-insensitive email compare
+                    var createdBy = team.Value<IPublishedContent>("selectTeamCreatedBy");
+
+                    userIsWithTeam =
+                        string.Equals(user.Email, nmaTeam?.Value<string>("teamContactEmail"), StringComparison.OrdinalIgnoreCase)
+                        || (createdBy != null && createdBy.Id == member.Id); // user is team contact
+                }
+
+                if (!userIsWithTeam && !isNmaApprover && !isIsshfApprover)
+                {
+                    players.Clear();
+                    benchOfficials.Clear();
+                    team = null;
+                    selectedTournament = null;
+                    isSubmitted = false;
+                }
+            }
         }
     }
 }
@@ -798,8 +895,13 @@
         }
         var titleEvent = $('#shortCode').val()
         var rosterId = row.data('id')
-        var eventSelectValue = $("#eventSelect").val();
-        var isChampionship = eventSelectValue.toLowerCase().includes("championship");
+        // // var eventSelectValue = $("#eventSelect").val();
+        // // var isChampionship = eventSelectValue.toLowerCase().includes("championship");
+
+         var eventSelectValue = $("#eventSelect").val() || "";
+        // FIX: value is an ID; use selected option TEXT for name-based rules
+        var eventSelectText = $("#eventSelect option:selected").text() || "";
+        var isChampionship = eventSelectText.toLowerCase().includes("championship");
 
         var startDateText = $("#startDate").text();
         var eventYear = ''
@@ -2294,7 +2396,7 @@ $('#dateOfBirth').datepicker({
 
         // When the user clicks anywhere outside of the modal, close it
         $(window).on("click", function (event) {
-            var modal = $("#edit-modal");
+            var modal = $("#editmodal");
             if ($(event.target).is(modal)) {
                 modal.hide();
             }
@@ -2305,7 +2407,7 @@ $('#dateOfBirth').datepicker({
             event.preventDefault();
             // TODO: Add code to handle the form data, e.g., send an AJAX request
 
-            $("#edit-modal").hide();
+            $("#editmodal").hide();
         });
 
         var nationalityDropdown = $('select[name^="Nationality"]');

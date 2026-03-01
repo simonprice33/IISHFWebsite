@@ -1,17 +1,20 @@
-﻿using System;
+﻿using IISHF.Core.Interfaces;
+using IISHF.Core.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
-using IISHF.Core.Interfaces;
-using IISHF.Core.Models;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
+using IMediaService = IISHF.Core.Interfaces.IMediaService;
 
 namespace IISHF.Core.Services
 {
@@ -25,6 +28,7 @@ namespace IISHF.Core.Services
         private readonly IContentService _contentService;
         private readonly IPublishedContentQuery _contentQuery;
         private readonly IEmailService _emailService;
+        private readonly IMediaService _iishfMediaService;
 
         public UserInvitationService(
             INMAService nmaService,
@@ -34,7 +38,10 @@ namespace IISHF.Core.Services
             IMemberManager memberManager,
             IContentService contentService,
             IPublishedContentQuery contentQuery,
-            IEmailService emailService)
+            IEmailService emailService,
+            IMediaService iishfMediaService
+
+            )
         {
             _nmaService = nmaService;
             _teamService = teamService;
@@ -44,6 +51,7 @@ namespace IISHF.Core.Services
             _contentService = contentService;
             _contentQuery = contentQuery;
             _emailService = emailService;
+            _iishfMediaService = iishfMediaService;
         }
 
         public async Task InviteUser(UserInvitationModel model)
@@ -105,15 +113,21 @@ namespace IISHF.Core.Services
             
             var queryString = $"id={invitation.Key}";
 
-            var template = "MemberRegistrationInvitation.html";
+            var templateName = "MemberRegistrationInvitation";
+
+            var template = _iishfMediaService.GetMediaTemplate(templateName);
+            var templateUri = _iishfMediaService.GetTemplateUrl(template);
 
             var protocol = _httpContextAccessor.HttpContext.Request.Scheme;
+            
             var baseUrl = _httpContextAccessor.HttpContext.Request.Host;
             var route = "register";
 
             var registerUrl = new Uri($"{protocol}://{baseUrl}/{route}?{queryString}");
+            
 
-            await _emailService.SendUserInvitation(member, model.Email, model.Name, registerUrl, template, "IISHF Website User Invitation");
+
+            await _emailService.SendUserInvitation(member, model.Email, model.Name, registerUrl, templateUri, "IISHF Website User Invitation");
         }
     }
 }

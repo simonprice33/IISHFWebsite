@@ -48,6 +48,7 @@ namespace IISHF.Core.Controllers.ApiControllers
         private readonly INMAService _nmaService;
         private readonly ILogger<EventsController> _logger;
         private readonly IHubContext<DataHub> _hubContext;
+        private readonly IMediaService _iishfMediaService;
         private readonly JsonSerializerOptions _options;
 
         public EventsController(
@@ -64,7 +65,9 @@ namespace IISHF.Core.Controllers.ApiControllers
             IEmailService emailService,
             INMAService nmaService,
             ILogger<EventsController> logger,
-            IHubContext<DataHub> hubContext)
+            IHubContext<DataHub> hubContext,
+            IMediaService iishfMediaService
+            )
         {
             _contentQuery = contentQuery;
             _contentService = contentService;
@@ -80,6 +83,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             _nmaService = nmaService;
             _logger = logger;
             _hubContext = hubContext;
+            _iishfMediaService = iishfMediaService;
 
             _options = new JsonSerializerOptions
             {
@@ -516,8 +520,11 @@ namespace IISHF.Core.Controllers.ApiControllers
                 var excelFileName =
                     $"ITC_${tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-hhmmss")}.pdf";
 
+                var template = _iishfMediaService.GetMediaTemplate("ITCApprovedInternalInternalTemplate");
+                var templateUri = _iishfMediaService.GetTemplateUrl(template);
+
                 var itcExcel = await _tournamentService.GenerateItcAsExcelFile(team, tournament);
-                await _emailService.SendItc("thf@iishf.com", new List<string>(), "THF Manager", "IISHF Event Name", "ITCApprovedInternalInternalTemplate.html",
+                await _emailService.SendItc("thf@iishf.com", new List<string>(), "THF Manager", "IISHF Event Name", templateUri,
                     $"{tournament.Name} ITC Approved - {team.Name}", team.Name, itcExcel, excelFileName);
 
                 var excelStream = new MemoryStream(itcExcel);
@@ -539,7 +546,10 @@ namespace IISHF.Core.Controllers.ApiControllers
 
                 cc.AddRange(itcApprovers.Select(itcApprover => itcApprover.NmaApproverEmail));
 
-                await _emailService.SendItc(tournament.Value<string>("hostEmail"), cc, tournament.Value<string>("hostContact"), "IISHF Event Name", "ITCApprovedSendToHost.html",
+                template = _iishfMediaService.GetMediaTemplate("ITCApprovedSendToHost");
+                templateUri = _iishfMediaService.GetTemplateUrl(template);
+
+                await _emailService.SendItc(tournament.Value<string>("hostEmail"), cc, tournament.Value<string>("hostContact"), "IISHF Event Name", templateUri,
                     $"{tournament.Name} ITC Approved - {team.Name}", team.Name, itcPdf, pdfFileName);
 
                 return NoContent();

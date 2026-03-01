@@ -241,7 +241,7 @@ namespace IISHF.Core.Services
                 writer.WriteSafeString(dt.ToShortDateString());
             });
 
-            var templateUri = new Uri($"{_iishfOptions.EmailTemplateBaseUrl}{templateName}");
+            var templateUri = new Uri($"{templateName}");
             var emailTemplate = await _httpClient.GetStringAsync(templateUri);
 
             return Handlebars.Compile(emailTemplate)(data);
