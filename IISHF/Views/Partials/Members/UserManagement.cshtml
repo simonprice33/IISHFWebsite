@@ -1,8 +1,8 @@
 ﻿@using System.Text.Encodings.Web
 
-    <div id="userManagementRoot" class="col-12 col-sm-12 col-md-12 col-lg-12 mb-5">
-    <div class="tab-content" id="v-pills-tabContent">
-        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+<div id="userManagementRoot" class="col-12 col-sm-12 col-md-12 col-lg-12 mb-5">
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
         <h4 class="mb-0">User Management</h4>
 
         <div class="ms-auto d-flex flex-wrap gap-2 align-items-center">
@@ -13,6 +13,7 @@
     </div>
 
     <div id="umError" class="alert alert-danger d-none"></div>
+    <div id="umSuccess" class="alert alert-success d-none"></div>
 
     <div class="table-responsive">
         <table class="table table-sm align-middle">
@@ -20,14 +21,12 @@
                 <tr>
                     <th>Login</th>
                     <th>Email</th>
-                    <th>Member group(s)</th>
-                    <th>Approved</th>
-                    <th>Locked out</th>
-                    <th style="width:240px;">Actions</th>
+                    <th style="width:140px;">Locked out</th>
+                    <th style="width:120px;">Actions</th>
                 </tr>
             </thead>
             <tbody id="umRows">
-                <tr><td colspan="6">Loading...</td></tr>
+                <tr><td colspan="4">Loading...</td></tr>
             </tbody>
         </table>
     </div>
@@ -41,6 +40,90 @@
     </div>
 
 </div>
+
+<!-- Edit / Associations Modal -->
+<div class="modal fade" id="umEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Member</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <div id="umEditError" class="alert alert-danger d-none"></div>
+                <div id="umEditSuccess" class="alert alert-success d-none"></div>
+
+                <input type="hidden" id="umEditUserId" />
+
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <div class="small text-muted">Login</div>
+                        <div id="umEditLogin" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="small text-muted">Email</div>
+                        <div id="umEditEmail" class="fw-semibold"></div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label mb-1">Member group</label>
+                        <select id="umEditRole" class="form-select form-select-sm">
+                            <option value="">-- Select role --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-6 col-md-3 d-flex align-items-end">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="umEditApproved" />
+                            <label class="form-check-label" for="umEditApproved">Approved</label>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-md-3 d-flex align-items-end">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="umEditLockedOut" />
+                            <label class="form-check-label" for="umEditLockedOut">Locked out</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap mb-4">
+                    <button type="button" class="btn btn-success" id="umEditSave">Save</button>
+                    <button type="button" class="btn btn-outline-primary" id="umEditResetPw">Start password reset</button>
+                </div>
+
+                <hr />
+
+                <div class="mb-2 fw-semibold">Club / Team associations</div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>National Member Association</th>
+                                <th>Club</th>
+                                <th>Team</th>
+                                <th>Age Group</th>
+                                <th>Tournament team (current year)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="umEditTeams">
+                            <tr><td colspan="5">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+
+        </div>
+    </div>
 </div>
 
 <script>
@@ -50,6 +133,7 @@
         var total = 0;
         var roles = [];
         var loading = false;
+        var initialised = false;
 
         function showError(msg) {
             var el = $("#umError");
@@ -61,49 +145,59 @@
             $("#umError").addClass("d-none").text("");
         }
 
+        function showSuccess(msg) {
+            var el = $("#umSuccess");
+            el.text(msg || "Success.");
+            el.removeClass("d-none");
+            setTimeout(function () { el.addClass("d-none").text(""); }, 3000);
+        }
+
+        function showEditError(msg) {
+            var el = $("#umEditError");
+            if (!msg) { el.addClass("d-none").text(""); return; }
+            el.text(msg);
+            el.removeClass("d-none");
+        }
+
+        function showEditSuccess(msg) {
+            var el = $("#umEditSuccess");
+            el.text(msg || "Success.");
+            el.removeClass("d-none");
+            setTimeout(function () { el.addClass("d-none").text(""); }, 3000);
+        }
+
         function escapeHtml(text) {
             return $("<div/>").text(text ?? "").html();
         }
 
-            function buildRolesSelect(selected) {
-        selected = selected || [];
-
-        // Pick a single "default" role. If they have multiple, we take the first.
-        var selectedRole = selected.length > 0 ? selected[0] : "";
-
-        var html = '<select class="form-select form-select-sm umRole">';
-        html += '<option value="">-- Select role --</option>';
-
-        roles.forEach(function (r) {
-            var isSel = (r || "").toLowerCase() === (selectedRole || "").toLowerCase();
-            html += '<option value="' + escapeHtml(r) + '"' + (isSel ? ' selected' : '') + '>' + escapeHtml(r) + '</option>';
-        });
-
-        html += '</select>';
-        return html;
-    }
-
         function render(rows) {
             var tbody = $("#umRows");
             if (!rows || rows.length === 0) {
-                tbody.html('<tr><td colspan="6">No users found.</td></tr>');
+                tbody.html('<tr><td colspan="4">No users found.</td></tr>');
                 return;
             }
 
             var html = "";
             rows.forEach(function (u) {
-                var groupsText = (u.roles || []).join(", ");
+                var selectedRole = (u.roles && u.roles.length > 0) ? u.roles[0] : "";
 
-                html += '<tr data-userid="' + escapeHtml(u.userId) + '">';
+                var lockedHtml = u.isLockedOut
+                    ? '<span class="badge bg-danger">Yes</span>'
+                    : '<span class="badge bg-success">No</span>';
+
+                html += '<tr ' +
+                    'data-userid="' + escapeHtml(u.userId) + '" ' +
+                    'data-login="' + escapeHtml(u.userName) + '" ' +
+                    'data-email="' + escapeHtml(u.email) + '" ' +
+                    'data-role="' + escapeHtml(selectedRole) + '" ' +
+                    'data-approved="' + (u.isApproved ? "true" : "false") + '" ' +
+                    'data-lockedout="' + (u.isLockedOut ? "true" : "false") + '"' +
+                    '>';
+
                 html += '  <td>' + escapeHtml(u.userName) + '</td>';
                 html += '  <td>' + escapeHtml(u.email) + '</td>';
-                html += '  <td>' + buildRolesSelect(u.roles) + '</td>';
-                html += '  <td><input type="checkbox" class="form-check-input umApproved" ' + (u.isApproved ? "checked" : "") + ' /></td>';
-                html += '  <td><input type="checkbox" class="form-check-input umLockedOut" ' + (u.isLockedOut ? "checked" : "") + ' /></td>';
-                html += '  <td class="d-flex gap-2 flex-wrap">';
-                html += '     <button type="button" class="btn btn-sm btn-success umSave">Save</button>';
-                html += '     <button type="button" class="btn btn-sm btn-outline-primary umResetPw">Start password reset</button>';
-                html += '  </td>';
+                html += '  <td>' + lockedHtml + '</td>';
+                html += '  <td><button type="button" class="btn btn-sm btn-outline-primary umEdit">Edit</button></td>';
                 html += '</tr>';
             });
 
@@ -133,7 +227,7 @@
             clearError();
 
             var q = ($("#umSearch").val() || "").trim();
-            $("#umRows").html('<tr><td colspan="6">Loading...</td></tr>');
+            $("#umRows").html('<tr><td colspan="4">Loading...</td></tr>');
 
             return $.ajax({
                 url: "/umbraco/api/accountusers/members",
@@ -150,28 +244,121 @@
             });
         }
 
-        function getSelectedRoles($tr) {
-            var selected = [];
-            $tr.find("select.umRoles option:selected").each(function () {
-                selected.push($(this).val());
+        function populateEditRoleSelect(selectedRole) {
+            var $sel = $("#umEditRole");
+            $sel.empty();
+            $sel.append('<option value="">-- Select role --</option>');
+
+            roles.forEach(function (r) {
+                var isSel = (r || "").toLowerCase() === (selectedRole || "").toLowerCase();
+                $sel.append('<option value="' + escapeHtml(r) + '"' + (isSel ? ' selected' : '') + '>' + escapeHtml(r) + '</option>');
             });
-            return selected;
         }
 
-        function updateRolesText($tr) {
-            var selected = getSelectedRoles($tr);
-            $tr.find(".umRolesText").text(selected.join(", "));
+        function renderTeams(rows) {
+            var $tbody = $("#umEditTeams");
+
+            if (!rows || rows.length === 0) {
+                $tbody.html('<tr><td colspan="5">No teams found for this member.</td></tr>');
+                return;
+            }
+
+            var html = "";
+            rows.forEach(function (t) {
+                var tourneys = t.currentYearTournamentTeams || [];
+                var tourneyCell = "—";
+
+                if (tourneys.length > 0) {
+                    tourneyCell = tourneys.map(function (x) {
+                        var nm = x.tournamentTeamName || "";
+                        var ev = x.eventName ? (" (" + x.eventName + ")") : "";
+                        var tn = x.tournamentName ? (" - " + x.tournamentName) : "";
+                        return escapeHtml(nm + ev + tn);
+                    }).join("<br/>");
+                }
+
+                html += "<tr>";
+                html += "<td>" + escapeHtml(t.nmaName || "") + "</td>";
+                html += "<td>" + escapeHtml(t.clubName || "") + "</td>";
+                html += "<td>" + escapeHtml(t.teamName || "") + "</td>";
+                html += "<td>" + escapeHtml(t.ageGroup || "") + "</td>";
+                html += "<td>" + tourneyCell + "</td>";
+                html += "</tr>";
+            });
+
+            $tbody.html(html);
         }
 
-        function saveRow($tr) {
-            clearError();
+        function loadMemberTeams(userId) {
+            $("#umEditTeams").html('<tr><td colspan="5">Loading...</td></tr>');
+
+            return $.ajax({
+                type: "GET",
+                url: "/umbraco/api/accountusers/members/" + encodeURIComponent(userId) + "/teams"
+            }).then(function (data) {
+                renderTeams(data ? data.teams : []);
+            }).fail(function (xhr) {
+                showEditError(xhr && xhr.responseText ? xhr.responseText : "Failed to load member associations.");
+                $("#umEditTeams").html('<tr><td colspan="5">Error</td></tr>');
+            });
+        }
+
+        function openEditModalFromRow($tr) {
+            showEditError(null);
+            $("#umEditSuccess").addClass("d-none").text("");
 
             var userId = $tr.data("userid");
+            var login = $tr.data("login") || "";
+            var email = $tr.data("email") || "";
+            var role = $tr.data("role") || "";
+            var approved = ($tr.data("approved") + "").toLowerCase() === "true";
+            var lockedOut = ($tr.data("lockedout") + "").toLowerCase() === "true";
+
+            $("#umEditUserId").val(userId);
+            $("#umEditLogin").text(login);
+            $("#umEditEmail").text(email);
+            $("#umEditApproved").prop("checked", approved);
+            $("#umEditLockedOut").prop("checked", lockedOut);
+
+            populateEditRoleSelect(role);
+
+            var modalEl = document.getElementById("umEditModal");
+            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+
+            loadMemberTeams(userId);
+        }
+
+        function applyModalChangesToRow(userId) {
+            var $tr = $('#umRows tr[data-userid="' + userId + '"]');
+            if ($tr.length === 0) return;
+
+            var role = ($("#umEditRole").val() || "").trim();
+            var approved = $("#umEditApproved").is(":checked");
+            var lockedOut = $("#umEditLockedOut").is(":checked");
+
+            $tr.attr("data-role", role);
+            $tr.attr("data-approved", approved ? "true" : "false");
+            $tr.attr("data-lockedout", lockedOut ? "true" : "false");
+
+            var lockedHtml = lockedOut
+                ? '<span class="badge bg-danger">Yes</span>'
+                : '<span class="badge bg-success">No</span>';
+
+            $tr.find("td").eq(2).html(lockedHtml);
+        }
+
+        function saveFromModal() {
+            showEditError(null);
+
+            var userId = ($("#umEditUserId").val() || "").trim();
+            var role = ($("#umEditRole").val() || "").trim();
+
             var payload = {
                 userId: userId,
-                isApproved: $tr.find(".umApproved").is(":checked"),
-                isLockedOut: $tr.find(".umLockedOut").is(":checked"),
-                roles: getSelectedRoles($tr)
+                isApproved: $("#umEditApproved").is(":checked"),
+                isLockedOut: $("#umEditLockedOut").is(":checked"),
+                roles: role ? [role] : []
             };
 
             return $.ajax({
@@ -180,28 +367,27 @@
                 contentType: "application/json",
                 data: JSON.stringify(payload)
             }).then(function () {
-                updateRolesText($tr);
+                applyModalChangesToRow(userId);
+                showEditSuccess("User updated successfully.");
+                showSuccess("User updated successfully.");
             }).fail(function (xhr) {
-                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to save user.");
+                showEditError(xhr && xhr.responseText ? xhr.responseText : "Failed to save user.");
             });
         }
 
-        function startPasswordReset($tr) {
-            clearError();
-            var userId = $tr.data("userid");
-
+        function startPasswordResetById(userId) {
             return $.ajax({
                 url: "/umbraco/api/accountusers/members/" + encodeURIComponent(userId) + "/password-reset",
                 method: "POST"
             }).then(function () {
-                alert("Password reset email sent (if email is configured).");
+                showEditSuccess("Password reset email sent.");
+                showSuccess("Password reset email sent.");
             }).fail(function (xhr) {
-                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to start password reset.");
+                showEditError(xhr && xhr.responseText ? xhr.responseText : "Failed to start password reset.");
             });
         }
 
         // Lazy-load when the tab is first opened
-        var initialised = false;
         $('a[data-bs-toggle="pill"][href="#v-pills-users"]').on('shown.bs.tab', function () {
             if (initialised) return;
             initialised = true;
@@ -216,18 +402,18 @@
         $("#umPrev").on("click", function () { if (page > 1) { page--; loadUsers(); } });
         $("#umNext").on("click", function () { if (page * pageSize < total) { page++; loadUsers(); } });
 
-        $(document).on("change", "select.umRoles", function () {
-            updateRolesText($(this).closest("tr"));
+        $(document).on("click", ".umEdit", function () {
+            openEditModalFromRow($(this).closest("tr"));
         });
 
-        $(document).on("click", ".umSave", function () {
-            var $tr = $(this).closest("tr");
-            saveRow($tr);
+        $("#umEditSave").on("click", function () {
+            saveFromModal();
         });
 
-        $(document).on("click", ".umResetPw", function () {
-            var $tr = $(this).closest("tr");
-            startPasswordReset($tr);
+        $("#umEditResetPw").on("click", function () {
+            var userId = ($("#umEditUserId").val() || "").trim();
+            if (!userId) return;
+            startPasswordResetById(userId);
         });
 
     })();

@@ -24,6 +24,14 @@
                          || member.GetValue<bool>("CanManageUsers")
                          || member.GetValue<bool>("canManageRoles")
                          || member.GetValue<bool>("CanManageRoles");
+
+    var canManageEvents = member.GetValue<bool>("canManageEvents")
+                          || member.GetValue<bool>("CanManageEvents")
+                          || member.GetValue<bool>("canManageTournamentEvents")
+                          || member.GetValue<bool>("CanManageTournamentEvents");
+
+    // NEW: Final gate - Tournament Management tab is IISHF only + role flag
+    var canManageTournaments = isIISHF && canManageEvents;
 }
 
 <div class="container custom-container mt-5">
@@ -70,6 +78,19 @@
                         <span class="font-weight-bold small text-uppercase">User Management</span>
                     </a>
                 }
+                
+                @if (canManageTournaments)
+                {
+                    <a class="nav-link mb-3 p-3 shadow"
+                       id="v-pills-tournament-tab"
+                       data-bs-toggle="pill"
+                       href="#v-pills-tournament"
+                       role="tab"
+                       aria-controls="v-pills-tournament"
+                       aria-selected="false">
+                        <span class="font-weight-bold small text-uppercase">Tournament Management</span>
+                    </a>
+                }
 
                 @if (isTeamAdministrator)
                 {
@@ -96,6 +117,7 @@
                         <span class="font-weight-bold small text-uppercase">Approvals</span>
                     </a>
                 }
+                
 
                 @*
                     <!-- Re-enable when using notification -->
@@ -163,7 +185,15 @@
                     </div>
                 }
                 
-                
+                @if (canManageTournaments)
+                {
+                    <div class="tab-pane fade shadow rounded bg-white p-5"
+                         id="v-pills-tournament"
+                         role="tabpanel"
+                         aria-labelledby="v-pills-tournament-tab">
+                        @await Html.PartialAsync("TournamentManagement.cshtml", null)
+                    </div>
+                }
 
                 @*
                     <!-- Re-enable when using notification -->

@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using IISHF.Core.Interfaces;
+using IISHF.Core.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
-using IISHF.Core.Interfaces;
-using IISHF.Core.Models;
-using Microsoft.AspNetCore.Http;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Mail;
 using Umbraco.Cms.Core.Models.Email;
 using Umbraco.Cms.Core.Security;
@@ -27,6 +28,7 @@ namespace IISHF.Web.Controllers
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IMediaService _iishfMediaService;
         private readonly IEmailService _emailService;
+        private readonly IPublishedContentQuery _contentQuery;
 
         public AccountUsersController(
             IMemberManager memberManager,
@@ -36,7 +38,8 @@ namespace IISHF.Web.Controllers
             IEmailSender emailSender,
             IHttpContextAccessor httpContextAccessor,
             IMediaService iishfMediaService,
-            IEmailService emailService)
+            IEmailService emailService,
+            IPublishedContentQuery contentQuery)
         {
             _memberManager = memberManager;
             _memberService = memberService;
@@ -47,6 +50,7 @@ namespace IISHF.Web.Controllers
             _httpContextAccessor = httpContextAccessor;
             _iishfMediaService = iishfMediaService;
             _emailService = emailService;
+            _contentQuery = contentQuery;
         }
 
         // -----------------------------
@@ -257,6 +261,183 @@ namespace IISHF.Web.Controllers
             _memberService.Save(member);
 
             return Ok(new { sent = true });
+        }
+
+        // GET /umbraco/api/accountusers/members/{userId}/teams
+        ////[HttpGet("members/{userId}/teams")]
+        ////public async Task<IActionResult> MemberTeams([FromRoute] string userId)
+        ////{
+        ////    await EnsureCanManageUsersAsync();
+
+        ////    if (!int.TryParse(userId, out var memberId))
+        ////        return BadRequest("Invalid user id.");
+
+        ////    var member = _memberService.GetById(memberId);
+        ////    if (member == null) return NotFound("Member not found.");
+
+        ////    var email = member.Email;
+        ////    if (string.IsNullOrWhiteSpace(email))
+        ////        return Ok(new { email = "", teams = Array.Empty<object>() });
+
+        ////    // Mirrors InvitationService logic
+        ////    var teams = _contentQuery.ContentAtRoot()
+        ////        .DescendantsOrSelfOfType("clubTeam")
+        ////        .Where(x => x.Value<string>("TeamContactEmail") == email)
+        ////        .Select(x => new
+        ////        {
+        ////            TeamKey = x.Key,
+        ////            TeamName = x.Name,
+        ////            AgeGroup = x.Value<string>("ageGroup"),
+
+        ////            // Club name: prefer explicit prop if present, fallback to parent name
+        ////            ClubName = x.Value<string>("clubName") ?? x.Parent?.Name,
+
+        ////            // NMA: try common patterns safely (ancestor types or prop)
+        ////            NmaName =
+        ////                x.Value<string>("nationalMemberAssociation") ??
+        ////                x.AncestorsOrSelf().FirstOrDefault(a => a.ContentType.Alias.Equals("nationalMemberAssociation", StringComparison.OrdinalIgnoreCase))?.Name ??
+        ////                x.AncestorsOrSelf().FirstOrDefault(a => a.ContentType.Alias.Equals("nma", StringComparison.OrdinalIgnoreCase))?.Name
+        ////        })
+        ////        .ToList();
+
+        ////    return Ok(new
+        ////    {
+        ////        email,
+        ////        teams
+        ////    });
+        ////}
+
+        // GET /umbraco/api/accountusers/members/{userId}/teams
+        [HttpGet("members/{userId}/teams")]
+        public async Task<IActionResult> MemberTeams([FromRoute] string userId)
+        {
+            await EnsureCanManageUsersAsync();
+
+            if (!int.TryParse(userId, out var memberId))
+                return BadRequest("Invalid user id.");
+
+            var member = _memberService.GetById(memberId);
+            if (member == null) return NotFound("Member not found.");
+
+            var email = member.Email ?? string.Empty;
+            var currentYear = DateTime.UtcNow.Year.ToString();
+
+            // 1) Find the member's club teams (matches InvitationService logic)
+            var clubTeams = _contentQuery.ContentAtRoot()
+                .DescendantsOrSelfOfType("clubTeam")
+                .Where(x => x.Value<string>("TeamContactEmail") == email)
+                .ToList();
+
+            // 2) Build lookup: clubTeamKey (Guid string) => tournament teams in current year
+            // IMPORTANT: This now matches your real structure:
+            // Tournaments -> (European Cups / Championships) -> events -> {year} -> team
+            var tournamentTeamsByClubTeamKey = BuildCurrentYearTournamentTeamLookup(currentYear);
+
+            // 3) Shape response
+            var teams = clubTeams.Select(ct =>
+            {
+                var clubTeamKeyString = ct.Key.ToString();
+                tournamentTeamsByClubTeamKey.TryGetValue(clubTeamKeyString, out var tourneyTeams);
+
+                var nmaName =
+                    ct.AncestorsOrSelf().FirstOrDefault(a => a.ContentType.Alias.Equals("nationalMemberAssociation", StringComparison.OrdinalIgnoreCase))?.Name
+                    ?? ct.AncestorsOrSelf().FirstOrDefault(a => a.ContentType.Alias.Equals("nma", StringComparison.OrdinalIgnoreCase))?.Name;
+
+                return new
+                {
+                    teamKey = ct.Key,
+                    teamName = ct.Name,
+                    ageGroup = ct.Value<string>("ageGroup"),
+                    clubName = ct.Parent?.Name,
+                    nmaName = nmaName,
+                    currentYear = currentYear,
+                    currentYearTournamentTeams = tourneyTeams ?? new List<object>()
+                };
+            }).ToList();
+
+            return Ok(new
+            {
+                email,
+                year = currentYear,
+                teams
+            });
+        }
+
+        private Dictionary<string, List<object>> BuildCurrentYearTournamentTeamLookup(string currentYear)
+        {
+            var map = new Dictionary<string, List<object>>(StringComparer.OrdinalIgnoreCase);
+
+            // Root tournaments node
+            var tournamentsRoot = _contentQuery.ContentAtRoot()
+                .DescendantsOrSelfOfType("Tournaments")
+                .FirstOrDefault();
+
+            if (tournamentsRoot == null)
+                return map;
+
+            // Per your screenshots you need to drill into these categories:
+            // European Cups + Championships (and optionally others later)
+            var categoryAliases = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "europeanCups",
+        "championships"
+    };
+
+            var categories = tournamentsRoot.Children()
+                .Where(x => categoryAliases.Contains(x.ContentType.Alias))
+                .ToList();
+
+            foreach (var category in categories)
+            {
+                // Under European Cups / Championships you have "events" nodes (U13 European Cup, etc)
+                var events = category.Children()
+                    .Where(x => x.ContentType.Alias.Equals("events", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                foreach (var ev in events)
+                {
+                    // Under each event you have year nodes named "2026" etc, alias "event"
+                    var yearNode = ev.Children()
+                        .FirstOrDefault(x =>
+                            x.ContentType.Alias.Equals("event", StringComparison.OrdinalIgnoreCase) &&
+                            x.Name == currentYear);
+
+                    if (yearNode == null)
+                        continue;
+
+                    // Under the year node you have team nodes
+                    var eventTeams = yearNode.Children()
+                        .Where(x => x.ContentType.Alias.Equals("team", StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+
+                    foreach (var eventTeam in eventTeams)
+                    {
+                        // Link back to clubTeam via NMaTeamKey == clubTeam.Key.ToString()
+                        var nmaTeamKey = eventTeam.Value<string>("NMaTeamKey");
+                        if (string.IsNullOrWhiteSpace(nmaTeamKey))
+                            continue;
+
+                        if (!map.TryGetValue(nmaTeamKey, out var list))
+                        {
+                            list = new List<object>();
+                            map[nmaTeamKey] = list;
+                        }
+
+                        // tournament team name = node name
+                        list.Add(new
+                        {
+                            tournamentTeamName = eventTeam.Name, // e.g. "Copenhagen Vikings"
+                            eventName = ev.Name,                 // e.g. "U13 European Cup"
+                            categoryName = category.Name,        // e.g. "European Cups"
+                            year = currentYear,
+                            eventTeamKey = eventTeam.Key,
+                            yearNodeKey = yearNode.Key
+                        });
+                    }
+                }
+            }
+
+            return map;
         }
 
         private sealed class MemberListItemDto
