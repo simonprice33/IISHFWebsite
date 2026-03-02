@@ -1,5 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Linq;
+using System.Text.Json.Serialization;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Controllers;
@@ -22,59 +26,90 @@ namespace IISHF.Core.Controllers.ApiControllers
         }
 
         // -----------------------------
-        // GET /umbraco/api/tournamentmanagement/events?year=2026
+        // GET /umbraco/api/tournamentmanagement/events/current
+        // Finds all events under European Cups / Championships for the current calendar year.
+        // Returns:
+        // - eventYearNodeKey (GUID key of the YEAR node under the specific event)
+        // - category ("European Cups" / "Championships")
+        // - tournamentName (e.g. "U13 European Cup")
+        // - year (e.g. 2026)
+        // - ageGroup (e.g. U13)
         // -----------------------------
-        [HttpGet("events")]
-        public IActionResult Events([FromQuery] int? year = null)
+        [HttpGet("events/current")]
+        public IActionResult CurrentYearEvents()
         {
-            var y = (year ?? DateTime.UtcNow.Year).ToString();
+            // These aliases match your debug screenshots.
+            // If they differ, adjust here.
+            const string tournamentsRootAlias = "tournaments";
+            const string europeanCupsAlias = "europeanCups";
+            const string championshipsAlias = "championships";
+            const string eventAlias = "event";
+
+            var currentYear = DateTime.Now.Year.ToString();
 
             var tournamentsRoot = _contentQuery.ContentAtRoot()
                 .DescendantsOrSelfOfType("Tournaments")
                 .FirstOrDefault();
 
             if (tournamentsRoot == null)
-                return Ok(new { year = y, items = Array.Empty<object>() });
+                return Ok(new { items = Array.Empty<object>() });
 
-            // Per your tree: Tournaments -> europeanCups / championships -> events -> year (event) -> team
-            var categoryAliases = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            {
-                "europeanCups",
-                "championships"
-            };
+            // Title events only: European Cups + Championships
+            var titleEventContainers = tournamentsRoot.Children()
+                .Where(x =>
+                    x.ContentType.Alias.Equals(europeanCupsAlias, StringComparison.OrdinalIgnoreCase) ||
+                    x.ContentType.Alias.Equals(championshipsAlias, StringComparison.OrdinalIgnoreCase))
+                .ToList();
 
-            var items = new List<object>();
-
-            foreach (var category in tournamentsRoot.Children().Where(x => categoryAliases.Contains(x.ContentType.Alias)))
-            {
-                foreach (var ev in category.Children().Where(x => x.ContentType.Alias.Equals("events", StringComparison.OrdinalIgnoreCase)))
+            var items = titleEventContainers
+                .SelectMany(container =>
                 {
-                    var yearNode = ev.Children()
-                        .FirstOrDefault(x => x.ContentType.Alias.Equals("event", StringComparison.OrdinalIgnoreCase) && x.Name == y);
+                    var category = container.ContentType.Alias.Equals(europeanCupsAlias, StringComparison.OrdinalIgnoreCase)
+                        ? "European Cups"
+                        : "Championships";
 
-                    if (yearNode == null) continue;
-
-                    // AgeGroup appears on the yearNode in your debug (property: AgeGroup)
-                    var ageGroup = yearNode.Value<string>("AgeGroup") ?? yearNode.Value<string>("ageGroup");
-
-                    items.Add(new
+                    return container.Children().SelectMany(tournament =>
                     {
-                        categoryName = category.Name,
-                        categoryAlias = category.ContentType.Alias,
-                        eventName = ev.Name,
-                        eventKey = ev.Key,
-                        year = y,
-                        yearNodeKey = yearNode.Key,
-                        ageGroup = ageGroup
-                    });
-                }
-            }
+                        var yearNode = tournament.Children()
+                            .FirstOrDefault(y => y.Name == currentYear && y.ContentType.Alias.Equals(eventAlias, StringComparison.OrdinalIgnoreCase));
 
-            return Ok(new { year = y, items });
+                        if (yearNode == null)
+                            return Enumerable.Empty<CurrentYearEventItem>();
+
+                        var ageGroup = yearNode.Value<string>("ageGroup") ?? "";
+
+                        return new[]
+                        {
+                            new CurrentYearEventItem
+                            {
+                                Category = category,
+                                TournamentName = tournament.Name,
+                                Year = int.TryParse(currentYear, out var yr) ? yr : 0,
+                                AgeGroup = ageGroup,
+                                EventYearNodeKey = yearNode.Key
+                            }
+                        };
+                    });
+                })
+                .OrderBy(x => x.Category)
+                .ThenBy(x => x.TournamentName)
+                .ToList();
+
+            return Ok(new { items });
+        }
+
+        private sealed class CurrentYearEventItem
+        {
+            public string Category { get; set; } = "";
+            public string TournamentName { get; set; } = "";
+            public int Year { get; set; }
+            public string AgeGroup { get; set; } = "";
+            public Guid EventYearNodeKey { get; set; }
         }
 
         // -----------------------------
         // GET /umbraco/api/tournamentmanagement/nmas
+        // Returns all NMAs (id, key, name, iso3)
         // -----------------------------
         [HttpGet("nmas")]
         public IActionResult Nmas()
@@ -98,17 +133,17 @@ namespace IISHF.Core.Controllers.ApiControllers
         }
 
         // -----------------------------
-        // GET /umbraco/api/tournamentmanagement/nmas/{nmaKey}/teams?ageGroup=U13&year=2025&search=...
+        // GET /umbraco/api/tournamentmanagement/nmas/{nmaKey}/teams?ageGroup=U13&year=2025&q=...
         // Loads clubTeam items under: NMA -> {year} -> club -> ageGroup -> clubTeam
         // -----------------------------
         [HttpGet("nmas/{nmaKey:guid}/teams")]
-        public IActionResult NmaTeams([FromRoute] Guid nmaKey, [FromQuery] string ageGroup, [FromQuery] int? year = null, [FromQuery] string search = "")
+        public IActionResult NmaTeams([FromRoute] Guid nmaKey, [FromQuery] string ageGroup, [FromQuery] int? year = null, [FromQuery] string q = "")
         {
             if (string.IsNullOrWhiteSpace(ageGroup))
                 return BadRequest("ageGroup is required (e.g. U13).");
 
             var y = (year ?? DateTime.Now.AddYears(-1).Year).ToString();
-            search = (search ?? string.Empty).Trim();
+            q = (q ?? string.Empty).Trim();
 
             // Adjust alias if your club team doc type alias differs
             const string clubTeamAlias = "clubTeam";
@@ -122,42 +157,32 @@ namespace IISHF.Core.Controllers.ApiControllers
             if (nma == null)
                 return Ok(new { year = y, items = Array.Empty<object>() });
 
-            // Find the year node under the NMA (node name is the year, per your URLs)
+            // Find the year node under the NMA (node name is the year)
             var yearNode = nma.Children().FirstOrDefault(x => x.Name == y);
             if (yearNode == null)
                 return Ok(new { year = y, items = Array.Empty<object>() });
 
             // Under year node: clubs -> age groups -> club teams
-            // We'll grab all clubTeam descendants and filter by age group parent name/value
             var teams = yearNode
                 .DescendantsOrSelfOfType(clubTeamAlias)
                 .Where(t =>
                 {
-                    // Your URL suggests: .../{ageGroup}/{team}/, so parent could be the ageGroup node
                     var parentAge = t.Parent?.Name;
                     if (!string.Equals(parentAge, ageGroup, StringComparison.OrdinalIgnoreCase))
                     {
-                        // fallback: sometimes stored as property on team
-                        var ag = t.Value<string>("ageGroup");
+                        var ag = t.Value<string>("ageGroup") ?? t.Value<string>("AgeGroup");
                         if (!string.Equals(ag, ageGroup, StringComparison.OrdinalIgnoreCase))
                             return false;
                     }
 
-                    if (!string.IsNullOrWhiteSpace(search))
-                    {
-                        if (!t.Name.Contains(search, StringComparison.InvariantCultureIgnoreCase))
-                            return false;
-                    }
-
-                    return true;
+                    if (string.IsNullOrWhiteSpace(q)) return true;
+                    return t.Name.Contains(q, StringComparison.InvariantCultureIgnoreCase);
                 })
                 .Select(t => new
                 {
-                    id = t.Id,      // int
-                    key = t.Key,    // guid
-                    name = t.Name,
-                    ageGroup = t.Value<string>("ageGroup") ?? t.Parent?.Name,
-                    clubName = t.Parent?.Parent?.Name, // likely club node
+                    id = t.Id,
+                    key = t.Key,
+                    name = t.Name
                 })
                 .OrderBy(t => t.name)
                 .ToList();
@@ -168,6 +193,9 @@ namespace IISHF.Core.Controllers.ApiControllers
         // -----------------------------
         // GET /umbraco/api/tournamentmanagement/events/{eventYearNodeKey}/teams
         // Returns tournament team nodes for that event-year node, including mapping info if present.
+        // Also returns:
+        // - countryIso3 (from tournament team node if present)
+        // - nmaKey (from tournament team node if present)
         // -----------------------------
         [HttpGet("events/{eventYearNodeKey:guid}/teams")]
         public IActionResult EventTeams([FromRoute] Guid eventYearNodeKey)
@@ -183,10 +211,12 @@ namespace IISHF.Core.Controllers.ApiControllers
                     key = t.Key,
                     name = t.Name,
 
-                    // mapping fields
-                    nmaTeamKey = t.Value<string>("NMaTeamKey"),
-                    nmaTeamId = t.Value<int?>("NMaTeamId"),
-                    nmaReportedName = t.Value<string>("NMaReportedName")
+                    nmaTeamKey = GetTeamMapKey(t),
+                    nmaTeamId = GetTeamMapId(t),
+                    nmaReportedName = GetTeamReportedName(t),
+
+                    countryIso3 = GetTeamCountryIso3(t),
+                    nmaKey = GetTeamNmaKey(t)
                 })
                 .OrderBy(t => t.name)
                 .ToList();
@@ -196,23 +226,37 @@ namespace IISHF.Core.Controllers.ApiControllers
 
         // -----------------------------
         // POST /umbraco/api/tournamentmanagement/events/{eventYearNodeKey}/teams/add
-        // Creates a new tournament team node under the event-year node AND sets mapping.
-        // Keeps the node name as the NMA-reported name initially.
+        // Adds the selected reported team to the event-year node, and stores mapping info.
         // -----------------------------
         public class AddTeamRequest
         {
-            public int TeamId { get; set; }          // int id (reported team id)
-            public Guid TeamKey { get; set; }        // guid key (reported team key)
-            public string TeamName { get; set; }     // reported team name
+            // NOTE: keep existing property names, but bind to the CURRENT JSON payload
+            // from TournamentManagement.cshtml without renaming client-side objects.
+
+            [JsonPropertyName("reportedTeamId")]
+            public int TeamId { get; set; }
+
+            [JsonPropertyName("reportedTeamKey")]
+            public Guid TeamKey { get; set; }
+
+            [JsonPropertyName("reportedTeamName")]
+            public string TeamName { get; set; }
+
+            [JsonPropertyName("nmaKey")]
+            public Guid NmaKey { get; set; }
+
+            [JsonPropertyName("nmaIso3")]
+            public string NmaIso3 { get; set; }
         }
 
         [HttpPost("events/{eventYearNodeKey:guid}/teams/add")]
         public IActionResult AddTeamToEvent([FromRoute] Guid eventYearNodeKey, [FromBody] AddTeamRequest req)
         {
             if (req == null) return BadRequest("Missing body.");
-            if (req.TeamKey == Guid.Empty) return BadRequest("TeamKey is required.");
-            if (req.TeamId <= 0) return BadRequest("TeamId is required.");
-            if (string.IsNullOrWhiteSpace(req.TeamName)) return BadRequest("TeamName is required.");
+            if (req.TeamKey == Guid.Empty) return BadRequest("reportedTeamKey is required.");
+            if (req.TeamId <= 0) return BadRequest("reportedTeamId is required.");
+            if (string.IsNullOrWhiteSpace(req.TeamName)) return BadRequest("reportedTeamName is required.");
+            if (req.NmaKey == Guid.Empty) return BadRequest("nmaKey is required.");
 
             var yearNode = _contentQuery.Content(eventYearNodeKey);
             if (yearNode == null) return NotFound("Event year node not found.");
@@ -221,7 +265,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             var existingLinked = yearNode.Children()
                 .FirstOrDefault(x =>
                     x.ContentType.Alias.Equals("team", StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(x.Value<string>("NMaTeamKey"), req.TeamKey.ToString(), StringComparison.OrdinalIgnoreCase));
+                    string.Equals(GetTeamMapKey(x), req.TeamKey.ToString(), StringComparison.OrdinalIgnoreCase));
 
             if (existingLinked != null)
             {
@@ -229,16 +273,40 @@ namespace IISHF.Core.Controllers.ApiControllers
                 {
                     created = false,
                     message = "Team already exists/linked in this event.",
-                    eventTeam = new { id = existingLinked.Id, key = existingLinked.Key, name = existingLinked.Name }
+                    eventTeam = new
+                    {
+                        id = existingLinked.Id,
+                        key = existingLinked.Key,
+                        name = existingLinked.Name,
+                        countryIso3 = GetTeamCountryIso3(existingLinked),
+                        nmaKey = GetTeamNmaKey(existingLinked)
+                    }
                 });
             }
 
-            // Create + publish new team node
+            // Create + publish new team node (tournament team name initially uses reported name)
             var content = _contentService.Create(req.TeamName.Trim(), yearNode.Id, "team");
 
-            content.SetValue("NMaTeamKey", req.TeamKey.ToString());
-            content.SetValue("NMaTeamId", req.TeamId);
-            content.SetValue("NMaReportedName", req.TeamName.Trim());
+            // store mapping (tolerant to mixed alias casing)
+            SetValueIfExists(content, "nMATeamKey", req.TeamKey.ToString());
+            SetValueIfExists(content, "NMaTeamKey", req.TeamKey.ToString());
+
+            SetValueIfExists(content, "teamId", req.TeamId);
+            SetValueIfExists(content, "NMaTeamId", req.TeamId);
+
+            SetValueIfExists(content, "NMaReportedName", req.TeamName.Trim());
+            SetValueIfExists(content, "nmaReportedName", req.TeamName.Trim());
+
+            // requested: persist NMA key + ISO3 onto tournament team
+            SetValueIfExists(content, "nmaKey", req.NmaKey.ToString());
+            SetValueIfExists(content, "nMAKey", req.NmaKey.ToString()); // just in case
+
+            var iso3 = !string.IsNullOrWhiteSpace(req.NmaIso3) ? req.NmaIso3.Trim() : ResolveNmaIso3(req.NmaKey);
+            if (!string.IsNullOrWhiteSpace(iso3))
+            {
+                SetValueIfExists(content, "countryIso3", iso3);
+                SetValueIfExists(content, "iso3", iso3); // if you used that alias on the team node
+            }
 
             var result = _contentService.SaveAndPublish(content);
             if (!result.Success)
@@ -248,33 +316,56 @@ namespace IISHF.Core.Controllers.ApiControllers
             {
                 created = true,
                 message = "Team added to event.",
-                eventTeam = new { id = content.Id, key = content.Key, name = content.Name }
+                eventTeam = new
+                {
+                    id = content.Id,
+                    key = content.Key,
+                    name = content.Name,
+                    countryIso3 = iso3,
+                    nmaKey = req.NmaKey
+                }
             });
         }
 
         // -----------------------------
-        // PUT /umbraco/api/tournamentmanagement/events/{eventYearNodeKey}/teams/{eventTeamKey}/link
-        // Links an existing manually-created tournament team to the NMA team (without renaming).
+        // POST /umbraco/api/tournamentmanagement/events/{eventYearNodeKey}/teams/link
+        // Links existing tournament team -> reported team (WITHOUT renaming tournament team).
         // -----------------------------
         public class LinkTeamRequest
         {
+            [JsonPropertyName("tournamentTeamKey")]
+            public Guid TournamentTeamKey { get; set; }
+
+            [JsonPropertyName("reportedTeamId")]
             public int TeamId { get; set; }
+
+            [JsonPropertyName("reportedTeamKey")]
             public Guid TeamKey { get; set; }
-            public string TeamName { get; set; } // reported name (stored, but tournament name remains unchanged)
+
+            [JsonPropertyName("reportedTeamName")]
+            public string TeamName { get; set; } // reported name (stored; tournament name remains unchanged)
+
+            [JsonPropertyName("nmaKey")]
+            public Guid NmaKey { get; set; }
+
+            [JsonPropertyName("nmaIso3")]
+            public string NmaIso3 { get; set; }
         }
 
-        [HttpPut("events/{eventYearNodeKey:guid}/teams/{eventTeamKey:guid}/link")]
-        public IActionResult LinkExistingTournamentTeam([FromRoute] Guid eventYearNodeKey, [FromRoute] Guid eventTeamKey, [FromBody] LinkTeamRequest req)
+        [HttpPost("events/{eventYearNodeKey:guid}/teams/link")]
+        public IActionResult LinkTournamentTeam([FromRoute] Guid eventYearNodeKey, [FromBody] LinkTeamRequest req)
         {
             if (req == null) return BadRequest("Missing body.");
-            if (req.TeamKey == Guid.Empty) return BadRequest("TeamKey is required.");
-            if (req.TeamId <= 0) return BadRequest("TeamId is required.");
+            if (req.TournamentTeamKey == Guid.Empty) return BadRequest("tournamentTeamKey is required.");
+            if (req.TeamKey == Guid.Empty) return BadRequest("reportedTeamKey is required.");
+            if (req.TeamId <= 0) return BadRequest("reportedTeamId is required.");
+            if (req.NmaKey == Guid.Empty) return BadRequest("nmaKey is required.");
 
             var yearNode = _contentQuery.Content(eventYearNodeKey);
             if (yearNode == null) return NotFound("Event year node not found.");
 
             var tournamentTeam = yearNode.Children()
-                .FirstOrDefault(x => x.ContentType.Alias.Equals("team", StringComparison.OrdinalIgnoreCase) && x.Key == eventTeamKey);
+                .FirstOrDefault(x => x.ContentType.Alias.Equals("team", StringComparison.OrdinalIgnoreCase) && x.Key == req.TournamentTeamKey);
 
             if (tournamentTeam == null) return NotFound("Tournament team not found under this event year.");
 
@@ -282,32 +373,147 @@ namespace IISHF.Core.Controllers.ApiControllers
             var alreadyLinked = yearNode.Children()
                 .FirstOrDefault(x =>
                     x.ContentType.Alias.Equals("team", StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(x.Value<string>("nMATeamKey"), req.TeamKey.ToString(), StringComparison.OrdinalIgnoreCase) &&
-                    x.Key != eventTeamKey);
+                    string.Equals(GetTeamMapKey(x), req.TeamKey.ToString(), StringComparison.OrdinalIgnoreCase) &&
+                    x.Key != req.TournamentTeamKey);
 
             if (alreadyLinked != null)
-                return BadRequest("That NMA team is already linked to a different tournament team in this event.");
+                return BadRequest("That reported team is already linked to a different tournament team in this event.");
 
-            // Update existing tournament team node via IContentService
             var content = _contentService.GetById(tournamentTeam.Id);
             if (content == null) return NotFound("Tournament team content not found.");
 
-            content.SetValue("nMATeamKey", req.TeamKey.ToString());
-            content.SetValue("teamId", req.TeamId);
+            SetValueIfExists(content, "nMATeamKey", req.TeamKey.ToString());
+            SetValueIfExists(content, "NMaTeamKey", req.TeamKey.ToString());
+
+            SetValueIfExists(content, "teamId", req.TeamId);
+            SetValueIfExists(content, "NMaTeamId", req.TeamId);
+
+            // store reported name only; do not overwrite tournament team name fields
             if (!string.IsNullOrWhiteSpace(req.TeamName))
-                content.SetValue("eventTeam", req.TeamName.Trim());
+            {
+                SetValueIfExists(content, "NMaReportedName", req.TeamName.Trim());
+                SetValueIfExists(content, "nmaReportedName", req.TeamName.Trim());
+            }
+
+            // requested: persist NMA key + ISO3 onto tournament team
+            SetValueIfExists(content, "nmaKey", req.NmaKey.ToString());
+            SetValueIfExists(content, "nMAKey", req.NmaKey.ToString());
+
+            var iso3 = !string.IsNullOrWhiteSpace(req.NmaIso3) ? req.NmaIso3.Trim() : ResolveNmaIso3(req.NmaKey);
+            if (!string.IsNullOrWhiteSpace(iso3))
+            {
+                SetValueIfExists(content, "countryIso3", iso3);
+                SetValueIfExists(content, "iso3", iso3);
+            }
 
             var result = _contentService.SaveAndPublish(content);
             if (!result.Success)
                 return BadRequest("Failed to save/publish link.");
 
-            return Ok(new { linked = true, message = "Tournament team linked to NMA team." });
+            return Ok(new { linked = true, message = "Tournament team linked to reported team." });
+        }
+
+        // -----------------------------
+        // Legacy endpoint retained (earlier iteration)
+        // PUT /umbraco/api/tournamentmanagement/events/{eventYearNodeKey}/teams/{eventTeamKey}/link
+        // -----------------------------
+        [HttpPut("events/{eventYearNodeKey:guid}/teams/{eventTeamKey:guid}/link")]
+        public IActionResult LinkExistingTournamentTeam([FromRoute] Guid eventYearNodeKey, [FromRoute] Guid eventTeamKey, [FromBody] LinkTeamRequest req)
+        {
+            if (req == null) return BadRequest("Missing body.");
+            req.TournamentTeamKey = eventTeamKey;
+            return LinkTournamentTeam(eventYearNodeKey, req);
+        }
+
+        // -----------------------------
+        // Helpers
+        // -----------------------------
+        private static void SetValueIfExists(IContent content, string alias, object value)
+        {
+            if (content == null) return;
+            if (string.IsNullOrWhiteSpace(alias)) return;
+            if (!content.HasProperty(alias)) return;
+
+            content.SetValue(alias, value);
+        }
+
+        private string ResolveNmaIso3(Guid nmaKey)
+        {
+            if (nmaKey == Guid.Empty) return "";
+
+            const string nmaAlias = "nationalMemberAssociation";
+
+            var nma = _contentQuery.ContentAtRoot()
+                .DescendantsOrSelfOfType(nmaAlias)
+                .FirstOrDefault(x => x.Key == nmaKey);
+
+            return nma == null ? "" : GetIso3(nma);
+        }
+
+        private static string GetTeamMapKey(IPublishedContent t)
+        {
+            var v = t?.Value<string>("nMATeamKey");
+            if (!string.IsNullOrWhiteSpace(v)) return v;
+
+            v = t?.Value<string>("NMaTeamKey");
+            if (!string.IsNullOrWhiteSpace(v)) return v;
+
+            v = t?.Value<string>("nmaTeamKey");
+            if (!string.IsNullOrWhiteSpace(v)) return v;
+
+            return "";
+        }
+
+        private static int? GetTeamMapId(IPublishedContent t)
+        {
+            var v = t?.Value<int?>("teamId");
+            if (v.HasValue && v.Value > 0) return v;
+
+            v = t?.Value<int?>("NMaTeamId");
+            if (v.HasValue && v.Value > 0) return v;
+
+            v = t?.Value<int?>("nmaTeamId");
+            if (v.HasValue && v.Value > 0) return v;
+
+            return null;
+        }
+
+        private static string GetTeamReportedName(IPublishedContent t)
+        {
+            var v = t?.Value<string>("NMaReportedName");
+            if (!string.IsNullOrWhiteSpace(v)) return v;
+
+            v = t?.Value<string>("nmaReportedName");
+            if (!string.IsNullOrWhiteSpace(v)) return v;
+
+            // DO NOT use "eventTeam" here: that is the tournament team's display name in your schema.
+            return "";
+        }
+
+        private static string GetTeamCountryIso3(IPublishedContent t)
+        {
+            var v = t?.Value<string>("countryIso3");
+            if (!string.IsNullOrWhiteSpace(v)) return v;
+
+            v = t?.Value<string>("iso3");
+            if (!string.IsNullOrWhiteSpace(v)) return v;
+
+            return "";
+        }
+
+        private static string GetTeamNmaKey(IPublishedContent t)
+        {
+            var v = t?.Value<string>("nmaKey");
+            if (!string.IsNullOrWhiteSpace(v)) return v;
+
+            v = t?.Value<string>("nMAKey");
+            if (!string.IsNullOrWhiteSpace(v)) return v;
+
+            return "";
         }
 
         private static string GetIso3(IPublishedContent nma)
         {
-            // tolerant alias reads (based on your backoffice label “ISO3”)
-            // Most likely alias is "iso3"
             var iso3 = nma.Value<string>("iso3");
             if (!string.IsNullOrWhiteSpace(iso3)) return iso3;
 

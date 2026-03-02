@@ -1,9 +1,12 @@
-﻿<div id="tournamentManagementRoot" class="col-12 col-sm-12 col-md-12 col-lg-12 mb-5">
+﻿@using System.Text.Encodings.Web
+
+<div id="tournamentManagementRoot" class="col-12 col-sm-12 col-md-12 col-lg-12 mb-5">
 
     <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
         <h4 class="mb-0">Tournament Management</h4>
+
         <div class="ms-auto d-flex flex-wrap gap-2 align-items-center">
-            <button type="button" id="tmRefreshAll" class="btn btn-outline-secondary">Refresh</button>
+            <button type="button" id="tmRefreshBtn" class="btn btn-outline-secondary">Refresh</button>
         </div>
     </div>
 
@@ -12,15 +15,15 @@
 
     <div class="row g-4">
         <div class="col-12 col-lg-6">
-            <div class="mb-2">
+            <div class="mb-3">
                 <label class="form-label">Current-year event</label>
                 <select id="tmEventSelect" class="form-select"></select>
-                <div class="small text-muted mt-2">
+                <div class="small text-muted mt-1">
                     <span id="tmEventMeta"></span>
                 </div>
             </div>
 
-            <div class="mb-2">
+            <div class="mb-3">
                 <label class="form-label">Search team</label>
                 <div class="d-flex gap-2">
                     <input type="text" id="tmTeamSearch" class="form-control" placeholder="Search reported team name..." />
@@ -28,55 +31,55 @@
                 </div>
             </div>
 
-            <div class="table-responsive mt-3">
+            <div class="table-responsive">
                 <table class="table table-sm align-middle">
                     <thead>
                         <tr>
                             <th>Reported team</th>
                             <th style="width:90px;">Id</th>
-                            <th style="width:240px;">Key</th>
-                            <th style="width:140px;">Actions</th>
+                            <th>Key</th>
+                            <th style="width:170px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="tmReportedRows">
-                        <tr><td colspan="4">Select an event and NMA…</td></tr>
+                        <tr><td colspan="4">Select an event and NMA, then search.</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
         <div class="col-12 col-lg-6">
-            <div class="mb-2">
+            <div class="mb-3">
                 <label class="form-label">National Member Association</label>
                 <select id="tmNmaSelect" class="form-select"></select>
-
-                <div class="small text-muted mt-2">
+                <div class="small text-muted mt-1">
                     <span id="tmNmaMeta"></span>
                 </div>
             </div>
 
-            <div class="d-flex align-items-center justify-content-between mt-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
                 <div class="fw-semibold">Tournament teams in selected event</div>
-                <button type="button" id="tmReloadTournamentTeams" class="btn btn-outline-secondary btn-sm">Reload</button>
+                <button type="button" id="tmReloadTeamsBtn" class="btn btn-outline-secondary btn-sm">Reload</button>
             </div>
 
-            <div class="table-responsive mt-2">
+            <div class="table-responsive">
                 <table class="table table-sm align-middle">
                     <thead>
                         <tr>
                             <th>Tournament team</th>
+                            <th style="width:80px;">ISO3</th>
                             <th style="width:90px;">Mapped?</th>
                             <th style="width:70px;">Select</th>
                         </tr>
                     </thead>
                     <tbody id="tmTournamentRows">
-                        <tr><td colspan="3">Select an event…</td></tr>
+                        <tr><td colspan="4">Select an event to load teams.</td></tr>
                     </tbody>
                 </table>
             </div>
 
             <div class="small text-muted mt-2">
-                Linking keeps the tournament team name unchanged (e.g. <em>IHC La Broye</em>) but stores the reported team Id/Key.
+                Linking keeps the tournament team name unchanged (e.g. <em>IHC La Broye</em>) but stores the reported team Id/Key + NMA key + ISO3.
             </div>
         </div>
     </div>
@@ -84,7 +87,6 @@
 
 <script>
     (function () {
-
         var state = {
             events: [],
             nmas: [],
@@ -93,20 +95,27 @@
             selectedAgeGroup: null,
             selectedNmaKey: null,
             selectedNmaIso3: null,
-            selectedTournamentTeamKey: null
+            sourceYear: null,
+            tournamentTeams: []
         };
 
         function showError(msg) {
-            $("#tmError").text(msg || "An error occurred.").removeClass("d-none");
+            var el = $("#tmError");
+            el.text(msg || "An error occurred.");
+            el.removeClass("d-none");
         }
+
         function clearError() {
             $("#tmError").addClass("d-none").text("");
         }
+
         function showSuccess(msg) {
             var el = $("#tmSuccess");
-            el.text(msg || "Saved.").removeClass("d-none");
+            el.text(msg || "Saved.");
+            el.removeClass("d-none");
             setTimeout(function () { el.addClass("d-none").text(""); }, 2500);
         }
+
         function clearSuccess() {
             $("#tmSuccess").addClass("d-none").text("");
         }
@@ -115,172 +124,85 @@
             return $("<div/>").text(text ?? "").html();
         }
 
-        function currentYear() {
-            return new Date().getFullYear();
+        function setMeta() {
+            var eventMeta = "";
+            if (state.selectedAgeGroup && state.selectedEventYear) {
+                eventMeta = "Age group: " + state.selectedAgeGroup + "  |  Year: " + state.selectedEventYear;
+            }
+            $("#tmEventMeta").text(eventMeta);
+
+            var nmaMeta = "";
+            if (state.sourceYear) {
+                nmaMeta = "Source year (reported): " + state.sourceYear;
+            }
+            $("#tmNmaMeta").text(nmaMeta);
         }
 
-        function sourceYear() {
-            // Your logic says: reported teams come from previous calendar year
-            return currentYear() - 1;
-        }
+        function renderEvents() {
+            var sel = $("#tmEventSelect");
+            if (!state.events || state.events.length === 0) {
+                sel.html('<option value="">No current-year events found</option>');
+                state.selectedEventYearKey = null;
+                state.selectedEventYear = null;
+                state.selectedAgeGroup = null;
+                setMeta();
+                return;
+            }
 
-        function loadNmas() {
-            return $.ajax({
-                url: "/umbraco/api/tournamentmanagement/nmas",
-                method: "GET"
-            }).then(function (res) {
-                state.nmas = res || [];
-                renderNmaSelect();
+            var html = '<option value="">-- Select event --</option>';
+            state.events.forEach(function (e) {
+                var label = (e.category || "") + " - " + (e.tournamentName || "") + " (" + (e.year || "") + ")";
+                html += '<option value="' + escapeHtml(e.eventYearNodeKey) + '" data-year="' + escapeHtml(e.year) + '" data-agegroup="' + escapeHtml(e.ageGroup) + '">' + escapeHtml(label) + '</option>';
             });
+
+            sel.html(html);
         }
 
-        function renderNmaSelect() {
+        function renderNmas() {
             var sel = $("#tmNmaSelect");
-            var html = '<option value="">-- Select NMA --</option>';
+            if (!state.nmas || state.nmas.length === 0) {
+                sel.html('<option value="">No NMAs found</option>');
+                state.selectedNmaKey = null;
+                state.selectedNmaIso3 = null;
+                setMeta();
+                return;
+            }
 
+            var html = '<option value="">-- Select NMA --</option>';
             state.nmas.forEach(function (n) {
                 html += '<option value="' + escapeHtml(n.key) + '" data-iso3="' + escapeHtml(n.iso3 || "") + '">' + escapeHtml(n.name) + '</option>';
             });
 
             sel.html(html);
-
-            // keep selection if possible
-            if (state.selectedNmaKey) {
-                sel.val(state.selectedNmaKey);
-            }
-
-            updateNmaMeta();
-        }
-
-        function updateNmaMeta() {
-            var nma = getSelectedNma();
-            state.selectedNmaIso3 = nma ? (nma.iso3 || "") : "";
-
-            var iso3Text = state.selectedNmaIso3 ? ("ISO3: " + state.selectedNmaIso3) : "ISO3: (not set)";
-            $("#tmNmaMeta").text("Source year (reported): " + sourceYear() + " | " + iso3Text);
-        }
-
-        function getSelectedNma() {
-            if (!state.selectedNmaKey) return null;
-            return state.nmas.find(function (n) {
-                return (n.key || "").toString().toLowerCase() === state.selectedNmaKey.toString().toLowerCase();
-            }) || null;
-        }
-
-        // You already have an events endpoint in your current feature set.
-        // Keep your existing URL if different.
-        function loadEvents() {
-            return $.ajax({
-                url: "/umbraco/api/tournamentmanagement/events",
-                method: "GET",
-                data: { year: currentYear() }
-            }).then(function (res) {
-                state.events = res || [];
-                renderEventSelect();
-            });
-        }
-
-        function renderEventSelect() {
-            var sel = $("#tmEventSelect");
-            var html = '<option value="">-- Select event --</option>';
-
-            state.events.forEach(function (e) {
-                // e.display expected from your existing implementation
-                html += '<option value="' + escapeHtml(e.eventYearKey) + '" data-year="' + escapeHtml(e.year) + '" data-age="' + escapeHtml(e.ageGroup || "") + '">' + escapeHtml(e.display) + '</option>';
-            });
-
-            sel.html(html);
-
-            if (state.selectedEventYearKey) {
-                sel.val(state.selectedEventYearKey);
-            }
-
-            updateEventMeta();
-        }
-
-        function updateEventMeta() {
-            var opt = $("#tmEventSelect option:selected");
-            var year = opt.data("year");
-            var age = opt.data("age");
-
-            state.selectedEventYear = year || null;
-            state.selectedAgeGroup = age || null;
-
-            if (state.selectedAgeGroup && state.selectedEventYear) {
-                $("#tmEventMeta").text("Age group: " + state.selectedAgeGroup + "  |  Year: " + state.selectedEventYear);
-            } else {
-                $("#tmEventMeta").text("");
-            }
-        }
-
-        function loadTournamentTeams() {
-            if (!state.selectedEventYearKey) {
-                $("#tmTournamentRows").html('<tr><td colspan="3">Select an event…</td></tr>');
-                return $.Deferred().resolve().promise();
-            }
-
-            $("#tmTournamentRows").html('<tr><td colspan="3">Loading…</td></tr>');
-
-            return $.ajax({
-                url: "/umbraco/api/tournamentmanagement/events/" + encodeURIComponent(state.selectedEventYearKey) + "/teams",
-                method: "GET"
-            }).then(function (res) {
-                renderTournamentTeams(res || []);
-            }).fail(function (xhr) {
-                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to load tournament teams.");
-            });
         }
 
         function renderTournamentTeams(rows) {
+            var tbody = $("#tmTournamentRows");
             if (!rows || rows.length === 0) {
-                $("#tmTournamentRows").html('<tr><td colspan="3">No tournament teams found.</td></tr>');
+                tbody.html('<tr><td colspan="4">No tournament teams found for this event.</td></tr>');
                 return;
             }
 
             var html = "";
             rows.forEach(function (t) {
-                html += '<tr data-teamkey="' + escapeHtml(t.teamKey) + '">';
+                var isMapped = !!(t.nmaTeamKey) || !!(t.nmaTeamId);
+                var iso3 = t.countryIso3 || "";
+                html += '<tr data-teamkey="' + escapeHtml(t.key) + '">';
                 html += '  <td>' + escapeHtml(t.name) + '</td>';
-                html += '  <td>' + (t.mapped ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>') + '</td>';
-                html += '  <td><input type="radio" name="tmSelectedTeam" class="form-check-input tmPickTeam" /></td>';
+                html += '  <td>' + escapeHtml(iso3) + '</td>';
+                html += '  <td>' + (isMapped ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>') + '</td>';
+                html += '  <td><input type="radio" name="tmTeamSelect" class="form-check-input tmTournamentSelect" value="' + escapeHtml(t.key) + '"></td>';
                 html += '</tr>';
             });
 
-            $("#tmTournamentRows").html(html);
-            state.selectedTournamentTeamKey = null;
-        }
-
-        function loadReportedTeams() {
-            clearError();
-            clearSuccess();
-
-            if (!state.selectedEventYearKey || !state.selectedNmaKey) {
-                $("#tmReportedRows").html('<tr><td colspan="4">Select an event and NMA…</td></tr>');
-                return $.Deferred().resolve().promise();
-            }
-
-            $("#tmReportedRows").html('<tr><td colspan="4">Loading…</td></tr>');
-
-            var search = ($("#tmTeamSearch").val() || "").trim();
-
-            return $.ajax({
-                url: "/umbraco/api/tournamentmanagement/nmas/" + encodeURIComponent(state.selectedNmaKey) + "/teams",
-                method: "GET",
-                data: {
-                    year: sourceYear(),
-                    ageGroup: state.selectedAgeGroup || "",
-                    q: search
-                }
-            }).then(function (res) {
-                renderReportedTeams(res || []);
-            }).fail(function (xhr) {
-                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to load reported teams.");
-            });
+            tbody.html(html);
         }
 
         function renderReportedTeams(rows) {
+            var tbody = $("#tmReportedRows");
+
             if (!rows || rows.length === 0) {
-                $("#tmReportedRows").html('<tr><td colspan="4">No reported teams found.</td></tr>');
+                tbody.html('<tr><td colspan="4">No reported teams found.</td></tr>');
                 return;
             }
 
@@ -289,7 +211,7 @@
                 html += '<tr data-reportedid="' + escapeHtml(r.id) + '" data-reportedkey="' + escapeHtml(r.key) + '" data-reportedname="' + escapeHtml(r.name) + '">';
                 html += '  <td>' + escapeHtml(r.name) + '</td>';
                 html += '  <td>' + escapeHtml(r.id) + '</td>';
-                html += '  <td class="text-break" style="font-family:monospace;font-size:12px;">' + escapeHtml(r.key) + '</td>';
+                html += '  <td><span class="text-break" style="font-size:12px; color:#d63384;">' + escapeHtml(r.key) + '</span></td>';
                 html += '  <td class="d-flex gap-2 flex-wrap">';
                 html += '     <button type="button" class="btn btn-sm btn-success tmAdd">Add</button>';
                 html += '     <button type="button" class="btn btn-sm btn-outline-primary tmLink">Link</button>';
@@ -297,23 +219,98 @@
                 html += '</tr>';
             });
 
-            $("#tmReportedRows").html(html);
+            tbody.html(html);
         }
 
-        function addTeamFromReported($tr) {
+        function loadEvents() {
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/events/current",
+                method: "GET"
+            }).then(function (res) {
+                state.events = (res && res.items) ? res.items : [];
+                renderEvents();
+            });
+        }
+
+        function loadNmas() {
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/nmas",
+                method: "GET"
+            }).then(function (res) {
+                state.nmas = (res && res.items) ? res.items : [];
+                renderNmas();
+            });
+        }
+
+        function loadTournamentTeams() {
+            if (!state.selectedEventYearKey) {
+                $("#tmTournamentRows").html('<tr><td colspan="4">Select an event to load teams.</td></tr>');
+                return $.Deferred().resolve().promise();
+            }
+
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/events/" + encodeURIComponent(state.selectedEventYearKey) + "/teams",
+                method: "GET"
+            }).then(function (res) {
+                var rows = (res && res.items) ? res.items : [];
+                state.tournamentTeams = rows;
+                renderTournamentTeams(rows);
+            }).fail(function (xhr) {
+                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to load tournament teams.");
+            });
+        }
+
+        function loadReportedTeams(searchText) {
+            if (!state.selectedNmaKey) {
+                $("#tmReportedRows").html('<tr><td colspan="4">Select an NMA first.</td></tr>');
+                return $.Deferred().resolve().promise();
+            }
+            if (!state.selectedAgeGroup) {
+                $("#tmReportedRows").html('<tr><td colspan="4">Select an event first.</td></tr>');
+                return $.Deferred().resolve().promise();
+            }
+
+            var srcYear = (state.selectedEventYear ? (parseInt(state.selectedEventYear, 10) - 1) : (new Date().getFullYear() - 1));
+            state.sourceYear = srcYear;
+            setMeta();
+
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/nmas/" + encodeURIComponent(state.selectedNmaKey) + "/teams",
+                method: "GET",
+                data: {
+                    ageGroup: state.selectedAgeGroup,
+                    year: srcYear,
+                    q: (searchText || "").trim()
+                }
+            }).then(function (res) {
+                state.sourceYear = res && res.year ? res.year : srcYear;
+                setMeta();
+                var rows = (res && res.items) ? res.items : [];
+                renderReportedTeams(rows);
+            }).fail(function (xhr) {
+                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to load reported teams.");
+            });
+        }
+
+        function getSelectedTournamentTeamKey() {
+            var key = $('input[name="tmTeamSelect"]:checked').val();
+            return key || "";
+        }
+
+        function addTeam($reportedRow) {
             clearError();
             clearSuccess();
 
-            if (!state.selectedEventYearKey) return;
-            if (!state.selectedNmaKey) return;
+            if (!state.selectedEventYearKey) { showError("Select an event first."); return; }
+            if (!state.selectedNmaKey) { showError("Select an NMA first."); return; }
 
             var payload = {
-                eventYearKey: state.selectedEventYearKey,
+                eventYearKey: state.selectedEventYearKey, // kept for future use; server uses route
                 nmaKey: state.selectedNmaKey,
-                nmaIso3: state.selectedNmaIso3 || "", // ✅ comes from NMA record
-                reportedTeamId: parseInt($tr.data("reportedid"), 10),
-                reportedTeamKey: $tr.data("reportedkey"),
-                reportedTeamName: $tr.data("reportedname")
+                nmaIso3: state.selectedNmaIso3,
+                reportedTeamId: parseInt($reportedRow.data("reportedid"), 10),
+                reportedTeamKey: $reportedRow.data("reportedkey"),
+                reportedTeamName: $reportedRow.data("reportedname")
             };
 
             return $.ajax({
@@ -321,100 +318,117 @@
                 method: "POST",
                 contentType: "application/json",
                 data: JSON.stringify(payload)
-            }).then(function () {
-                showSuccess("Team added.");
+            }).then(function (res) {
+                showSuccess((res && res.message) ? res.message : "Team added.");
                 return loadTournamentTeams();
             }).fail(function (xhr) {
                 showError(xhr && xhr.responseText ? xhr.responseText : "Failed to add team.");
             });
         }
 
-        function linkTeamToTournament($tr) {
+        function linkTeam($reportedRow) {
             clearError();
             clearSuccess();
 
-            if (!state.selectedTournamentTeamKey) {
-                showError("Select a tournament team on the right to link.");
-                return;
-            }
+            if (!state.selectedEventYearKey) { showError("Select an event first."); return; }
+            if (!state.selectedNmaKey) { showError("Select an NMA first."); return; }
+
+            var tournamentTeamKey = getSelectedTournamentTeamKey();
+            if (!tournamentTeamKey) { showError("Select a tournament team to link on the right-hand table."); return; }
 
             var payload = {
-                tournamentTeamKey: state.selectedTournamentTeamKey,
+                tournamentTeamKey: tournamentTeamKey,
                 nmaKey: state.selectedNmaKey,
-                nmaIso3: state.selectedNmaIso3 || "", // ✅ comes from NMA record
-                reportedTeamId: parseInt($tr.data("reportedid"), 10),
-                reportedTeamKey: $tr.data("reportedkey"),
-                reportedTeamName: $tr.data("reportedname")
+                nmaIso3: state.selectedNmaIso3,
+                TeamId: parseInt($reportedRow.data("reportedid"), 10),
+                TeamKey: $reportedRow.data("reportedkey"),
+                TeamName: $reportedRow.data("reportedname")
             };
+
+            console.log(payload);
 
             return $.ajax({
                 url: "/umbraco/api/tournamentmanagement/events/" + encodeURIComponent(state.selectedEventYearKey) + "/teams/link",
                 method: "POST",
                 contentType: "application/json",
                 data: JSON.stringify(payload)
-            }).then(function () {
-                showSuccess("Team linked.");
+            }).then(function (res) {
+                showSuccess((res && res.message) ? res.message : "Linked.");
                 return loadTournamentTeams();
             }).fail(function (xhr) {
                 showError(xhr && xhr.responseText ? xhr.responseText : "Failed to link team.");
             });
         }
 
-        // -------------------------
         // Events
-        // -------------------------
-
         $("#tmEventSelect").on("change", function () {
-            state.selectedEventYearKey = $(this).val() || null;
-            updateEventMeta();
+            var opt = $(this).find("option:selected");
+            var key = opt.val();
 
-            // refresh both lists when event changes
-            loadTournamentTeams().then(loadReportedTeams);
-        });
+            state.selectedEventYearKey = key || null;
+            state.selectedEventYear = opt.data("year") || null;
+            state.selectedAgeGroup = opt.data("agegroup") || null;
 
-        $("#tmNmaSelect").on("change", function () {
-            state.selectedNmaKey = $(this).val() || null;
-            updateNmaMeta();
-            loadReportedTeams();
-        });
+            state.sourceYear = null;
+            setMeta();
 
-        $("#tmTeamSearchBtn").on("click", function () {
-            loadReportedTeams();
-        });
+            $("#tmReportedRows").html('<tr><td colspan="4">Select an NMA, then search.</td></tr>');
 
-        $("#tmReloadTournamentTeams").on("click", function () {
             loadTournamentTeams();
         });
 
-        $("#tmRefreshAll").on("click", function () {
+        // NMAs
+        $("#tmNmaSelect").on("change", function () {
+            var opt = $(this).find("option:selected");
+            var key = opt.val();
+            state.selectedNmaKey = key || null;
+            state.selectedNmaIso3 = opt.data("iso3") || null;
+
+            state.sourceYear = null;
+            setMeta();
+
+            $("#tmReportedRows").html('<tr><td colspan="4">Search for reported teams.</td></tr>');
+            loadReportedTeams($("#tmTeamSearch").val());
+        });
+
+        $("#tmRefreshBtn").on("click", function () {
             clearError();
             clearSuccess();
             $.when(loadEvents(), loadNmas()).then(function () {
-                loadTournamentTeams().then(loadReportedTeams);
+                showSuccess("Refreshed.");
+            }).fail(function (xhr) {
+                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to refresh.");
             });
         });
 
-        $(document).on("change", ".tmPickTeam", function () {
-            var $tr = $(this).closest("tr");
-            state.selectedTournamentTeamKey = $tr.data("teamkey");
+        $("#tmReloadTeamsBtn").on("click", function () {
+            clearError();
+            clearSuccess();
+            loadTournamentTeams();
+        });
+
+        $("#tmTeamSearchBtn").on("click", function () {
+            clearError();
+            clearSuccess();
+            loadReportedTeams($("#tmTeamSearch").val());
+            
         });
 
         $(document).on("click", ".tmAdd", function () {
-            addTeamFromReported($(this).closest("tr"));
+            var $tr = $(this).closest("tr");
+            addTeam($tr);
         });
 
         $(document).on("click", ".tmLink", function () {
-            linkTeamToTournament($(this).closest("tr"));
+            var $tr = $(this).closest("tr");
+            linkTeam($tr);
         });
 
-        // -------------------------
-        // Initialise
-        // -------------------------
-        $(function () {
-            $.when(loadEvents(), loadNmas()).then(function () {
-                updateEventMeta();
-                updateNmaMeta();
-            });
+        // init
+        $.when(loadEvents(), loadNmas()).then(function () {
+            setMeta();
+        }).fail(function (xhr) {
+            showError(xhr && xhr.responseText ? xhr.responseText : "Failed to initialise tournament management.");
         });
 
     })();
