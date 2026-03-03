@@ -6,6 +6,8 @@
 
         public DateTime EventEndDate { get; set; }
 
+        public string SanctionNumber { get; set; }
+
         public string HostClub { get; set; }
 
         public string HostContact { get; set; }

@@ -1,11 +1,17 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Linq;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.IO;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.PublishedContent;
+using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Strings;
 using Umbraco.Cms.Web.Common.Controllers;
 
 namespace IISHF.Core.Controllers.ApiControllers
@@ -16,13 +22,28 @@ namespace IISHF.Core.Controllers.ApiControllers
     {
         private readonly IPublishedContentQuery _contentQuery;
         private readonly IContentService _contentService;
+        private readonly IMediaService _mediaService;
+        private readonly MediaFileManager _mediaFileManager;
+        private readonly MediaUrlGeneratorCollection _mediaUrlGenerators;
+        private readonly IShortStringHelper _shortStringHelper;
+        private readonly IContentTypeBaseServiceProvider _contentTypeBaseServiceProvider;
 
         public TournamentManagementController(
             IPublishedContentQuery contentQuery,
-            IContentService contentService)
+            IContentService contentService,
+            IMediaService mediaService,
+            MediaFileManager mediaFileManager,
+            MediaUrlGeneratorCollection mediaUrlGenerators,
+            IShortStringHelper shortStringHelper,
+            IContentTypeBaseServiceProvider contentTypeBaseServiceProvider)
         {
             _contentQuery = contentQuery;
             _contentService = contentService;
+            _mediaService = mediaService;
+            _mediaFileManager = mediaFileManager;
+            _mediaUrlGenerators = mediaUrlGenerators;
+            _shortStringHelper = shortStringHelper;
+            _contentTypeBaseServiceProvider = contentTypeBaseServiceProvider;
         }
 
         // -----------------------------
@@ -342,8 +363,8 @@ namespace IISHF.Core.Controllers.ApiControllers
             [JsonPropertyName("reportedTeamKey")]
             public Guid TeamKey { get; set; }
 
-            [JsonPropertyName("reportedTeamName")]
-            public string TeamName { get; set; } // reported name (stored; tournament name remains unchanged)
+            //[JsonPropertyName("reportedTeamName")]
+            //public string TeamName { get; set; } // reported name (stored; tournament name remains unchanged)
 
             [JsonPropertyName("nmaKey")]
             public Guid NmaKey { get; set; }
@@ -389,11 +410,11 @@ namespace IISHF.Core.Controllers.ApiControllers
             SetValueIfExists(content, "NMaTeamId", req.TeamId);
 
             // store reported name only; do not overwrite tournament team name fields
-            if (!string.IsNullOrWhiteSpace(req.TeamName))
-            {
-                SetValueIfExists(content, "NMaReportedName", req.TeamName.Trim());
-                SetValueIfExists(content, "nmaReportedName", req.TeamName.Trim());
-            }
+            //if (!string.IsNullOrWhiteSpace(req.TeamName))
+            //{
+            //    SetValueIfExists(content, "NMaReportedName", req.TeamName.Trim());
+            //    SetValueIfExists(content, "nmaReportedName", req.TeamName.Trim());
+            //}
 
             // requested: persist NMA key + ISO3 onto tournament team
             SetValueIfExists(content, "nmaKey", req.NmaKey.ToString());
@@ -423,6 +444,309 @@ namespace IISHF.Core.Controllers.ApiControllers
             if (req == null) return BadRequest("Missing body.");
             req.TournamentTeamKey = eventTeamKey;
             return LinkTournamentTeam(eventYearNodeKey, req);
+        }
+
+        // -----------------------------
+        // GET /umbraco/api/tournamentmanagement/events/{eventYearNodeKey}/teams/{tournamentTeamKey}
+        // Returns editable fields + logo
+        // -----------------------------
+        [HttpGet("events/{eventYearNodeKey:guid}/teams/{tournamentTeamKey:guid}")]
+        public IActionResult GetTournamentTeam([FromRoute] Guid eventYearNodeKey, [FromRoute] Guid tournamentTeamKey)
+        {
+            var yearNode = _contentQuery.Content(eventYearNodeKey);
+            if (yearNode == null) return NotFound("Event year node not found.");
+
+            var team = yearNode.Children()
+                .FirstOrDefault(x => x.ContentType.Alias.Equals("team", StringComparison.OrdinalIgnoreCase) && x.Key == tournamentTeamKey);
+
+            if (team == null) return NotFound("Tournament team not found under this event year.");
+
+            // Media picker "image"
+            string logoUrl = "";
+            Guid? logoKey = null;
+            int? logoId = null;
+
+            // Try common patterns: Media picker returns IPublishedContent or MediaWithCrops, etc.
+            var logoMedia = team.Value<IPublishedContent>("image");
+            if (logoMedia != null)
+            {
+                logoUrl = logoMedia.Url();
+                logoKey = logoMedia.Key;
+                logoId = logoMedia.Id;
+            }
+
+            // Multi URL Picker "teamWebsite" (up to 1 URL)
+            var links = team.Value<Link[]>("teamWebsite");
+            var websiteUrl = (links != null && links.Length > 0) ? (links[0]?.Url ?? "") : "";
+
+            return Ok(new
+            {
+                key = team.Key,
+                id = team.Id,
+
+                // Node name
+                name = team.Name,
+
+                // Properties
+                eventTeam = team.Value<string>("eventTeam") ?? "",
+                countryIso3 = team.Value<string>("countryIso3") ?? "",
+                @group = team.Value<string>("group") ?? "",
+
+                teamWebsite = websiteUrl,
+
+                // Logo
+                logo = new
+                {
+                    id = logoId,
+                    key = logoKey,
+                    url = logoUrl
+                }
+            });
+        }
+
+        // -----------------------------
+        // POST /umbraco/api/tournamentmanagement/events/{eventYearNodeKey}/teams/{tournamentTeamKey}/update
+        // Updates core fields + logo media picker
+        // -----------------------------
+        [HttpPost("events/{eventYearNodeKey:guid}/teams/{tournamentTeamKey:guid}/update")]
+        public IActionResult UpdateTournamentTeam([FromRoute] Guid eventYearNodeKey, [FromRoute] Guid tournamentTeamKey, [FromBody] UpdateTournamentTeamRequest req)
+        {
+            if (req == null) return BadRequest("Missing body.");
+
+            var yearNode = _contentQuery.Content(eventYearNodeKey);
+            if (yearNode == null) return NotFound("Event year node not found.");
+
+            var publishedTeam = yearNode.Children()
+                .FirstOrDefault(x => x.ContentType.Alias.Equals("team", StringComparison.OrdinalIgnoreCase) && x.Key == tournamentTeamKey);
+
+            if (publishedTeam == null) return NotFound("Tournament team not found under this event year.");
+
+            var content = _contentService.GetById(publishedTeam.Id);
+            if (content == null) return NotFound("Tournament team content not found.");
+
+            // NEW: update node name (if provided)
+            if (!string.IsNullOrWhiteSpace(req.Name))
+            {
+                content.Name = req.Name.Trim();
+            }
+
+            // NEW: update properties (only if they exist)
+            SetValueIfExists(content, "eventTeam", req.EventTeam?.Trim() ?? "");
+            SetValueIfExists(content, "countryIso3", req.CountryIso3?.Trim() ?? "");
+            SetValueIfExists(content, "group", req.Group?.Trim() ?? "");
+
+            // NEW: Multi URL Picker - store up to 1 URL
+            // Umbraco stores this as JSON; easiest stable approach is to set JSON string.
+            if (content.HasProperty("teamWebsite"))
+            {
+                var url = (req.TeamWebsite ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(url))
+                {
+                    content.SetValue("teamWebsite", "[]");
+                }
+                else
+                {
+                    // single URL entry
+                    var json = "[{\"name\":\"\",\"url\":\"" + JavaScriptEncoder.Default.Encode(url) + "\",\"target\":\"\",\"type\":\"external\"}]";
+                    content.SetValue("teamWebsite", json);
+                }
+            }
+
+            // NEW: logo media picker "image"
+            if (content.HasProperty("image"))
+            {
+                if (req.ClearLogo)
+                {
+                    content.SetValue("image", null);
+                }
+                else if (req.LogoKey.HasValue && req.LogoKey.Value != Guid.Empty)
+                {
+                    // Media picker stores UDIs. We'll convert key -> media id -> UDI.
+                    var media = _contentQuery.Media(req.LogoKey.Value);
+                    if (media != null)
+                    {
+                        var udi = Udi.Create(Constants.UdiEntityType.Media, media.Key);
+                        content.SetValue("image", udi.ToString());
+                    }
+                }
+            }
+
+            var result = _contentService.SaveAndPublish(content);
+            if (!result.Success)
+                return BadRequest("Failed to save/publish tournament team.");
+
+            return Ok(new { updated = true, message = "Tournament team updated." });
+        }
+
+        // -----------------------------
+        // POST /umbraco/api/tournamentmanagement/logos/upload
+        // multipart/form-data with file field name "file"
+        // Returns new media { id, key, name, url }
+        // -----------------------------
+        [HttpPost("logos/upload")]
+        [RequestSizeLimit(50_000_000)]
+        public IActionResult UploadLogo([FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+
+            // Find /Logos folder in Media
+            var logosFolder = _contentQuery
+                .MediaAtRoot()
+                .SelectMany(x => x.DescendantsOrSelf())
+                .FirstOrDefault(x => x.Name.Equals("Logos", StringComparison.OrdinalIgnoreCase));
+
+            if (logosFolder == null)
+                return BadRequest("Logos folder not found in Media.");
+
+            // Create media item (Image)
+            var safeName = System.IO.Path.GetFileNameWithoutExtension(file.FileName);
+            if (string.IsNullOrWhiteSpace(safeName)) safeName = "logo";
+
+            var media = _mediaService.CreateMedia(safeName, logosFolder.Id, Constants.Conventions.MediaTypes.Image);
+
+            using (var stream = file.OpenReadStream())
+            {
+                // Save physical file + set umbracoFile
+                media.SetValue(
+                    _mediaFileManager,
+                    _mediaUrlGenerators,
+                    _shortStringHelper,
+                    _contentTypeBaseServiceProvider,
+                    Constants.Conventions.Media.File,
+                    file.FileName,
+                    stream);
+            }
+
+            _mediaService.Save(media);
+
+            // Re-read as published media so Url() works consistently
+            var published = _contentQuery.Media(media.Key);
+            var url = published?.Url() ?? "";
+
+            return Ok(new
+            {
+                created = true,
+                item = new
+                {
+                    id = media.Id,
+                    key = media.Key,
+                    name = media.Name,
+                    url = url
+                }
+            });
+        }
+
+        [HttpGet(template: "logos")]
+        public IActionResult Logos()
+        {
+            var logosFolder = _contentQuery.MediaAtRoot()
+                .SelectMany(x => x.DescendantsOrSelf())
+                .FirstOrDefault(x => x.Name.Equals("Logos", StringComparison.OrdinalIgnoreCase)); 
+            
+            if (logosFolder == null) 
+            { return Ok(new
+                {
+                    items = Array.Empty<object>()
+                });
+                } 
+            var logos = logosFolder.Children().Select(x => new
+            {
+                id = x.Id, key = x.Key, name = x.Name, url = x.Url()
+            })
+                .OrderBy(x => x.name)
+                .ToList(); 
+            
+            return Ok(new { items = logos });
+        }
+
+        // -----------------------------
+        // POST /umbraco/api/tournamentmanagement/events/create
+        // Creates a new "event" under the selected tournament (by EventShotCode == TitleEvent)
+        // Assigns hostImage using model.HostImage (media key GUID string)
+        // -----------------------------
+        [HttpPost("events/create")]
+        public IActionResult CreateEvent([FromBody] IISHF.Core.Models.TournamentModel model)
+        {
+            if (model == null) return BadRequest("Missing model.");
+            if (model.EventYear <= 0) return BadRequest("EventYear is required.");
+            if (string.IsNullOrWhiteSpace(model.TitleEvent)) return BadRequest("TitleEvent is required.");
+
+            var rootContent = _contentQuery.ContentAtRoot().ToList();
+
+            // IMPORTANT: tournament lookup matches your existing service exactly
+            var tournament = rootContent
+                .FirstOrDefault(x => x.Name == "Home")!.Children()?
+                .FirstOrDefault(x => x.Name == "Tournaments")!.Children()?
+                .FirstOrDefault(x => x.Name.ToLower().Contains(model.IsChampionships ? "championships" : "cup"))!
+                .Children()
+                .FirstOrDefault(x => x.Value<string>("EventShotCode") == model.TitleEvent);
+
+            if (tournament == null)
+            {
+                return BadRequest("Tournament not found for TitleEvent/EventShotCode.");
+            }
+
+            // Host website link array JSON (same pattern as your service)
+            var linkObject = new
+            {
+                name = $"{model.HostClub} Website",
+                url = model.HostWebsite,
+                target = "_blank",
+            };
+
+            var jsonLinkArray = JsonSerializer.Serialize(new[] { linkObject });
+
+            // Create event node named by year under the tournament
+            var iishfEvent = _contentService.Create(model.EventYear.ToString(), tournament.Id, "event");
+            if (iishfEvent == null) return BadRequest("Failed to create event node.");
+
+            iishfEvent.SetValue("eventStartDate", model.EventStartDate);
+            iishfEvent.SetValue("eventEndDate", model.EventEndDate);
+            iishfEvent.SetValue("hostClub", model.HostClub);
+            iishfEvent.SetValue("hostContact", model.HostContact);
+            iishfEvent.SetValue("hostPhoneNumber", model.HostPhoneNumber);
+            iishfEvent.SetValue("hostEmail", model.HostEmail);
+            iishfEvent.SetValue("hostWebSite", jsonLinkArray);
+            iishfEvent.SetValue("venueName", model.VenueName);
+            iishfEvent.SetValue("venueAddress", model.VenueAddress);
+            iishfEvent.SetValue("rinkSizeLength", model.RinkLength);
+            iishfEvent.SetValue("rinkSizeWidth", model.RinkWidth);
+            iishfEvent.SetValue("rinkFloor", model.RinkFloor);
+
+            // NEW: assign hostImage from model.HostImage (GUID media key string)
+            if (iishfEvent.HasProperty("hostImage") && !string.IsNullOrWhiteSpace(model.HostImage))
+            {
+                if (Guid.TryParse(model.HostImage, out var mediaKey) && mediaKey != Guid.Empty)
+                {
+                    var udi = Udi.Create(Constants.UdiEntityType.Media, mediaKey);
+                    iishfEvent.SetValue("hostImage", udi.ToString());
+                }
+            }
+
+            // NEW: set ageGroup on the event by copying from the parent tournament node (robust for Uxx/Senior/Vets/Women)
+            if (iishfEvent.HasProperty("ageGroup"))
+            {
+                // Try common aliases on the TOURNAMENT node
+                var ageGroup =
+                    tournament.Value<string>("ageGroup") ??
+                    tournament.Value<string>("AgeGroup") ??
+                    tournament.Value<string>("division") ??
+                    tournament.Value<string>("Division");
+
+                if (!string.IsNullOrWhiteSpace(ageGroup))
+                {
+                    iishfEvent.SetValue("ageGroup", ageGroup);
+                }
+            }
+
+            _contentService.SaveAndPublish(iishfEvent);
+
+            return Ok(new
+            {
+                created = true,
+                message = "Event created.",
+                eventYearNodeKey = iishfEvent.Key
+            });
         }
 
         // -----------------------------
@@ -524,6 +848,19 @@ namespace IISHF.Core.Controllers.ApiControllers
             if (!string.IsNullOrWhiteSpace(iso3)) return iso3;
 
             return "";
+        }
+
+        public sealed class UpdateTournamentTeamRequest
+        {
+            public string Name { get; set; }          // node name
+            public string EventTeam { get; set; }
+            public string CountryIso3 { get; set; }
+            public string Group { get; set; }
+            public string TeamWebsite { get; set; }   // single URL (multi url picker supports 1)
+
+            // Optional: set/clear logo
+            public Guid? LogoKey { get; set; }        // media key in Logos
+            public bool ClearLogo { get; set; }
         }
     }
 }
