@@ -251,9 +251,6 @@ namespace IISHF.Core.Controllers.ApiControllers
         // -----------------------------
         public class AddTeamRequest
         {
-            // NOTE: keep existing property names, but bind to the CURRENT JSON payload
-            // from TournamentManagement.cshtml without renaming client-side objects.
-
             [JsonPropertyName("reportedTeamId")]
             public int TeamId { get; set; }
 
@@ -363,9 +360,6 @@ namespace IISHF.Core.Controllers.ApiControllers
             [JsonPropertyName("reportedTeamKey")]
             public Guid TeamKey { get; set; }
 
-            //[JsonPropertyName("reportedTeamName")]
-            //public string TeamName { get; set; } // reported name (stored; tournament name remains unchanged)
-
             [JsonPropertyName("nmaKey")]
             public Guid NmaKey { get; set; }
 
@@ -408,13 +402,6 @@ namespace IISHF.Core.Controllers.ApiControllers
 
             SetValueIfExists(content, "teamId", req.TeamId);
             SetValueIfExists(content, "NMaTeamId", req.TeamId);
-
-            // store reported name only; do not overwrite tournament team name fields
-            //if (!string.IsNullOrWhiteSpace(req.TeamName))
-            //{
-            //    SetValueIfExists(content, "NMaReportedName", req.TeamName.Trim());
-            //    SetValueIfExists(content, "nmaReportedName", req.TeamName.Trim());
-            //}
 
             // requested: persist NMA key + ISO3 onto tournament team
             SetValueIfExists(content, "nmaKey", req.NmaKey.ToString());
@@ -466,7 +453,6 @@ namespace IISHF.Core.Controllers.ApiControllers
             Guid? logoKey = null;
             int? logoId = null;
 
-            // Try common patterns: Media picker returns IPublishedContent or MediaWithCrops, etc.
             var logoMedia = team.Value<IPublishedContent>("image");
             if (logoMedia != null)
             {
@@ -475,7 +461,6 @@ namespace IISHF.Core.Controllers.ApiControllers
                 logoId = logoMedia.Id;
             }
 
-            // Multi URL Picker "teamWebsite" (up to 1 URL)
             var links = team.Value<Link[]>("teamWebsite");
             var websiteUrl = (links != null && links.Length > 0) ? (links[0]?.Url ?? "") : "";
 
@@ -484,17 +469,14 @@ namespace IISHF.Core.Controllers.ApiControllers
                 key = team.Key,
                 id = team.Id,
 
-                // Node name
                 name = team.Name,
 
-                // Properties
                 eventTeam = team.Value<string>("eventTeam") ?? "",
                 countryIso3 = team.Value<string>("countryIso3") ?? "",
                 @group = team.Value<string>("group") ?? "",
 
                 teamWebsite = websiteUrl,
 
-                // Logo
                 logo = new
                 {
                     id = logoId,
@@ -524,19 +506,15 @@ namespace IISHF.Core.Controllers.ApiControllers
             var content = _contentService.GetById(publishedTeam.Id);
             if (content == null) return NotFound("Tournament team content not found.");
 
-            // NEW: update node name (if provided)
             if (!string.IsNullOrWhiteSpace(req.Name))
             {
                 content.Name = req.Name.Trim();
             }
 
-            // NEW: update properties (only if they exist)
             SetValueIfExists(content, "eventTeam", req.EventTeam?.Trim() ?? "");
             SetValueIfExists(content, "countryIso3", req.CountryIso3?.Trim() ?? "");
             SetValueIfExists(content, "group", req.Group?.Trim() ?? "");
 
-            // NEW: Multi URL Picker - store up to 1 URL
-            // Umbraco stores this as JSON; easiest stable approach is to set JSON string.
             if (content.HasProperty("teamWebsite"))
             {
                 var url = (req.TeamWebsite ?? "").Trim();
@@ -546,13 +524,11 @@ namespace IISHF.Core.Controllers.ApiControllers
                 }
                 else
                 {
-                    // single URL entry
                     var json = "[{\"name\":\"\",\"url\":\"" + JavaScriptEncoder.Default.Encode(url) + "\",\"target\":\"\",\"type\":\"external\"}]";
                     content.SetValue("teamWebsite", json);
                 }
             }
 
-            // NEW: logo media picker "image"
             if (content.HasProperty("image"))
             {
                 if (req.ClearLogo)
@@ -561,13 +537,9 @@ namespace IISHF.Core.Controllers.ApiControllers
                 }
                 else if (req.LogoKey.HasValue && req.LogoKey.Value != Guid.Empty)
                 {
-                    // Media picker stores UDIs. We'll convert key -> media id -> UDI.
-                    var media = _contentQuery.Media(req.LogoKey.Value);
-                    if (media != null)
-                    {
-                        var udi = Udi.Create(Constants.UdiEntityType.Media, media.Key);
-                        content.SetValue("image", udi.ToString());
-                    }
+                    // CHANGED: set media picker directly from key (UDI), no lookup required
+                    var udi = Udi.Create(Constants.UdiEntityType.Media, req.LogoKey.Value);
+                    content.SetValue("image", udi.ToString());
                 }
             }
 
@@ -589,7 +561,6 @@ namespace IISHF.Core.Controllers.ApiControllers
         {
             if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
 
-            // Find /Logos folder in Media
             var logosFolder = _contentQuery
                 .MediaAtRoot()
                 .SelectMany(x => x.DescendantsOrSelf())
@@ -598,7 +569,6 @@ namespace IISHF.Core.Controllers.ApiControllers
             if (logosFolder == null)
                 return BadRequest("Logos folder not found in Media.");
 
-            // Create media item (Image)
             var safeName = System.IO.Path.GetFileNameWithoutExtension(file.FileName);
             if (string.IsNullOrWhiteSpace(safeName)) safeName = "logo";
 
@@ -606,7 +576,6 @@ namespace IISHF.Core.Controllers.ApiControllers
 
             using (var stream = file.OpenReadStream())
             {
-                // Save physical file + set umbracoFile
                 media.SetValue(
                     _mediaFileManager,
                     _mediaUrlGenerators,
@@ -619,7 +588,6 @@ namespace IISHF.Core.Controllers.ApiControllers
 
             _mediaService.Save(media);
 
-            // Re-read as published media so Url() works consistently
             var published = _contentQuery.Media(media.Key);
             var url = published?.Url() ?? "";
 
@@ -636,26 +604,31 @@ namespace IISHF.Core.Controllers.ApiControllers
             });
         }
 
-        [HttpGet(template: "logos")]
+        // CHANGED: ensure route matches JS: /umbraco/api/tournamentmanagement/logos
+        [HttpGet("logos")]
         public IActionResult Logos()
         {
             var logosFolder = _contentQuery.MediaAtRoot()
                 .SelectMany(x => x.DescendantsOrSelf())
-                .FirstOrDefault(x => x.Name.Equals("Logos", StringComparison.OrdinalIgnoreCase)); 
-            
-            if (logosFolder == null) 
-            { return Ok(new
-                {
-                    items = Array.Empty<object>()
-                });
-                } 
-            var logos = logosFolder.Children().Select(x => new
+                .FirstOrDefault(x => x.Name.Equals("Logos", StringComparison.OrdinalIgnoreCase));
+
+            if (logosFolder == null)
             {
-                id = x.Id, key = x.Key, name = x.Name, url = x.Url()
-            })
+                return Ok(new { items = Array.Empty<object>() });
+            }
+
+            var logos = logosFolder
+                .Children()
+                .Select(x => new
+                {
+                    id = x.Id,
+                    key = x.Key,
+                    name = x.Name,
+                    url = x.Url()
+                })
                 .OrderBy(x => x.name)
-                .ToList(); 
-            
+                .ToList();
+
             return Ok(new { items = logos });
         }
 
@@ -670,10 +643,10 @@ namespace IISHF.Core.Controllers.ApiControllers
             if (model == null) return BadRequest("Missing model.");
             if (model.EventYear <= 0) return BadRequest("EventYear is required.");
             if (string.IsNullOrWhiteSpace(model.TitleEvent)) return BadRequest("TitleEvent is required.");
+            if (string.IsNullOrWhiteSpace(model.SanctionNumber)) return BadRequest("SanctionNumber is required."); // CHANGED
 
             var rootContent = _contentQuery.ContentAtRoot().ToList();
 
-            // IMPORTANT: tournament lookup matches your existing service exactly
             var tournament = rootContent
                 .FirstOrDefault(x => x.Name == "Home")!.Children()?
                 .FirstOrDefault(x => x.Name == "Tournaments")!.Children()?
@@ -686,7 +659,6 @@ namespace IISHF.Core.Controllers.ApiControllers
                 return BadRequest("Tournament not found for TitleEvent/EventShotCode.");
             }
 
-            // Host website link array JSON (same pattern as your service)
             var linkObject = new
             {
                 name = $"{model.HostClub} Website",
@@ -696,7 +668,6 @@ namespace IISHF.Core.Controllers.ApiControllers
 
             var jsonLinkArray = JsonSerializer.Serialize(new[] { linkObject });
 
-            // Create event node named by year under the tournament
             var iishfEvent = _contentService.Create(model.EventYear.ToString(), tournament.Id, "event");
             if (iishfEvent == null) return BadRequest("Failed to create event node.");
 
@@ -713,29 +684,19 @@ namespace IISHF.Core.Controllers.ApiControllers
             iishfEvent.SetValue("rinkSizeWidth", model.RinkWidth);
             iishfEvent.SetValue("rinkFloor", model.RinkFloor);
 
-            // NEW: assign hostImage from model.HostImage (GUID media key string)
+            // CHANGED: persist sanction number (only if property exists)
+            if (iishfEvent.HasProperty("sanctionNumber"))
+            {
+                iishfEvent.SetValue("sanctionNumber", model.SanctionNumber);
+            }
+
+            // hostImage: model.HostImage is GUID key string (selected existing OR uploaded)
             if (iishfEvent.HasProperty("hostImage") && !string.IsNullOrWhiteSpace(model.HostImage))
             {
                 if (Guid.TryParse(model.HostImage, out var mediaKey) && mediaKey != Guid.Empty)
                 {
                     var udi = Udi.Create(Constants.UdiEntityType.Media, mediaKey);
                     iishfEvent.SetValue("hostImage", udi.ToString());
-                }
-            }
-
-            // NEW: set ageGroup on the event by copying from the parent tournament node (robust for Uxx/Senior/Vets/Women)
-            if (iishfEvent.HasProperty("ageGroup"))
-            {
-                // Try common aliases on the TOURNAMENT node
-                var ageGroup =
-                    tournament.Value<string>("ageGroup") ??
-                    tournament.Value<string>("AgeGroup") ??
-                    tournament.Value<string>("division") ??
-                    tournament.Value<string>("Division");
-
-                if (!string.IsNullOrWhiteSpace(ageGroup))
-                {
-                    iishfEvent.SetValue("ageGroup", ageGroup);
                 }
             }
 
@@ -810,7 +771,6 @@ namespace IISHF.Core.Controllers.ApiControllers
             v = t?.Value<string>("nmaReportedName");
             if (!string.IsNullOrWhiteSpace(v)) return v;
 
-            // DO NOT use "eventTeam" here: that is the tournament team's display name in your schema.
             return "";
         }
 
@@ -852,14 +812,13 @@ namespace IISHF.Core.Controllers.ApiControllers
 
         public sealed class UpdateTournamentTeamRequest
         {
-            public string Name { get; set; }          // node name
+            public string Name { get; set; }
             public string EventTeam { get; set; }
             public string CountryIso3 { get; set; }
             public string Group { get; set; }
-            public string TeamWebsite { get; set; }   // single URL (multi url picker supports 1)
+            public string TeamWebsite { get; set; }
 
-            // Optional: set/clear logo
-            public Guid? LogoKey { get; set; }        // media key in Logos
+            public Guid? LogoKey { get; set; }
             public bool ClearLogo { get; set; }
         }
     }

@@ -236,13 +236,42 @@
                         <input type="url" class="form-control" id="tmNewHostWebsite" placeholder="https://..." />
                     </div>
 
+                    <!-- CHANGED: host logo now supports select existing + upload new -->
                     <div class="col-12">
-                        <label class="form-label">Host Image (optional upload)</label>
-                        <input type="file" class="form-control" id="tmNewHostImageFile" accept="image/*" />
-                        <div class="small text-muted mt-1">
-                            This uploads via <code>/logos/upload</code> and assigns the returned media key to <code>hostImage</code>.
+                        <label class="form-label">Host Image (logo)</label>
+
+                        <div class="d-flex flex-wrap gap-3 align-items-start">
+                            <div>
+                                <div class="small text-muted mb-1">Selected</div>
+                                <img id="tmNewHostLogoPreview" src="" alt=""
+                                     style="max-height:80px; max-width:180px; display:none; border:1px solid #ddd; padding:4px; background:#fff;" />
+                                <div id="tmNewHostNoLogo" class="small text-muted">No logo selected</div>
+                            </div>
+
+                            <div class="flex-grow-1">
+                                <div class="small text-muted mb-1">Select existing</div>
+                                <select id="tmNewHostLogoSelect" class="form-select">
+                                    <option value="">-- Select logo --</option>
+                                </select>
+
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="tmNewClearHostLogo" />
+                                    <label class="form-check-label" for="tmNewClearHostLogo">Clear selection</label>
+                                </div>
+
+                                <hr />
+
+                                <div class="small text-muted mb-1">Upload new (optional)</div>
+                                <input type="file" class="form-control" id="tmNewHostImageFile" accept="image/*" />
+                                <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="tmUploadHostLogoBtn">Upload</button>
+
+                                <div class="small text-muted mt-1">
+                                    Upload uses <code>/logos/upload</code>. After upload, it will be selected automatically.
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    <!-- END CHANGED -->
 
                     <div class="col-12 col-lg-6">
                         <label class="form-label">Venue Name</label>
@@ -446,6 +475,28 @@
                  }
              });
          }
+
+        // NEW: load logos into Add Event modal select
+        function loadLogosIntoAddEventSelect(selectedKey) {
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/logos",
+                method: "GET"
+            }).then(function (res) {
+                var items = (res && res.items) ? res.items : [];
+                var sel = $("#tmNewHostLogoSelect");
+
+                var html = '<option value="">-- Select logo --</option>';
+                items.forEach(function (l) {
+                    html += '<option value="' + escapeHtml(l.key) + '" data-url="' + escapeHtml(l.url || "") + '">' + escapeHtml(l.name || "") + '</option>';
+                });
+
+                sel.html(html);
+
+                if (selectedKey) {
+                    sel.val(selectedKey);
+                }
+            });
+        }
 
         function openEditTeamModal(teamKey) {
             clearError();
@@ -855,6 +906,13 @@
 
         $("#tmNewSanctionNumber").val("");
 
+        // NEW: reset host logo picker UI + load logos
+        $("#tmNewHostLogoSelect").val("");
+        $("#tmNewClearHostLogo").prop("checked", false);
+        $("#tmNewHostLogoPreview").hide().attr("src", "");
+        $("#tmNewHostNoLogo").show();
+        loadLogosIntoAddEventSelect();
+
         var el = document.getElementById("tmAddEventModal");
         var modal = bootstrap.Modal.getOrCreateInstance(el);
         modal.show();
@@ -883,6 +941,64 @@
         });
     }
 
+    // NEW: decide HostImage key for Add Event (selected existing first, otherwise upload)
+    function getHostImageKeyForAddEvent() {
+        if ($("#tmNewClearHostLogo").is(":checked")) {
+            return $.Deferred().resolve("").promise();
+        }
+
+        var selectedKey = $("#tmNewHostLogoSelect").val();
+        if (selectedKey) {
+            return $.Deferred().resolve(selectedKey).promise();
+        }
+
+        return uploadHostImageIfProvided().then(function (k) {
+            return k ? k : "";
+        });
+    }
+
+    // NEW: upload host logo for Add Event and auto-select
+    function uploadHostLogoForAddEvent() {
+        clearAddEventError();
+
+        var input = document.getElementById("tmNewHostImageFile");
+        if (!input || !input.files || input.files.length === 0) {
+            showAddEventError("Select a logo file first.");
+            return;
+        }
+
+        var fd = new FormData();
+        fd.append("file", input.files[0]);
+
+        return $.ajax({
+            url: "/umbraco/api/tournamentmanagement/logos/upload",
+            method: "POST",
+            data: fd,
+            processData: false,
+            contentType: false
+        }).then(function (res) {
+            if (!res || !res.item || !res.item.key) {
+                showAddEventError("Upload succeeded but no logo returned.");
+                return;
+            }
+
+            return loadLogosIntoAddEventSelect(res.item.key).then(function () {
+                $("#tmNewHostLogoSelect").val(res.item.key);
+                $("#tmNewClearHostLogo").prop("checked", false);
+
+                if (res.item.url) {
+                    $("#tmNewHostLogoPreview").attr("src", res.item.url).show();
+                    $("#tmNewHostNoLogo").hide();
+                }
+
+                $("#tmNewHostImageFile").val("");
+            });
+
+        }).fail(function (xhr) {
+            showAddEventError(xhr && xhr.responseText ? xhr.responseText : "Failed to upload logo.");
+        });
+    }
+
     function createEvent() {
         clearAddEventError();
         clearError();
@@ -898,7 +1014,7 @@
         var sanction = ($("#tmNewSanctionNumber").val() || "").trim();
         if (!sanction) { showAddEventError("Sanction Number is required."); return; }
 
-        return uploadHostImageIfProvided().then(function (mediaKey) {
+        return getHostImageKeyForAddEvent().then(function (mediaKey) {
 
             // Build TournamentModel payload (property names match your model)
             var payload = {
@@ -961,6 +1077,34 @@
 
     $("#tmCreateEventBtn").on("click", function () {
         createEvent();
+    });
+
+    // NEW: Add Event logo picker handlers
+    $("#tmNewHostLogoSelect").on("change", function () {
+        var opt = $(this).find("option:selected");
+        var url = opt.data("url") || "";
+
+        if (url) {
+            $("#tmNewHostLogoPreview").attr("src", url).show();
+            $("#tmNewHostNoLogo").hide();
+            $("#tmNewClearHostLogo").prop("checked", false);
+        } else {
+            $("#tmNewHostLogoPreview").hide().attr("src", "");
+            $("#tmNewHostNoLogo").show();
+        }
+    });
+
+    $("#tmNewClearHostLogo").on("change", function () {
+        if ($(this).is(":checked")) {
+            $("#tmNewHostLogoSelect").val("");
+            $("#tmNewHostLogoPreview").hide().attr("src", "");
+            $("#tmNewHostNoLogo").show();
+            $("#tmNewHostImageFile").val("");
+        }
+    });
+
+    $("#tmUploadHostLogoBtn").on("click", function () {
+        uploadHostLogoForAddEvent();
     });
 
     })();
