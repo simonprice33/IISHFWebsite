@@ -68,10 +68,11 @@
                     <thead>
                         <tr>
                             <th>Tournament team</th>
-                            <th style="width:80px;">ISO3</th>
-                            <th style="width:90px;">Mapped?</th>
-                            <th style="width:70px;">Select</th>
-                            <th style="width:90px;">Edit</th>
+                            <th >ISO3</th>
+                            <th >Mapped?</th>
+                            <th >Select</th>
+                            <th >Edit</th>
+                            <th >Remove</th>
                         </tr>
                     </thead>
                     <tbody id="tmTournamentRows">
@@ -425,6 +426,7 @@
                 html += '  <td>' + (isMapped ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>') + '</td>';
                 html += '  <td><input type="radio" name="tmTeamSelect" class="form-check-input tmTournamentSelect" value="' + escapeHtml(t.key) + '"></td>';
                 html += '  <td><button type="button" class="btn btn-sm btn-outline-dark tmEditTeam" data-teamkey="' + escapeHtml(t.key) + '">Edit</button></td>';
+                html += '  <td><button type="button" class="btn btn-sm btn-outline-danger tmRemoveTeam" data-teamkey="' + escapeHtml(t.key) + '">Remove</button></td>';
                 html += '</tr>';
             });
 
@@ -719,9 +721,9 @@
                 eventYearKey: state.selectedEventYearKey, // kept for future use; server uses route
                 nmaKey: state.selectedNmaKey,
                 nmaIso3: state.selectedNmaIso3,
-                reportedTeamId: parseInt($reportedRow.data("reportedid"), 10),
-                reportedTeamKey: $reportedRow.data("reportedkey"),
-                reportedTeamName: $reportedRow.data("reportedname")
+                TeamId: parseInt($reportedRow.data("reportedid"), 10),
+                TeamKey: $reportedRow.data("reportedkey"),
+                TeamName: $reportedRow.data("reportedname")
             };
 
             return $.ajax({
@@ -845,6 +847,35 @@
             $(document).on("click", ".tmEditTeam", function () {
         var key = $(this).data("teamkey");
         openEditTeamModal(key);
+    });
+
+    $(document).on("click", ".tmRemoveTeam", function () {
+        clearError();
+        clearSuccess();
+
+        if (!state.selectedEventYearKey) { showError("Select an event first."); return; }
+
+        var teamKey = $(this).data("teamkey");
+        if (!teamKey) { showError("Missing team key."); return; }
+
+        if (!confirm("Remove this team from the event? This will delete the tournament team node.")) {
+            return;
+        }
+
+            $.ajax({
+        url: "/umbraco/api/tournamentmanagement/events/"
+            + encodeURIComponent(state.selectedEventYearKey)
+            + "/teams/"
+            + encodeURIComponent(teamKey),
+        method: "DELETE"
+    })
+    .then(function (res) {
+        showSuccess((res && res.message) ? res.message : "Removed.");
+        return loadTournamentTeams();
+    })
+    .fail(function (xhr) {
+        showError(xhr && xhr.responseText ? xhr.responseText : "Failed to remove team.");
+    });
     });
 
     $("#tmUploadLogoBtn").on("click", function () {

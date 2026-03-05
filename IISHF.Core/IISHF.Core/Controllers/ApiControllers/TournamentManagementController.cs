@@ -267,7 +267,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             public string NmaIso3 { get; set; }
         }
 
-        [HttpPost("events/{eventYearNodeKey:guid}/teams/add")]
+        [HttpPost("events/{eventYearNodeKey:guid}/teams/add")] 
         public IActionResult AddTeamToEvent([FromRoute] Guid eventYearNodeKey, [FromBody] AddTeamRequest req)
         {
             if (req == null) return BadRequest("Missing body.");
@@ -306,6 +306,8 @@ namespace IISHF.Core.Controllers.ApiControllers
             var content = _contentService.Create(req.TeamName.Trim(), yearNode.Id, "team");
 
             // store mapping (tolerant to mixed alias casing)
+            SetValueIfExists(content, "eventTeam", req.TeamName.ToString());
+
             SetValueIfExists(content, "nMATeamKey", req.TeamKey.ToString());
             SetValueIfExists(content, "NMaTeamKey", req.TeamKey.ToString());
 
@@ -318,7 +320,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             // requested: persist NMA key + ISO3 onto tournament team
             SetValueIfExists(content, "nmaKey", req.NmaKey.ToString());
             SetValueIfExists(content, "nMAKey", req.NmaKey.ToString()); // just in case
-
+            
             var iso3 = !string.IsNullOrWhiteSpace(req.NmaIso3) ? req.NmaIso3.Trim() : ResolveNmaIso3(req.NmaKey);
             if (!string.IsNullOrWhiteSpace(iso3))
             {
@@ -419,6 +421,34 @@ namespace IISHF.Core.Controllers.ApiControllers
                 return BadRequest("Failed to save/publish link.");
 
             return Ok(new { linked = true, message = "Tournament team linked to reported team." });
+        }
+
+        [HttpDelete("events/{eventYearNodeKey:guid}/teams/{teamKey:guid}")]
+        public IActionResult RemoveTeamFromEvent([FromRoute] Guid eventYearNodeKey, [FromRoute] Guid teamKey)
+        {
+            if (eventYearNodeKey == Guid.Empty) return BadRequest("eventYearNodeKey is required.");
+            if (teamKey == Guid.Empty) return BadRequest("teamKey is required.");
+
+            var yearNode = _contentQuery.Content(eventYearNodeKey);
+            if (yearNode == null) return NotFound("Event year node not found.");
+
+            var team = yearNode.Children()
+                .FirstOrDefault(x =>
+                    x.ContentType.Alias.Equals("team", StringComparison.OrdinalIgnoreCase)
+                    && x.Key == teamKey);
+
+            if (team == null)
+                return NotFound("Team not found under this event.");
+
+            var content = _contentService.GetById(team.Id);
+            if (content == null)
+                return NotFound("Team content not found.");
+
+            var result = _contentService.Delete(content);
+            if (result == null || !result.Success)
+                return BadRequest("Failed to delete team.");
+
+            return Ok(new { removed = true, message = "Team removed from event." });
         }
 
         // -----------------------------
@@ -710,6 +740,86 @@ namespace IISHF.Core.Controllers.ApiControllers
             });
         }
 
+        // GET /umbraco/api/tournamentmanagement/events/current/team-information-submission-status
+        // For each current-year event that is NOT completed (based on eventEndDate), return each team + submission date.
+        [HttpGet("events/current/team-information-submission-status")]
+        public IActionResult CurrentYearTeamInformationSubmissionStatus()
+        {
+            var currentYear = DateTime.Now.Year.ToString();
+            var today = DateTime.Today;
+
+            // IMPORTANT: keep your known-working approach
+            var tournamentsRoot = _contentQuery.ContentAtRoot()
+                .DescendantsOrSelfOfType("Tournaments")
+                .FirstOrDefault();
+
+            if (tournamentsRoot == null)
+                return Ok(Array.Empty<TeamInformationSubmissionStatus>());
+
+            // These two containers exist under Tournaments in your setup (based on earlier code)
+            var titleEventContainers = tournamentsRoot.Children()
+                .Where(x =>
+                    x.ContentType.Alias.Equals("europeanCups", StringComparison.OrdinalIgnoreCase) ||
+                    x.ContentType.Alias.Equals("championships", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            var response = new List<TeamInformationSubmissionStatus>();
+
+            // Find the current-year "event" node under each tournament, then teams underneath it
+            var results = titleEventContainers
+                .SelectMany(container => container.Children())
+                .SelectMany(tournament =>
+                {
+                    // under tournament: the year nodes, with alias "event" in your previous logic
+                    var eventYearNode = tournament.Children()
+                        .FirstOrDefault(y => y.Name == currentYear && y.ContentType.Alias.Equals("event", StringComparison.OrdinalIgnoreCase));
+
+                    if (eventYearNode == null)
+                        return Enumerable.Empty<TeamInformationSubmissionStatus>();
+
+                    // determine completed (exclude)
+                    var eventEndDate = eventYearNode.Value<DateTime?>("eventEndDate");
+                    if (eventEndDate.HasValue && eventEndDate.Value.Date < today)
+                        return Enumerable.Empty<TeamInformationSubmissionStatus>();
+
+                    var sanctionNumber = eventYearNode.Value<string>("sanctionNumber") ?? "";
+                    var eventStartDate = eventYearNode.Value<DateTime?>("eventStartDate");
+
+                    
+
+                    // teams under event year node
+                    var submissionInfo = eventYearNode.Children()
+                        .Where(x => x.ContentType.Alias.Equals("team", StringComparison.OrdinalIgnoreCase))
+                        .Select(team =>
+                        {
+                            // Your property name assumption:
+                            // if alias differs, change ONLY this alias string.
+                            var submissionDate = team.Value<DateTime?>("teamInformationSubmissionDate");
+
+                            return new TeamSubmissionInfo()
+                            {
+                                
+                                TeamName = team.Name,
+                                teamInformationSubmissionDate = submissionDate == DateTime.MinValue ? null : submissionDate
+                            };
+                        });
+
+                    response.Add(new TeamInformationSubmissionStatus()
+                    {
+                        SubmissionInfo = submissionInfo.ToList(),
+                        TournamentId = eventYearNode.Id,
+                        TournamentKey = eventYearNode.Key,
+                        SanctionNumber = sanctionNumber,
+                        EventStartDate = eventStartDate,
+                    });
+
+                    return response;
+                })
+                .ToList();
+
+            return Ok(response);
+        }
+
         // -----------------------------
         // Helpers
         // -----------------------------
@@ -820,6 +930,31 @@ namespace IISHF.Core.Controllers.ApiControllers
 
             public Guid? LogoKey { get; set; }
             public bool ClearLogo { get; set; }
+        }
+
+        public class TeamInformationSubmissionStatus 
+        {
+            public TeamInformationSubmissionStatus()
+            {
+                SubmissionInfo = new List<TeamSubmissionInfo>();
+            }
+
+            public int TournamentId { get; set; }
+
+            public Guid TournamentKey { get; set; }
+
+            public string SanctionNumber { get; set; }
+            
+            public DateTime? EventStartDate { get; set; }
+
+            public List<TeamSubmissionInfo> SubmissionInfo { get; set; }
+        }
+
+        public class TeamSubmissionInfo
+        {
+            public string TeamName { get; set; }
+
+            public DateTime? teamInformationSubmissionDate { get; set; }
         }
     }
 }
