@@ -763,12 +763,10 @@ namespace IISHF.Core.Controllers.ApiControllers
                     x.ContentType.Alias.Equals("championships", StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
-            var response = new List<TeamInformationSubmissionStatus>();
-
             // Find the current-year "event" node under each tournament, then teams underneath it
-            var results = titleEventContainers
+            var response = titleEventContainers
                 .SelectMany(container => container.Children())
-                .SelectMany(tournament =>
+                .SelectMany<IPublishedContent, TeamInformationSubmissionStatus>(tournament =>
                 {
                     // under tournament: the year nodes, with alias "event" in your previous logic
                     var eventYearNode = tournament.Children()
@@ -784,8 +782,6 @@ namespace IISHF.Core.Controllers.ApiControllers
 
                     var sanctionNumber = eventYearNode.Value<string>("sanctionNumber") ?? "";
                     var eventStartDate = eventYearNode.Value<DateTime?>("eventStartDate");
-
-                    
 
                     // teams under event year node
                     var submissionInfo = eventYearNode.Children()
