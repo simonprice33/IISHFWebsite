@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using DocumentFormat.OpenXml.Office2010.Excel;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Amqp.Encoding;
 using System;
 using System.Linq;
 using System.Text.Encodings.Web;
@@ -742,7 +744,7 @@ namespace IISHF.Core.Controllers.ApiControllers
 
         // GET /umbraco/api/tournamentmanagement/events/current/team-information-submission-status
         // For each current-year event that is NOT completed (based on eventEndDate), return each team + submission date.
-        [HttpGet("events/current/team-information-submission-status")]
+        [HttpGet("events/team-information-submission-status")]
         public IActionResult CurrentYearTeamInformationSubmissionStatus()
         {
             var currentYear = DateTime.Now.Year.ToString();
@@ -763,8 +765,16 @@ namespace IISHF.Core.Controllers.ApiControllers
                     x.ContentType.Alias.Equals("championships", StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
+            const string nmaAlias = "nationalMemberAssociation";
+
+            // Find NMA node
+            var nma = _contentQuery.ContentAtRoot()
+                .DescendantsOrSelfOfType(nmaAlias);
+                
+
             // Find the current-year "event" node under each tournament, then teams underneath it
-            var response = titleEventContainers
+            List<TeamInformationSubmissionStatus>? response = new List<TeamInformationSubmissionStatus>();
+            response = titleEventContainers
                 .SelectMany(container => container.Children())
                 .SelectMany<IPublishedContent, TeamInformationSubmissionStatus>(tournament =>
                 {
@@ -788,15 +798,30 @@ namespace IISHF.Core.Controllers.ApiControllers
                         .Where(x => x.ContentType.Alias.Equals("team", StringComparison.OrdinalIgnoreCase))
                         .Select(team =>
                         {
+                            var linkedTeam = _contentQuery.Content(team.Value<string>("nMATeamKey"));
+                            var contactEmail = linkedTeam == null || string.IsNullOrWhiteSpace(linkedTeam.Value<string>("teamContactEmail")) ? "Contact email not assigned to team" : linkedTeam.Value<string>("teamContactEmail");
+                            var contatName =
+                                linkedTeam == null ||
+                                string.IsNullOrWhiteSpace(linkedTeam.Value<string>("teamContactName"))
+                                    ? "Contact name not assigned to team"
+                                    : linkedTeam.Value<string>("teamContactName");
                             // Your property name assumption:
                             // if alias differs, change ONLY this alias string.
                             var submissionDate = team.Value<DateTime?>("teamInformationSubmissionDate");
+                            var reminderDate = team.Value<DateTime?>("lastTeamInformationReminderSent");
+                            var nmaKey = team.Value<Guid>("nmaKey");
+                            var teamNma = nma.ToList().FirstOrDefault(x => x.Key == nmaKey);
+                            var nmaEmail = teamNma == null || string.IsNullOrWhiteSpace(teamNma.Value<string>("email")) ? "NMA not assigned to team" : teamNma.Value<string>("email");
 
                             return new TeamSubmissionInfo()
                             {
                                 
                                 TeamName = team.Name,
-                                teamInformationSubmissionDate = submissionDate == DateTime.MinValue ? null : submissionDate
+                                teamInformationSubmissionDate = submissionDate == DateTime.MinValue ? null : submissionDate,
+                                lastTeamInformationReminderSent = reminderDate == DateTime.MinValue ? null : reminderDate,
+                                NmaEmail = nmaEmail,
+                                TeamEmail = contactEmail,
+                                TeamContact = contatName
                             };
                         });
 
@@ -807,6 +832,9 @@ namespace IISHF.Core.Controllers.ApiControllers
                         TournamentKey = eventYearNode.Key,
                         SanctionNumber = sanctionNumber,
                         EventStartDate = eventStartDate,
+                        EventName = tournament.Name,
+                        DueDate = eventStartDate.Value.AddDays(-56),
+
                     });
 
                     return response;
@@ -939,18 +967,29 @@ namespace IISHF.Core.Controllers.ApiControllers
 
             public Guid TournamentKey { get; set; }
 
+            public string EventName { get; set; }
+
             public string SanctionNumber { get; set; }
-            
+
             public DateTime? EventStartDate { get; set; }
 
             public List<TeamSubmissionInfo> SubmissionInfo { get; set; }
+            public DateTime DueDate { get; set; }
         }
 
         public class TeamSubmissionInfo
         {
             public string TeamName { get; set; }
 
+            public string TeamContact { get; set; }
+            
             public DateTime? teamInformationSubmissionDate { get; set; }
+
+            public DateTime? lastTeamInformationReminderSent { get; set; }
+
+            public string NmaEmail { get; set; }
+
+            public string TeamEmail { get; set; }
         }
     }
 }
