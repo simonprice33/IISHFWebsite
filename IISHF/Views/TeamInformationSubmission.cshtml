@@ -611,6 +611,7 @@
 
 <script>
     var countries = @Html.Raw(Json.Serialize(@countries));
+    var deletedLicenseNumbers = [];
     Dropzone.autoDiscover = false; // Prevent auto initialization
 
     function deleteRow(button) {
