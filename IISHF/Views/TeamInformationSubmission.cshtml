@@ -410,7 +410,7 @@
                                 if (photo != null)
                                 {
                                     <div id="teamPhotoContainer" class="position-relative d-inline-block mt-3">
-                                        <img id="teamPhoto" class="img img-fluid" src="@photo.Url()" onerror="document.getElementById('teamPhotoContainer').style.display='none';" />
+                                        <img id="teamPhoto" class="img img-fluid" src="@photo.Url()" />
                                         @if (!isSubmitted)
                                         {
                                             <button id="removeTeamPhoto" type="button" class="btn btn-danger btn-sm" style="position:absolute;top:5px;right:5px;" title="Remove photo">&times;</button>
@@ -445,7 +445,7 @@
                                 if (logo != null)
                                 {
                                     <div id="teamLogoContainer" class="position-relative d-inline-block mt-3">
-                                        <img id="teamLogo" class="img img-fluid" src="@logo.Url()" onerror="document.getElementById('teamLogoContainer').style.display='none';" />
+                                        <img id="teamLogo" class="img img-fluid" src="@logo.Url()" />
                                         @if (!isSubmitted)
                                         {
                                             <button id="removeTeamLogo" type="button" class="btn btn-danger btn-sm" style="position:absolute;top:5px;right:5px;" title="Remove logo">&times;</button>
@@ -747,6 +747,20 @@
             }
         });
 
+            var dobPicker = flatpickr("#dateOfBirth", {
+            dateFormat: "d.m.Y",
+            allowInput: false,
+            disableMobile: true
+        });
+
+        // Re-set the picker value when the modal is shown (populated from table row)
+        $('#editModal').on('shown.bs.modal', function () {
+            var currentVal = $('#dateOfBirth').val();
+            if (currentVal) {
+                dobPicker.setDate(currentVal, false, "d.m.Y");
+            }
+        });
+
         if ($("#teamPhotoDropzone").length) {
             var teamPhotoDropzone = new Dropzone("#teamPhotoDropzone", {
                 url: "/upload-team-photo",
@@ -884,6 +898,12 @@
                             $('#teamLogoContainer').show();
                         }
                     });
+                    this.on("removedfile", function (file) {
+                        $('#teamLogoDropzonePreview').remove();
+                        if ($('#teamLogo').attr('src')) {
+                            $('#teamLogoContainer').show();
+                        }
+                    });
                     this.on("addedfile", function (file) {
                         if (file.accepted === false) {
                             var errorMark = file.previewElement.querySelector('.dz-error-mark');
@@ -933,6 +953,16 @@
                     $('html, body').animate({ scrollTop: $tabContent.offset().top - 20 }, 300);
                 }
             }, 50);
+        });
+
+        $('#removeTeamPhoto').on('click', function () {
+            $('#teamPhoto').attr('src', '');
+            $('#teamPhotoContainer').hide();
+        });
+
+        $('#removeTeamLogo').on('click', function () {
+            $('#teamLogo').attr('src', '');
+            $('#teamLogoContainer').hide();
         });
 
         $('#submitDraft').click(function (e) {
