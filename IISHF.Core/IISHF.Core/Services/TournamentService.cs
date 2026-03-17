@@ -487,6 +487,19 @@ namespace IISHF.Core.Services
             _contentService.SaveAndPublish(tournamentTeam);
         }
 
+        public Task ResetTeamInformationSubmission(IPublishedContent team)
+        {
+            var tournamentTeam = _contentService.GetById(team.Id);
+            if (tournamentTeam != null)
+            {
+                tournamentTeam.SetValue("teamInformationSubmissionDate", null);
+                tournamentTeam.SetValue("teamInformationSubmitted", false);
+                tournamentTeam.SetValue("teamInformationSubmittedBy", null);
+                _contentService.SaveAndPublish(tournamentTeam);
+            }
+            return Task.CompletedTask;
+        }
+
         public async Task SubmitTeamInformationToHost(IPublishedContent tournament, IPublishedContent nmaTeam, IPublishedContent team)
         {
             // Logos from nma team - done
