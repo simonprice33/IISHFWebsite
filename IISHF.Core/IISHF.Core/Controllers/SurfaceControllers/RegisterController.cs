@@ -121,6 +121,13 @@ namespace IISHF.Core.Controllers.SurfaceControllers
 
             if (existingMember != null)
             {
+                if (model.InvitationKey != Guid.Empty)
+                {
+                    await _userService.ApplyInvitationToExistingMember(existingMember, model);
+                    TempData["status"] = "Invitation Applied";
+                    return CurrentUmbracoPage();
+                }
+
                 ModelState.AddModelError("Registration Error", "User with this email address already exists");
                 return CurrentUmbracoPage();
             }

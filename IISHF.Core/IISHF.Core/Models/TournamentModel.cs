@@ -1,10 +1,14 @@
-﻿namespace IISHF.Core.Models
+﻿using System;
+
+namespace IISHF.Core.Models
 {
     public class TournamentModel : TournamentBaseModel
     {
         public DateTime EventStartDate { get; set; }
 
         public DateTime EventEndDate { get; set; }
+
+        public string SanctionNumber { get; set; } = string.Empty;
 
         public string HostClub { get; set; }
 

@@ -1,31 +1,32 @@
-﻿using IISHF.Core.Interfaces;
+﻿using DocumentFormat.OpenXml.Bibliography;
+using DocumentFormat.OpenXml.Drawing;
+using DocumentFormat.OpenXml.EMMA;
+using DocumentFormat.OpenXml.Math;
+using IISHF.Core.Hubs;
+using IISHF.Core.Interfaces;
 using IISHF.Core.Models;
+using IISHF.Core.Models.ServiceBusMessage;
+using Lucene.Net.Index;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.TagHelpers;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Filters;
-using IMediaService = IISHF.Core.Interfaces.IMediaService;
-using Microsoft.AspNetCore.Mvc;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
-using IISHF.Core.Models.ServiceBusMessage;
-using Lucene.Net.Index;
-using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Umbraco.Extensions;
-using Microsoft.AspNetCore.SignalR;
-using IISHF.Core.Hubs;
-using DocumentFormat.OpenXml.Bibliography;
-using DocumentFormat.OpenXml.Drawing;
-using DocumentFormat.OpenXml.Math;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
+using IMediaService = IISHF.Core.Interfaces.IMediaService;
 
 namespace IISHF.Core.Controllers.ApiControllers
 {
@@ -47,6 +48,7 @@ namespace IISHF.Core.Controllers.ApiControllers
         private readonly INMAService _nmaService;
         private readonly ILogger<EventsController> _logger;
         private readonly IHubContext<DataHub> _hubContext;
+        private readonly IMediaService _iishfMediaService;
         private readonly JsonSerializerOptions _options;
 
         public EventsController(
@@ -63,7 +65,9 @@ namespace IISHF.Core.Controllers.ApiControllers
             IEmailService emailService,
             INMAService nmaService,
             ILogger<EventsController> logger,
-            IHubContext<DataHub> hubContext)
+            IHubContext<DataHub> hubContext,
+            IMediaService iishfMediaService
+            )
         {
             _contentQuery = contentQuery;
             _contentService = contentService;
@@ -79,6 +83,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             _nmaService = nmaService;
             _logger = logger;
             _hubContext = hubContext;
+            _iishfMediaService = iishfMediaService;
 
             _options = new JsonSerializerOptions
             {
@@ -515,8 +520,11 @@ namespace IISHF.Core.Controllers.ApiControllers
                 var excelFileName =
                     $"ITC_${tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-hhmmss")}.pdf";
 
+                var template = _iishfMediaService.GetMediaTemplate("ITCApprovedInternalInternalTemplate");
+                var templateUri = _iishfMediaService.GetTemplateUrl(template);
+
                 var itcExcel = await _tournamentService.GenerateItcAsExcelFile(team, tournament);
-                await _emailService.SendItc("thf@iishf.com", new List<string>(), "THF Manager", "IISHF Event Name", "ITCApprovedInternalInternalTemplate.html",
+                await _emailService.SendItc("thf@iishf.com", new List<string>(), "THF Manager", "IISHF Event Name", templateUri,
                     $"{tournament.Name} ITC Approved - {team.Name}", team.Name, itcExcel, excelFileName);
 
                 var excelStream = new MemoryStream(itcExcel);
@@ -538,7 +546,10 @@ namespace IISHF.Core.Controllers.ApiControllers
 
                 cc.AddRange(itcApprovers.Select(itcApprover => itcApprover.NmaApproverEmail));
 
-                await _emailService.SendItc(tournament.Value<string>("hostEmail"), cc, tournament.Value<string>("hostContact"), "IISHF Event Name", "ITCApprovedSendToHost.html",
+                template = _iishfMediaService.GetMediaTemplate("ITCApprovedSendToHost");
+                templateUri = _iishfMediaService.GetTemplateUrl(template);
+
+                await _emailService.SendItc(tournament.Value<string>("hostEmail"), cc, tournament.Value<string>("hostContact"), "IISHF Event Name", templateUri,
                     $"{tournament.Name} ITC Approved - {team.Name}", team.Name, itcPdf, pdfFileName);
 
                 return NoContent();
@@ -681,10 +692,40 @@ namespace IISHF.Core.Controllers.ApiControllers
             return NoContent();
         }
 
+        [HttpDelete]
+        [Route("team-submission/team/{teamKey}/photo")]
+        [UmbracoMemberAuthorize]
+        public async Task<IActionResult> RemoveTeamPhoto([FromRoute] Guid teamKey)
+        {
+            var team = _contentQuery.Content(teamKey);
+            if (team == null) return NotFound();
+
+            var nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
+            if (nmaTeam == null) return NotFound();
+
+            await _teamService.RemoveImageFromTeam(nmaTeam, "teamPhoto");
+            return NoContent();
+        }
 
         [HttpDelete]
-        [Route("itc/team/titel-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/roster-member/{rosterId}/")]
-        [Route("team-submission/team/titel-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/roster-member/{rosterId}/")]
+        [Route("team-submission/team/{teamKey}/logo")]
+        [UmbracoMemberAuthorize]
+        public async Task<IActionResult> RemoveTeamLogo([FromRoute] Guid teamKey)
+        {
+            var team = _contentQuery.Content(teamKey);
+            if (team == null) return NotFound();
+
+            var nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
+            if (nmaTeam == null) return NotFound();
+
+            await _teamService.RemoveImageFromTeam(nmaTeam, "teamLogo");
+            return NoContent();
+        }
+
+
+        [HttpDelete]
+        [Route("itc/team/title-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/roster-member/{rosterId}/")]
+        [Route("team-submission/team/title-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/roster-member/{rosterId}/")]
         public async Task<IActionResult> DeleteFromRoster(string titleEvent, bool isChampionship, int eventYear, string teamName, int rosterId)
         {
             // Check we have the tournament
@@ -759,7 +800,7 @@ namespace IISHF.Core.Controllers.ApiControllers
         }
 
         [HttpDelete]
-        [Route("team-submission/team/titel-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/sponsor/{sponsorId}/media/{mediaId}")]
+        [Route("team-submission/team/title-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/sponsor/{sponsorId}/media/{mediaId}")]
         public async Task<IActionResult> DeleteSponsorImage(string titleEvent, bool isChampionship, int eventYear, string teamName, int sponsorId, int mediaId)
         {
 
@@ -820,6 +861,29 @@ namespace IISHF.Core.Controllers.ApiControllers
                 .ToList();
             _logger.LogInformation(searchText);
             return Ok(teams);
+        }
+
+        [HttpPost]
+        [Route("tournament/{tournamentId}/nma-team/{teamId}/tournament-team/{tournamentTeamId}")]
+        public async Task<IActionResult> LinkTeamToTournamentTeam([FromRoute] int tournamentId, [FromRoute] int teamId, [FromRoute] int tournamentTeamId, [FromBody] TournamentBaseModel model)
+        {
+            var tournament = _tournamentService.GetTournament(tournamentId);
+            if (tournament == null)
+            {
+                return NotFound("Tournament not found");
+            }
+
+            try
+            {
+                await _tournamentService.LinkNmaTeamToTournamentTeam(tournament, teamId, tournamentTeamId);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+
+            return Ok();
         }
     }
 }

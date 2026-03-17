@@ -362,3 +362,7 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /IISHF/uSync/v9
+/IISHF/appsettings.Development.json
+/IISHF/Smidge/**
+/IISHF/wwwroot/media.rar
+

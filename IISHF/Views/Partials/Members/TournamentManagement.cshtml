@@ -1,0 +1,1142 @@
+﻿@using System.Text.Encodings.Web
+
+<div id="tournamentManagementRoot" class="col-12 col-sm-12 col-md-12 col-lg-12 mb-5">
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <h4 class="mb-0">Tournament Management</h4>
+
+        <div class="ms-auto d-flex flex-wrap gap-2 align-items-center">
+            <button type="button" id="tmRefreshBtn" class="btn btn-outline-secondary">Refresh</button>
+            <button type="button" id="tmAddEventBtn" class="btn btn-outline-primary">Add event</button>
+        </div>
+    </div>
+
+    <div id="tmError" class="alert alert-danger d-none"></div>
+    <div id="tmSuccess" class="alert alert-success d-none"></div>
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-6">
+            <div class="mb-3">
+                <label class="form-label">Current-year event</label>
+                <select id="tmEventSelect" class="form-select"></select>
+                <div class="small text-muted mt-1">
+                    <span id="tmEventMeta"></span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Search team</label>
+                <div class="d-flex gap-2">
+                    <input type="text" id="tmTeamSearch" class="form-control" placeholder="Search reported team name..." />
+                    <button type="button" id="tmTeamSearchBtn" class="btn btn-primary">Search</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Reported team</th>
+                            <th style="width:90px;">Id</th>
+                            <th>Key</th>
+                            <th style="width:170px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tmReportedRows">
+                        <tr><td colspan="4">Select an event and NMA, then search.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="mb-3">
+                <label class="form-label">National Member Association</label>
+                <select id="tmNmaSelect" class="form-select"></select>
+                <div class="small text-muted mt-1">
+                    <span id="tmNmaMeta"></span>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="fw-semibold">Tournament teams in selected event</div>
+                <button type="button" id="tmReloadTeamsBtn" class="btn btn-outline-secondary btn-sm">Reload</button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Tournament team</th>
+                            <th >ISO3</th>
+                            <th >Mapped?</th>
+                            <th >Select</th>
+                            <th >Edit</th>
+                            <th >Remove</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tmTournamentRows">
+                        <tr><td colspan="4">Select an event to load teams.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="small text-muted mt-2">
+                Linking keeps the tournament team name unchanged (e.g. <em>IHC La Broye</em>) but stores the reported team Id/Key + NMA key + ISO3.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="tmEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit tournament team</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="alert alert-danger d-none" id="tmEditError"></div>
+
+                <input type="hidden" id="tmEditTeamKey" />
+
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label">Name (node name)</label>
+                        <input type="text" class="form-control" id="tmEditName" />
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label">EventTeam</label>
+                        <input type="text" class="form-control" id="tmEditEventTeam" />
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label">CountryIso3</label>
+                        <input type="text" class="form-control" id="tmEditCountryIso3" maxlength="3" />
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label">Group</label>
+                        <input type="text" class="form-control" id="tmEditGroup" />
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label">Team Website</label>
+                        <input type="url" class="form-control" id="tmEditTeamWebsite" placeholder="https://..." />
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Logo</label>
+
+                        <div class="d-flex flex-wrap gap-3 align-items-start">
+                            <div>
+                                <div class="small text-muted mb-1">Current</div>
+                                <img id="tmEditLogoPreview" src="" alt="" style="max-height:80px; max-width:180px; display:none; border:1px solid #ddd; padding:4px; background:#fff;" />
+                                <div id="tmEditNoLogo" class="small text-muted">No logo set</div>
+                            </div>
+
+                            <div class="flex-grow-1">
+                                <div class="small text-muted mb-1">Select existing</div>
+                                <select id="tmEditLogoSelect" class="form-select">
+                                    <option value="">-- Select logo --</option>
+                                </select>
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="tmEditClearLogo" />
+                                    <label class="form-check-label" for="tmEditClearLogo">Clear logo</label>
+                                </div>
+
+                                <hr />
+
+                                <div class="small text-muted mb-1">Upload new (to Logos)</div>
+                                <input type="file" id="tmEditLogoFile" class="form-control" accept="image/*" />
+                                <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="tmUploadLogoBtn">Upload</button>
+                                <div class="small text-muted mt-1">After upload, it will appear in the dropdown and be selectable.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="tmSaveTeamBtn">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="tmAddEventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add new event</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="alert alert-danger d-none" id="tmAddEventError"></div>
+                <div class="col-12 col-lg-4">
+                    <label class="form-label">Sanction Number</label>
+                    <input type="text" class="form-control" id="tmNewSanctionNumber" />
+                </div>
+                <div class="row g-3">
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label">Year</label>
+                        <input type="number" class="form-control" id="tmNewEventYear" />
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label">Championships?</label>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="tmNewIsChampionships" />
+                            <label class="form-check-label" for="tmNewIsChampionships">Yes (otherwise Cups)</label>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label">TitleEvent (EventShotCode)</label>
+                        <input type="text" class="form-control" id="tmNewTitleEvent" placeholder="Must match EventShotCode" />
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label">Event Start Date</label>
+                        <input type="date" class="form-control" id="tmNewEventStartDate" />
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label">Event End Date</label>
+                        <input type="date" class="form-control" id="tmNewEventEndDate" />
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label">Host Club</label>
+                        <input type="text" class="form-control" id="tmNewHostClub" />
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label">Host Contact</label>
+                        <input type="text" class="form-control" id="tmNewHostContact" />
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label">Host Phone Number</label>
+                        <input type="text" class="form-control" id="tmNewHostPhoneNumber" />
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label">Host Email</label>
+                        <input type="email" class="form-control" id="tmNewHostEmail" />
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Host Website</label>
+                        <input type="url" class="form-control" id="tmNewHostWebsite" placeholder="https://..." />
+                    </div>
+
+                    <!-- CHANGED: host logo now supports select existing + upload new -->
+                    <div class="col-12">
+                        <label class="form-label">Host Image (logo)</label>
+
+                        <div class="d-flex flex-wrap gap-3 align-items-start">
+                            <div>
+                                <div class="small text-muted mb-1">Selected</div>
+                                <img id="tmNewHostLogoPreview" src="" alt=""
+                                     style="max-height:80px; max-width:180px; display:none; border:1px solid #ddd; padding:4px; background:#fff;" />
+                                <div id="tmNewHostNoLogo" class="small text-muted">No logo selected</div>
+                            </div>
+
+                            <div class="flex-grow-1">
+                                <div class="small text-muted mb-1">Select existing</div>
+                                <select id="tmNewHostLogoSelect" class="form-select">
+                                    <option value="">-- Select logo --</option>
+                                </select>
+
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="tmNewClearHostLogo" />
+                                    <label class="form-check-label" for="tmNewClearHostLogo">Clear selection</label>
+                                </div>
+
+                                <hr />
+
+                                <div class="small text-muted mb-1">Upload new (optional)</div>
+                                <input type="file" class="form-control" id="tmNewHostImageFile" accept="image/*" />
+                                <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="tmUploadHostLogoBtn">Upload</button>
+
+                                <div class="small text-muted mt-1">
+                                    Upload uses <code>/logos/upload</code>. After upload, it will be selected automatically.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- END CHANGED -->
+
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label">Venue Name</label>
+                        <input type="text" class="form-control" id="tmNewVenueName" />
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label">Venue Address</label>
+                        <input type="text" class="form-control" id="tmNewVenueAddress" />
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label">Rink Length</label>
+                        <input type="number" step="0.01" class="form-control" id="tmNewRinkLength" />
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label">Rink Width</label>
+                        <input type="number" step="0.01" class="form-control" id="tmNewRinkWidth" />
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label">Rink Floor</label>
+                        <input type="text" class="form-control" id="tmNewRinkFloor" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="tmCreateEventBtn">Create event</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var state = {
+            events: [],
+            nmas: [],
+            selectedEventYearKey: null,
+            selectedEventYear: null,
+            selectedAgeGroup: null,
+            selectedNmaKey: null,
+            selectedNmaIso3: null,
+            sourceYear: null,
+            tournamentTeams: []
+        };
+
+         function showEditError(msg) {
+             var el = $("#tmEditError");
+             el.text(msg || "An error occurred.");
+             el.removeClass("d-none");
+         }
+         function clearEditError() {
+             $("#tmEditError").addClass("d-none").text("");
+         }
+
+        function showError(msg) {
+            var el = $("#tmError");
+            el.text(msg || "An error occurred.");
+            el.removeClass("d-none");
+        }
+
+        function clearError() {
+            $("#tmError").addClass("d-none").text("");
+        }
+
+        function showSuccess(msg) {
+            var el = $("#tmSuccess");
+            el.text(msg || "Saved.");
+            el.removeClass("d-none");
+            setTimeout(function () { el.addClass("d-none").text(""); }, 2500);
+        }
+
+        function clearSuccess() {
+            $("#tmSuccess").addClass("d-none").text("");
+        }
+
+        function escapeHtml(text) {
+            return $("<div/>").text(text ?? "").html();
+        }
+
+        function setMeta() {
+            var eventMeta = "";
+            if (state.selectedAgeGroup && state.selectedEventYear) {
+                eventMeta = "Age group: " + state.selectedAgeGroup + "  |  Year: " + state.selectedEventYear;
+            }
+            $("#tmEventMeta").text(eventMeta);
+
+            var nmaMeta = "";
+            if (state.sourceYear) {
+                nmaMeta = "Source year (reported): " + state.sourceYear;
+            }
+            $("#tmNmaMeta").text(nmaMeta);
+        }
+
+        function renderEvents() {
+            var sel = $("#tmEventSelect");
+            if (!state.events || state.events.length === 0) {
+                sel.html('<option value="">No current-year events found</option>');
+                state.selectedEventYearKey = null;
+                state.selectedEventYear = null;
+                state.selectedAgeGroup = null;
+                setMeta();
+                return;
+            }
+
+            var html = '<option value="">-- Select event --</option>';
+            state.events.forEach(function (e) {
+                var label = (e.category || "") + " - " + (e.tournamentName || "") + " (" + (e.year || "") + ")";
+                html += '<option value="' + escapeHtml(e.eventYearNodeKey) + '" data-year="' + escapeHtml(e.year) + '" data-agegroup="' + escapeHtml(e.ageGroup) + '">' + escapeHtml(label) + '</option>';
+            });
+
+            sel.html(html);
+        }
+
+        function renderNmas() {
+            var sel = $("#tmNmaSelect");
+            if (!state.nmas || state.nmas.length === 0) {
+                sel.html('<option value="">No NMAs found</option>');
+                state.selectedNmaKey = null;
+                state.selectedNmaIso3 = null;
+                setMeta();
+                return;
+            }
+
+            var html = '<option value="">-- Select NMA --</option>';
+            state.nmas.forEach(function (n) {
+                html += '<option value="' + escapeHtml(n.key) + '" data-iso3="' + escapeHtml(n.iso3 || "") + '">' + escapeHtml(n.name) + '</option>';
+            });
+
+            sel.html(html);
+        }
+
+        function renderTournamentTeams(rows) {
+            var tbody = $("#tmTournamentRows");
+            if (!rows || rows.length === 0) {
+                tbody.html('<tr><td colspan="4">No tournament teams found for this event.</td></tr>');
+                return;
+            }
+
+            var html = "";
+            rows.forEach(function (t) {
+                var isMapped = !!(t.nmaTeamKey) || !!(t.nmaTeamId);
+                var iso3 = t.countryIso3 || "";
+                html += '<tr data-teamkey="' + escapeHtml(t.key) + '">';
+                html += '  <td>' + escapeHtml(t.name) + '</td>';
+                html += '  <td>' + escapeHtml(iso3) + '</td>';
+                html += '  <td>' + (isMapped ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>') + '</td>';
+                html += '  <td><input type="radio" name="tmTeamSelect" class="form-check-input tmTournamentSelect" value="' + escapeHtml(t.key) + '"></td>';
+                html += '  <td><button type="button" class="btn btn-sm btn-outline-dark tmEditTeam" data-teamkey="' + escapeHtml(t.key) + '">Edit</button></td>';
+                html += '  <td><button type="button" class="btn btn-sm btn-outline-danger tmRemoveTeam" data-teamkey="' + escapeHtml(t.key) + '">Remove</button></td>';
+                html += '</tr>';
+            });
+
+            tbody.html(html);
+        }
+
+        function renderReportedTeams(rows) {
+            var tbody = $("#tmReportedRows");
+
+            if (!rows || rows.length === 0) {
+                tbody.html('<tr><td colspan="4">No reported teams found.</td></tr>');
+                return;
+            }
+
+            var html = "";
+            rows.forEach(function (r) {
+                html += '<tr data-reportedid="' + escapeHtml(r.id) + '" data-reportedkey="' + escapeHtml(r.key) + '" data-reportedname="' + escapeHtml(r.name) + '">';
+                html += '  <td>' + escapeHtml(r.name) + '</td>';
+                html += '  <td>' + escapeHtml(r.id) + '</td>';
+                html += '  <td><span class="text-break" style="font-size:12px; color:#d63384;">' + escapeHtml(r.key) + '</span></td>';
+                html += '  <td class="d-flex gap-2 flex-wrap">';
+                html += '     <button type="button" class="btn btn-sm btn-success tmAdd">Add</button>';
+                html += '     <button type="button" class="btn btn-sm btn-outline-primary tmLink">Link</button>';
+                html += '  </td>';
+                html += '</tr>';
+            });
+
+            tbody.html(html);
+        }
+
+         function loadLogosIntoSelect(selectedKey) {
+             return $.ajax({
+                 url: "/umbraco/api/tournamentmanagement/logos",
+                 method: "GET"
+             }).then(function (res) {
+                 var items = (res && res.items) ? res.items : [];
+                 var sel = $("#tmEditLogoSelect");
+
+                 var html = '<option value="">-- Select logo --</option>';
+                 items.forEach(function (l) {
+                     html += '<option value="' + escapeHtml(l.key) + '" data-url="' + escapeHtml(l.url || "") + '">' + escapeHtml(l.name || "") + '</option>';
+                 });
+
+                 sel.html(html);
+
+                 if (selectedKey) {
+                     sel.val(selectedKey);
+                 }
+             });
+         }
+
+        // NEW: load logos into Add Event modal select
+        function loadLogosIntoAddEventSelect(selectedKey) {
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/logos",
+                method: "GET"
+            }).then(function (res) {
+                var items = (res && res.items) ? res.items : [];
+                var sel = $("#tmNewHostLogoSelect");
+
+                var html = '<option value="">-- Select logo --</option>';
+                items.forEach(function (l) {
+                    html += '<option value="' + escapeHtml(l.key) + '" data-url="' + escapeHtml(l.url || "") + '">' + escapeHtml(l.name || "") + '</option>';
+                });
+
+                sel.html(html);
+
+                if (selectedKey) {
+                    sel.val(selectedKey);
+                }
+            });
+        }
+
+        function openEditTeamModal(teamKey) {
+            clearError();
+            clearSuccess();
+            clearEditError();
+
+            if (!state.selectedEventYearKey) { showError("Select an event first."); return; }
+            if (!teamKey) { showError("Missing team key."); return; }
+
+            // reset UI
+            $("#tmEditTeamKey").val(teamKey);
+            $("#tmEditName").val("");
+            $("#tmEditEventTeam").val("");
+            $("#tmEditCountryIso3").val("");
+            $("#tmEditGroup").val("");
+            $("#tmEditTeamWebsite").val("");
+            $("#tmEditClearLogo").prop("checked", false);
+            $("#tmEditLogoFile").val("");
+
+            $("#tmEditLogoPreview").hide().attr("src", "");
+            $("#tmEditNoLogo").show();
+
+            // Load team
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/events/" + encodeURIComponent(state.selectedEventYearKey) + "/teams/" + encodeURIComponent(teamKey),
+                method: "GET"
+            }).then(function (res) {
+
+                $("#tmEditName").val(res && res.name ? res.name : "");
+                $("#tmEditEventTeam").val(res && res.eventTeam ? res.eventTeam : "");
+                $("#tmEditCountryIso3").val(res && res.countryIso3 ? res.countryIso3 : "");
+                $("#tmEditGroup").val(res && res.group ? res.group : "");
+                $("#tmEditTeamWebsite").val(res && res.teamWebsite ? res.teamWebsite : "");
+
+                var logoKey = (res && res.logo && res.logo.key) ? res.logo.key : "";
+                var logoUrl = (res && res.logo && res.logo.url) ? res.logo.url : "";
+
+                if (logoUrl) {
+                    $("#tmEditLogoPreview").attr("src", logoUrl).show();
+                    $("#tmEditNoLogo").hide();
+                }
+
+                // Load logos list and preselect existing
+                return loadLogosIntoSelect(logoKey);
+
+            }).then(function () {
+                // Open modal
+                var el = document.getElementById("tmEditModal");
+                var modal = bootstrap.Modal.getOrCreateInstance(el);
+                modal.show();
+            }).fail(function (xhr) {
+                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to load tournament team.");
+            });
+        }
+
+        function uploadLogo() {
+            clearEditError();
+
+            var input = document.getElementById("tmEditLogoFile");
+            if (!input || !input.files || input.files.length === 0) {
+                showEditError("Select a logo file first.");
+                return;
+            }
+
+            var fd = new FormData();
+            fd.append("file", input.files[0]);
+
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/logos/upload",
+                method: "POST",
+                data: fd,
+                processData: false,
+                contentType: false
+            }).then(function (res) {
+                if (!res || !res.item || !res.item.key) {
+                    showEditError("Upload succeeded but no logo returned.");
+                    return;
+                }
+
+                // refresh dropdown and select new logo
+                return loadLogosIntoSelect(res.item.key).then(function () {
+                    // update preview immediately
+                    if (res.item.url) {
+                        $("#tmEditLogoPreview").attr("src", res.item.url).show();
+                        $("#tmEditNoLogo").hide();
+                    }
+                    $("#tmEditLogoFile").val("");
+                });
+
+            }).fail(function (xhr) {
+                showEditError(xhr && xhr.responseText ? xhr.responseText : "Failed to upload logo.");
+            });
+        }
+
+        function saveTournamentTeam() {
+            clearEditError();
+
+            var teamKey = $("#tmEditTeamKey").val();
+            if (!state.selectedEventYearKey) { showEditError("Missing event."); return; }
+            if (!teamKey) { showEditError("Missing team key."); return; }
+
+            var clearLogo = $("#tmEditClearLogo").is(":checked");
+            var logoKey = $("#tmEditLogoSelect").val();
+
+            var payload = {
+                Name: $("#tmEditName").val(),
+                EventTeam: $("#tmEditEventTeam").val(),
+                CountryIso3: $("#tmEditCountryIso3").val(),
+                Group: $("#tmEditGroup").val(),
+                TeamWebsite: $("#tmEditTeamWebsite").val(),
+                ClearLogo: clearLogo,
+                LogoKey: clearLogo ? null : (logoKey || null)
+            };
+
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/events/" + encodeURIComponent(state.selectedEventYearKey) + "/teams/" + encodeURIComponent(teamKey) + "/update",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(payload)
+            }).then(function (res) {
+
+                showSuccess((res && res.message) ? res.message : "Updated.");
+
+                // close modal
+                var el = document.getElementById("tmEditModal");
+                var modal = bootstrap.Modal.getOrCreateInstance(el);
+                modal.hide();
+
+                // reload teams table so you see ISO3 / mapped / etc refresh
+                return loadTournamentTeams();
+
+            }).fail(function (xhr) {
+                showEditError(xhr && xhr.responseText ? xhr.responseText : "Failed to save tournament team.");
+            });
+        }
+
+        function loadEvents() {
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/events/current",
+                method: "GET"
+            }).then(function (res) {
+                state.events = (res && res.items) ? res.items : [];
+                renderEvents();
+            });
+        }
+
+        function loadNmas() {
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/nmas",
+                method: "GET"
+            }).then(function (res) {
+                state.nmas = (res && res.items) ? res.items : [];
+                renderNmas();
+            });
+        }
+
+        function loadTournamentTeams() {
+            if (!state.selectedEventYearKey) {
+                $("#tmTournamentRows").html('<tr><td colspan="4">Select an event to load teams.</td></tr>');
+                return $.Deferred().resolve().promise();
+            }
+
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/events/" + encodeURIComponent(state.selectedEventYearKey) + "/teams",
+                method: "GET"
+            }).then(function (res) {
+                var rows = (res && res.items) ? res.items : [];
+                state.tournamentTeams = rows;
+                renderTournamentTeams(rows);
+            }).fail(function (xhr) {
+                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to load tournament teams.");
+            });
+        }
+
+        function loadReportedTeams(searchText) {
+            if (!state.selectedNmaKey) {
+                $("#tmReportedRows").html('<tr><td colspan="4">Select an NMA first.</td></tr>');
+                return $.Deferred().resolve().promise();
+            }
+            if (!state.selectedAgeGroup) {
+                $("#tmReportedRows").html('<tr><td colspan="4">Select an event first.</td></tr>');
+                return $.Deferred().resolve().promise();
+            }
+
+            var srcYear = (state.selectedEventYear ? (parseInt(state.selectedEventYear, 10) - 1) : (new Date().getFullYear() - 1));
+            state.sourceYear = srcYear;
+            setMeta();
+
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/nmas/" + encodeURIComponent(state.selectedNmaKey) + "/teams",
+                method: "GET",
+                data: {
+                    ageGroup: state.selectedAgeGroup,
+                    year: srcYear,
+                    q: (searchText || "").trim()
+                }
+            }).then(function (res) {
+                state.sourceYear = res && res.year ? res.year : srcYear;
+                setMeta();
+                var rows = (res && res.items) ? res.items : [];
+                renderReportedTeams(rows);
+            }).fail(function (xhr) {
+                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to load reported teams.");
+            });
+        }
+
+        function getSelectedTournamentTeamKey() {
+            var key = $('input[name="tmTeamSelect"]:checked').val();
+            return key || "";
+        }
+
+        function addTeam($reportedRow) {
+            clearError();
+            clearSuccess();
+
+            if (!state.selectedEventYearKey) { showError("Select an event first."); return; }
+            if (!state.selectedNmaKey) { showError("Select an NMA first."); return; }
+
+            var payload = {
+                eventYearKey: state.selectedEventYearKey, // kept for future use; server uses route
+                nmaKey: state.selectedNmaKey,
+                nmaIso3: state.selectedNmaIso3,
+                TeamId: parseInt($reportedRow.data("reportedid"), 10),
+                TeamKey: $reportedRow.data("reportedkey"),
+                TeamName: $reportedRow.data("reportedname")
+            };
+
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/events/" + encodeURIComponent(state.selectedEventYearKey) + "/teams/add",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(payload)
+            }).then(function (res) {
+                showSuccess((res && res.message) ? res.message : "Team added.");
+                return loadTournamentTeams();
+            }).fail(function (xhr) {
+                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to add team.");
+            });
+        }
+
+        function linkTeam($reportedRow) {
+            clearError();
+            clearSuccess();
+
+            if (!state.selectedEventYearKey) { showError("Select an event first."); return; }
+            if (!state.selectedNmaKey) { showError("Select an NMA first."); return; }
+
+            var tournamentTeamKey = getSelectedTournamentTeamKey();
+            if (!tournamentTeamKey) { showError("Select a tournament team to link on the right-hand table."); return; }
+
+            var payload = {
+                tournamentTeamKey: tournamentTeamKey,
+                nmaKey: state.selectedNmaKey,
+                nmaIso3: state.selectedNmaIso3,
+                TeamId: parseInt($reportedRow.data("reportedid"), 10),
+                TeamKey: $reportedRow.data("reportedkey"),
+                TeamName: $reportedRow.data("reportedname")
+            };
+
+            console.log(payload);
+
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/events/" + encodeURIComponent(state.selectedEventYearKey) + "/teams/link",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(payload)
+            }).then(function (res) {
+                showSuccess((res && res.message) ? res.message : "Linked.");
+                return loadTournamentTeams();
+            }).fail(function (xhr) {
+                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to link team.");
+            });
+        }
+
+        // Events
+        $("#tmEventSelect").on("change", function () {
+            var opt = $(this).find("option:selected");
+            var key = opt.val();
+
+            state.selectedEventYearKey = key || null;
+            state.selectedEventYear = opt.data("year") || null;
+            state.selectedAgeGroup = opt.data("agegroup") || null;
+
+            state.sourceYear = null;
+            setMeta();
+
+            $("#tmReportedRows").html('<tr><td colspan="4">Select an NMA, then search.</td></tr>');
+
+            loadTournamentTeams();
+        });
+
+        // NMAs
+        $("#tmNmaSelect").on("change", function () {
+            var opt = $(this).find("option:selected");
+            var key = opt.val();
+            state.selectedNmaKey = key || null;
+            state.selectedNmaIso3 = opt.data("iso3") || null;
+
+            state.sourceYear = null;
+            setMeta();
+
+            $("#tmReportedRows").html('<tr><td colspan="4">Search for reported teams.</td></tr>');
+            loadReportedTeams($("#tmTeamSearch").val());
+        });
+
+        $("#tmRefreshBtn").on("click", function () {
+            clearError();
+            clearSuccess();
+            $.when(loadEvents(), loadNmas()).then(function () {
+                showSuccess("Refreshed.");
+            }).fail(function (xhr) {
+                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to refresh.");
+            });
+        });
+
+        $("#tmReloadTeamsBtn").on("click", function () {
+            clearError();
+            clearSuccess();
+            loadTournamentTeams();
+        });
+
+        $("#tmTeamSearchBtn").on("click", function () {
+            clearError();
+            clearSuccess();
+            loadReportedTeams($("#tmTeamSearch").val());
+
+        });
+
+        $(document).on("click", ".tmAdd", function () {
+            var $tr = $(this).closest("tr");
+            addTeam($tr);
+        });
+
+        $(document).on("click", ".tmLink", function () {
+            var $tr = $(this).closest("tr");
+            linkTeam($tr);
+        });
+
+        // init
+        $.when(loadEvents(), loadNmas()).then(function () {
+            setMeta();
+        }).fail(function (xhr) {
+            showError(xhr && xhr.responseText ? xhr.responseText : "Failed to initialise tournament management.");
+        });
+
+            $(document).on("click", ".tmEditTeam", function () {
+        var key = $(this).data("teamkey");
+        openEditTeamModal(key);
+    });
+
+    $(document).on("click", ".tmRemoveTeam", function () {
+        clearError();
+        clearSuccess();
+
+        if (!state.selectedEventYearKey) { showError("Select an event first."); return; }
+
+        var teamKey = $(this).data("teamkey");
+        if (!teamKey) { showError("Missing team key."); return; }
+
+        if (!confirm("Remove this team from the event? This will delete the tournament team node.")) {
+            return;
+        }
+
+            $.ajax({
+        url: "/umbraco/api/tournamentmanagement/events/"
+            + encodeURIComponent(state.selectedEventYearKey)
+            + "/teams/"
+            + encodeURIComponent(teamKey),
+        method: "DELETE"
+    })
+    .then(function (res) {
+        showSuccess((res && res.message) ? res.message : "Removed.");
+        return loadTournamentTeams();
+    })
+    .fail(function (xhr) {
+        showError(xhr && xhr.responseText ? xhr.responseText : "Failed to remove team.");
+    });
+    });
+
+    $("#tmUploadLogoBtn").on("click", function () {
+        uploadLogo();
+    });
+
+    $("#tmSaveTeamBtn").on("click", function () {
+        saveTournamentTeam();
+    });
+
+    // Optional: when selecting an existing logo, update preview
+    $("#tmEditLogoSelect").on("change", function () {
+        var opt = $(this).find("option:selected");
+        var url = opt.data("url") || "";
+        if (url) {
+            $("#tmEditLogoPreview").attr("src", url).show();
+            $("#tmEditNoLogo").hide();
+            $("#tmEditClearLogo").prop("checked", false);
+        }
+    });
+
+        // -----------------------------
+    // NEW: Add Event modal logic
+    // -----------------------------
+    function showAddEventError(msg) {
+        var el = $("#tmAddEventError");
+        el.text(msg || "An error occurred.");
+        el.removeClass("d-none");
+    }
+
+    function clearAddEventError() {
+        $("#tmAddEventError").addClass("d-none").text("");
+    }
+
+    function openAddEventModal() {
+        clearAddEventError();
+
+        // Default values
+        $("#tmNewEventYear").val(new Date().getFullYear());
+        $("#tmNewIsChampionships").prop("checked", false);
+        $("#tmNewTitleEvent").val("");
+
+        $("#tmNewEventStartDate").val("");
+        $("#tmNewEventEndDate").val("");
+
+        $("#tmNewHostClub").val("");
+        $("#tmNewHostContact").val("");
+        $("#tmNewHostPhoneNumber").val("");
+        $("#tmNewHostEmail").val("");
+        $("#tmNewHostWebsite").val("");
+
+        $("#tmNewHostImageFile").val("");
+
+        $("#tmNewVenueName").val("");
+        $("#tmNewVenueAddress").val("");
+        $("#tmNewRinkLength").val("");
+        $("#tmNewRinkWidth").val("");
+        $("#tmNewRinkFloor").val("");
+
+        $("#tmNewSanctionNumber").val("");
+
+        // NEW: reset host logo picker UI + load logos
+        $("#tmNewHostLogoSelect").val("");
+        $("#tmNewClearHostLogo").prop("checked", false);
+        $("#tmNewHostLogoPreview").hide().attr("src", "");
+        $("#tmNewHostNoLogo").show();
+        loadLogosIntoAddEventSelect();
+
+        var el = document.getElementById("tmAddEventModal");
+        var modal = bootstrap.Modal.getOrCreateInstance(el);
+        modal.show();
+    }
+
+    // Upload host image (optional) using EXISTING endpoint: /logos/upload
+    function uploadHostImageIfProvided() {
+        var input = document.getElementById("tmNewHostImageFile");
+        if (!input || !input.files || input.files.length === 0) {
+            return $.Deferred().resolve(null).promise();
+        }
+
+        var fd = new FormData();
+        fd.append("file", input.files[0]);
+
+        return $.ajax({
+            url: "/umbraco/api/tournamentmanagement/logos/upload",
+            method: "POST",
+            data: fd,
+            processData: false,
+            contentType: false
+        }).then(function (res) {
+            // Assumes upload returns { item: { key: ... } }
+            // If your upload returns a different shape, change this one line accordingly.
+            return (res && res.item && res.item.key) ? res.item.key : null;
+        });
+    }
+
+    // NEW: decide HostImage key for Add Event (selected existing first, otherwise upload)
+    function getHostImageKeyForAddEvent() {
+        if ($("#tmNewClearHostLogo").is(":checked")) {
+            return $.Deferred().resolve("").promise();
+        }
+
+        var selectedKey = $("#tmNewHostLogoSelect").val();
+        if (selectedKey) {
+            return $.Deferred().resolve(selectedKey).promise();
+        }
+
+        return uploadHostImageIfProvided().then(function (k) {
+            return k ? k : "";
+        });
+    }
+
+    // NEW: upload host logo for Add Event and auto-select
+    function uploadHostLogoForAddEvent() {
+        clearAddEventError();
+
+        var input = document.getElementById("tmNewHostImageFile");
+        if (!input || !input.files || input.files.length === 0) {
+            showAddEventError("Select a logo file first.");
+            return;
+        }
+
+        var fd = new FormData();
+        fd.append("file", input.files[0]);
+
+        return $.ajax({
+            url: "/umbraco/api/tournamentmanagement/logos/upload",
+            method: "POST",
+            data: fd,
+            processData: false,
+            contentType: false
+        }).then(function (res) {
+            if (!res || !res.item || !res.item.key) {
+                showAddEventError("Upload succeeded but no logo returned.");
+                return;
+            }
+
+            return loadLogosIntoAddEventSelect(res.item.key).then(function () {
+                $("#tmNewHostLogoSelect").val(res.item.key);
+                $("#tmNewClearHostLogo").prop("checked", false);
+
+                if (res.item.url) {
+                    $("#tmNewHostLogoPreview").attr("src", res.item.url).show();
+                    $("#tmNewHostNoLogo").hide();
+                }
+
+                $("#tmNewHostImageFile").val("");
+            });
+
+        }).fail(function (xhr) {
+            showAddEventError(xhr && xhr.responseText ? xhr.responseText : "Failed to upload logo.");
+        });
+    }
+
+    function createEvent() {
+        clearAddEventError();
+        clearError();
+        clearSuccess();
+
+        var year = parseInt($("#tmNewEventYear").val(), 10);
+        var titleEvent = ($("#tmNewTitleEvent").val() || "").trim();
+
+
+        if (!year || year <= 0) { showAddEventError("Year is required."); return; }
+        if (!titleEvent) { showAddEventError("TitleEvent (EventShotCode) is required."); return; }
+
+        var sanction = ($("#tmNewSanctionNumber").val() || "").trim();
+        if (!sanction) { showAddEventError("Sanction Number is required."); return; }
+
+        return getHostImageKeyForAddEvent().then(function (mediaKey) {
+
+            // Build TournamentModel payload (property names match your model)
+            var payload = {
+                EventId: 0,
+                IsChampionships: $("#tmNewIsChampionships").is(":checked"),
+                EventYear: year,
+                TitleEvent: titleEvent,
+                SanctionNumber: ($("#tmNewSanctionNumber").val() || "").trim(),
+                EventStartDate: $("#tmNewEventStartDate").val(),
+                EventEndDate: $("#tmNewEventEndDate").val(),
+
+                HostClub: $("#tmNewHostClub").val(),
+                HostContact: $("#tmNewHostContact").val(),
+                HostPhoneNumber: $("#tmNewHostPhoneNumber").val(),
+                HostWebsite: $("#tmNewHostWebsite").val(),
+                HostEmail: $("#tmNewHostEmail").val(),
+
+                HostImage: mediaKey ? mediaKey : "",
+
+                VenueName: $("#tmNewVenueName").val(),
+                VenueAddress: $("#tmNewVenueAddress").val(),
+                RinkLength: parseFloat($("#tmNewRinkLength").val() || 0),
+                RinkWidth: parseFloat($("#tmNewRinkWidth").val() || 0),
+                RinkFloor: $("#tmNewRinkFloor").val()
+            };
+
+            return $.ajax({
+                url: "/umbraco/api/tournamentmanagement/events/create",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(payload)
+            });
+        }).then(function (res) {
+
+            showSuccess((res && res.message) ? res.message : "Event created.");
+
+            // Close modal
+            var el = document.getElementById("tmAddEventModal");
+            var modal = bootstrap.Modal.getOrCreateInstance(el);
+            modal.hide();
+
+            // Refresh event dropdown and select the created event key (if returned)
+            var createdKey = (res && res.eventYearNodeKey) ? res.eventYearNodeKey : null;
+
+            return loadEvents().then(function () {
+                if (createdKey) {
+                    $("#tmEventSelect").val(createdKey).trigger("change");
+                }
+            });
+
+        }).fail(function (xhr) {
+            showAddEventError(xhr && xhr.responseText ? xhr.responseText : "Failed to create event.");
+        });
+    }
+
+    // Button wiring
+    $("#tmAddEventBtn").on("click", function () {
+        openAddEventModal();
+    });
+
+    $("#tmCreateEventBtn").on("click", function () {
+        createEvent();
+    });
+
+    // NEW: Add Event logo picker handlers
+    $("#tmNewHostLogoSelect").on("change", function () {
+        var opt = $(this).find("option:selected");
+        var url = opt.data("url") || "";
+
+        if (url) {
+            $("#tmNewHostLogoPreview").attr("src", url).show();
+            $("#tmNewHostNoLogo").hide();
+            $("#tmNewClearHostLogo").prop("checked", false);
+        } else {
+            $("#tmNewHostLogoPreview").hide().attr("src", "");
+            $("#tmNewHostNoLogo").show();
+        }
+    });
+
+    $("#tmNewClearHostLogo").on("change", function () {
+        if ($(this).is(":checked")) {
+            $("#tmNewHostLogoSelect").val("");
+            $("#tmNewHostLogoPreview").hide().attr("src", "");
+            $("#tmNewHostNoLogo").show();
+            $("#tmNewHostImageFile").val("");
+        }
+    });
+
+    $("#tmUploadHostLogoBtn").on("click", function () {
+        uploadHostLogoForAddEvent();
+    });
+
+    })();
+</script>
