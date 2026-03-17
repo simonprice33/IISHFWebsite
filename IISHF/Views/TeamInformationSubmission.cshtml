@@ -977,10 +977,22 @@
             var img = document.getElementById(imgId);
             var container = document.getElementById(containerId);
             if (!img || !container) return;
-            if (!img.src || img.naturalWidth === 0) {
+            // Hide immediately if the src attribute is absent or empty
+            var src = img.getAttribute('src');
+            if (!src || src === '') {
                 container.style.display = 'none';
+                return;
             }
+            // Hide if the image fails to load (broken URL / 404)
             img.addEventListener('error', function () { container.style.display = 'none'; });
+            // Check naturalWidth only after the browser has finished loading the image
+            if (img.complete) {
+                if (img.naturalWidth === 0) { container.style.display = 'none'; }
+            } else {
+                img.addEventListener('load', function () {
+                    if (img.naturalWidth === 0) { container.style.display = 'none'; }
+                });
+            }
         }
         checkImageContainer('teamPhoto', 'teamPhotoContainer');
         checkImageContainer('teamLogo', 'teamLogoContainer');
