@@ -89,6 +89,7 @@ namespace IISHF.Core.Services
                                             EventId = evt.Key,
                                             EventTeamId = team.Key,
                                             EventName = evt.Parent.Name,
+                                            TeamName = team.Name,
                                             ITCStatus = itcState,
                                             ItcStatusChangeDate = itcStatusChangeDate,
                                             TeamInformationRequired = true,

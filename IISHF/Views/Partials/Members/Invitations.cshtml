@@ -12,6 +12,7 @@
             <table class="table align-middle">
                 <thead>
                     <tr>
+                        <th>Team Name</th>
                         <th>Event Name</th>
                         <th>Event Dates</th>
                         <th>Team Information Submission Status</th>
@@ -39,6 +40,7 @@
                         bool dueSoon = daysFromEvent.Days < submissionRequiredByDays.Days;
 
                         <tr>
+                            <td>@invitation.TeamName</td>
                             <td>@invitation.EventName</td>
                             <td>@invitation.EventStartDate.ToString("dd.MM.yyyy") - @invitation.EventEndDate.ToString("dd.MM.yyyy")</td>
 

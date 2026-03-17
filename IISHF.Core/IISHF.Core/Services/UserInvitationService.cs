@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.PublishedContent;
@@ -29,6 +30,7 @@ namespace IISHF.Core.Services
         private readonly IPublishedContentQuery _contentQuery;
         private readonly IEmailService _emailService;
         private readonly IMediaService _iishfMediaService;
+        private readonly ILogger<UserInvitationService> _logger;
 
         public UserInvitationService(
             INMAService nmaService,
@@ -39,9 +41,8 @@ namespace IISHF.Core.Services
             IContentService contentService,
             IPublishedContentQuery contentQuery,
             IEmailService emailService,
-            IMediaService iishfMediaService
-
-            )
+            IMediaService iishfMediaService,
+            ILogger<UserInvitationService> logger)
         {
             _nmaService = nmaService;
             _teamService = teamService;
@@ -52,6 +53,7 @@ namespace IISHF.Core.Services
             _contentQuery = contentQuery;
             _emailService = emailService;
             _iishfMediaService = iishfMediaService;
+            _logger = logger;
         }
 
         public async Task InviteUser(UserInvitationModel model)
@@ -117,15 +119,13 @@ namespace IISHF.Core.Services
 
             var template = _iishfMediaService.GetMediaTemplate(templateName);
             var templateUri = _iishfMediaService.GetTemplateUrl(template);
-
+            _logger.LogInformation(templateUri);
             var protocol = _httpContextAccessor.HttpContext.Request.Scheme;
             
             var baseUrl = _httpContextAccessor.HttpContext.Request.Host;
             var route = "register";
 
             var registerUrl = new Uri($"{protocol}://{baseUrl}/{route}?{queryString}");
-            
-
 
             await _emailService.SendUserInvitation(member, model.Email, model.Name, registerUrl, templateUri, "IISHF Website User Invitation");
         }

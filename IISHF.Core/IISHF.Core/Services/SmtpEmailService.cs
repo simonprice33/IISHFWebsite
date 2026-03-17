@@ -9,6 +9,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Models.ContentEditing;
 using IMember = Umbraco.Cms.Core.Models.IMember;
@@ -24,16 +25,19 @@ namespace IISHF.Core.Services
     {
         private readonly EmailConfiguration _iishfOptions;
         private readonly IHttpClient _httpClient;
+        private readonly ILogger<SmtpEmailService> _logger;
         private readonly GlobalSettings _globalSettings;
 
         public SmtpEmailService(
             IOptions<EmailConfiguration> iishfOptions,
             IOptions<GlobalSettings> globalSettings,
-            IHttpClient httpClient)
+            IHttpClient httpClient,
+            ILogger<SmtpEmailService> logger)
         {
             _iishfOptions = iishfOptions.Value;
             _globalSettings = globalSettings.Value;
             _httpClient = httpClient;
+            _logger = logger;
         }
 
         public async Task SendRegistrationConfirmation(Member member, string templateName, string subject)
@@ -242,6 +246,7 @@ namespace IISHF.Core.Services
             });
 
             var templateUri = new Uri($"{templateName}");
+            _logger.LogInformation(templateUri.ToString());
             var emailTemplate = await _httpClient.GetStringAsync(templateUri);
 
             return Handlebars.Compile(emailTemplate)(data);

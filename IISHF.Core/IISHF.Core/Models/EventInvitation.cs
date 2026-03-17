@@ -6,6 +6,8 @@
 
         public Guid EventId { get; set; }
 
+        public string TeamName { get; set; }
+
         public string EventName { get; set; }
 
         public string ITCStatus { get; set; }

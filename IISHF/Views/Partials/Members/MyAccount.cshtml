@@ -18,7 +18,7 @@
     var isIISHF = member.GetValue<bool>("isIISHF");
     var isClubContact = member.GetValue<bool>("isClubContact");
 
-    var canInvite = isNMA || isIISHF || isClubContact;
+    var canInvite = isNMA || isIISHF;
 
     var canManageUsers = member.GetValue<bool>("canManageUsers")
                          || member.GetValue<bool>("CanManageUsers")
