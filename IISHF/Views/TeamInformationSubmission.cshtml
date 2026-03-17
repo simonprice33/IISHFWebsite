@@ -1018,11 +1018,11 @@
                     console.log(result.sponsorPaths)
 
                     if (isDraft) {
-                        var html = '<div id="saveSuccess" class="col-12 col-sm-12 col-md-4 col-lg-4 alert alert-success">Save as draft successfully completed</div>'
+                        var html = '<div id="saveSuccess" class="col-12 col-sm-12 col-md-12 col-lg-12 alert alert-success">Save as draft successfully completed</div>'
                         $('#saveMessage').html(html)
                         setTimeout(function () {
                             $('#saveMessage').slideUp()
-                        }, 500)
+                        }, 2000)
                     }
                     else {
                         var html = '<div class="alert alert-success">Team Information has been submitted to the host. </br>You should receive an email with a copy of the submitted information within the next 10 minutes.  If not received, please check your spam folder. </br> If you have any issues, please contact <a href="mailto:webmaster@iishf.com">IISHF Webmaster</a> </div>'
