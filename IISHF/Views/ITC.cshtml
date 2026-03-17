@@ -771,7 +771,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="editModalLabel">Edit Data</h5>
-                <button type="button" class="close close-edit" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close close-edit" data-bs-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -857,7 +857,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary close-edit" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary close-edit" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary" id="saveChanges">Update table</button>
             </div>
         </div>
@@ -2260,7 +2260,7 @@ $('#dateOfBirth').datepicker({
             // Optionally, add a default option
             $roleSelect.prepend($('<option>', { value: '', text: 'Select Role' }).attr('selected', 'selected'));
 
-            $('#editModal').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).show();
         });
 
         $('#addBenchOfficialButton').on('click', function () {
@@ -2289,7 +2289,7 @@ $('#dateOfBirth').datepicker({
             // Optionally, add a default option
             $roleSelect.prepend($('<option>', { value: '', text: 'Select Role' }).attr('selected', 'selected'));
 
-            $('#editModal').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).show();
         });
 
         $("#data-table tbody").on("click", "tr", function () {
@@ -2321,7 +2321,7 @@ $('#dateOfBirth').datepicker({
                 if (!isSubmitted)
                 {
                     <text>
-                        $('#editModal').modal('show');
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).show();
                 </text>
                 }
             }
@@ -2355,7 +2355,7 @@ $('#dateOfBirth').datepicker({
                  if (!isSubmitted)
                  {
                                          <text>
-                                                                                                $('#editModal').modal('show');
+                                                                                                bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).show();
                                                                                             </text>
                  }
              }
@@ -2378,7 +2378,7 @@ $('#dateOfBirth').datepicker({
                     addBenchOfficialRowFromModal();
                 }
             }
-            $('#editModal').modal('hide');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).hide();
             clearModalFields();
         });
 
@@ -2387,32 +2387,29 @@ $('#dateOfBirth').datepicker({
             $('#edit-form').find('input[type="text"], select').val('');
 
             // Open the modal
-            $('#editModal').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).show();
 
             // Clear the currentRow variable since this is for adding a new row
             currentRow = null;
         }
 
-        // Handle the save button click
+        // Handle the close button click
         $(".close-edit").on("click", function () {
-            // TODO: Add code to handle the form data, e.g., send an AJAX request
-            $('#editModal').modal('hide');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).hide();
         });
 
         // When the user clicks anywhere outside of the modal, close it
         $(window).on("click", function (event) {
-            var modal = $("#editmodal");
-            if ($(event.target).is(modal)) {
-                modal.hide();
+            var modal = document.getElementById('editModal');
+            if (event.target === modal) {
+                bootstrap.Modal.getOrCreateInstance(modal).hide();
             }
         });
 
         // Handle the form submission
         $("#edit-form").on("submit", function (event) {
             event.preventDefault();
-            // TODO: Add code to handle the form data, e.g., send an AJAX request
-
-            $("#editmodal").hide();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).hide();
         });
 
         var nationalityDropdown = $('select[name^="Nationality"]');
