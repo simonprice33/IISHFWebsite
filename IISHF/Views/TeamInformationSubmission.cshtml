@@ -935,22 +935,63 @@
             });
         }
 
+        // Get the team key from the URL query string for image removal API calls
+        var teamKey = new URLSearchParams(window.location.search).get('team');
+
         $('#removeTeamPhoto').on('click', function () {
-            $('#teamPhoto').attr('src', '');
-            $('#teamPhotoContainer').hide();
+            var $btn = $(this);
+            $btn.prop('disabled', true);
+            $.ajax({
+                url: '/api/events/team-submission/team/' + teamKey + '/photo',
+                type: 'DELETE',
+                success: function () {
+                    $('#teamPhoto').attr('src', '');
+                    $('#teamPhotoContainer').hide();
+                },
+                error: function () {
+                    $btn.prop('disabled', false);
+                    alert('Could not remove the team photo. Please try again.');
+                }
+            });
         });
 
         $('#removeTeamLogo').on('click', function () {
-            $('#teamLogo').attr('src', '');
-            $('#teamLogoContainer').hide();
+            var $btn = $(this);
+            $btn.prop('disabled', true);
+            $.ajax({
+                url: '/api/events/team-submission/team/' + teamKey + '/logo',
+                type: 'DELETE',
+                success: function () {
+                    $('#teamLogo').attr('src', '');
+                    $('#teamLogoContainer').hide();
+                },
+                error: function () {
+                    $btn.prop('disabled', false);
+                    alert('Could not remove the team logo. Please try again.');
+                }
+            });
         });
 
-        // Scroll to top of tab content when a tab is clicked
+        // Hide image containers if the image fails to load or has no meaningful src
+        function checkImageContainer(imgId, containerId) {
+            var img = document.getElementById(imgId);
+            var container = document.getElementById(containerId);
+            if (!img || !container) return;
+            if (!img.src || img.naturalWidth === 0) {
+                container.style.display = 'none';
+            }
+            img.addEventListener('error', function () { container.style.display = 'none'; });
+        }
+        checkImageContainer('teamPhoto', 'teamPhotoContainer');
+        checkImageContainer('teamLogo', 'teamLogoContainer');
+
+        // Scroll to top of tab content when a tab is clicked, accounting for fixed navbar
         $('.nav-pills-custom .nav-link[data-bs-toggle="pill"]').on('click', function () {
             setTimeout(function () {
                 var $tabContent = $('#v-pills-tabContent');
                 if ($tabContent.length) {
-                    $('html, body').animate({ scrollTop: $tabContent.offset().top - 20 }, 300);
+                    var navbarHeight = $('nav.navbar').outerHeight(true) || 70;
+                    $('html, body').animate({ scrollTop: $tabContent.offset().top - navbarHeight - 10 }, 300);
                 }
             }, 50);
         });
@@ -994,18 +1035,19 @@
                 errors.push("No players found")
             }
 
-            var dzInstance = Dropzone.forElement("#teamLogoDropzone");
-            var teamLogoCount = dzInstance.files.length;
-            if ($.trim($("#teamLogo").attr("src")) === "" && teamLogoCount === 0) {
-                errors.push("Team Logo not found")
-            }
+            // Photo and logo are only required on final submit, not draft saves
+            if (!isDraft) {
+                var dzLogoInstance = Dropzone.forElement("#teamLogoDropzone");
+                var teamLogoCount = dzLogoInstance.files.length;
+                if ($.trim($("#teamLogo").attr("src")) === "" && teamLogoCount === 0) {
+                    errors.push("Team Logo not found")
+                }
 
-
-            var dzInstance = Dropzone.forElement("#teamPhotoDropzone");
-            var teamPhotoCount = dzInstance.files.length;
-
-            if ($.trim($("#teamPhoto").attr("src")) === "" && teamPhotoCount === 0) {
-                errors.push("Team Photo not found")
+                var dzPhotoInstance = Dropzone.forElement("#teamPhotoDropzone");
+                var teamPhotoCount = dzPhotoInstance.files.length;
+                if ($.trim($("#teamPhoto").attr("src")) === "" && teamPhotoCount === 0) {
+                    errors.push("Team Photo not found")
+                }
             }
 
             if (errors.length > 0) {

@@ -692,6 +692,36 @@ namespace IISHF.Core.Controllers.ApiControllers
             return NoContent();
         }
 
+        [HttpDelete]
+        [Route("team-submission/team/{teamKey}/photo")]
+        [UmbracoMemberAuthorize]
+        public async Task<IActionResult> RemoveTeamPhoto([FromRoute] Guid teamKey)
+        {
+            var team = _contentQuery.Content(teamKey);
+            if (team == null) return NotFound();
+
+            var nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
+            if (nmaTeam == null) return NotFound();
+
+            await _teamService.RemoveImageFromTeam(nmaTeam, "teamPhoto");
+            return NoContent();
+        }
+
+        [HttpDelete]
+        [Route("team-submission/team/{teamKey}/logo")]
+        [UmbracoMemberAuthorize]
+        public async Task<IActionResult> RemoveTeamLogo([FromRoute] Guid teamKey)
+        {
+            var team = _contentQuery.Content(teamKey);
+            if (team == null) return NotFound();
+
+            var nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
+            if (nmaTeam == null) return NotFound();
+
+            await _teamService.RemoveImageFromTeam(nmaTeam, "teamLogo");
+            return NoContent();
+        }
+
 
         [HttpDelete]
         [Route("itc/team/title-event/{titleEvent}/championship/{isChampionship}/year/{eventYear}/team/{teamName}/roster-member/{rosterId}/")]

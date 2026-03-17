@@ -16,6 +16,8 @@ namespace IISHF.Core.Interfaces
 
         Task DeleteMedia(int sponsorId, int mediaId);
 
+        Task RemoveImageFromTeam(IPublishedContent nmaTeam, string propertyAlias);
+
         Task<IContent>? AddPlayerPermissionDocumentToTeam(IFormFile file, string label, IPublishedContent team);
 
         Task<IContent>? AddItcToTeam(Stream file, string fileName, IPublishedContent team);

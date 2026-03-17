@@ -199,6 +199,19 @@ namespace IISHF.Core.Services
             });
         }
 
+        public async Task RemoveImageFromTeam(IPublishedContent nmaTeam, string propertyAlias)
+        {
+            await Task.Run(() =>
+            {
+                var team = _contentService.GetById(nmaTeam.Id);
+                if (team != null)
+                {
+                    team.SetValue(propertyAlias, null);
+                    _contentService.SaveAndPublish(team);
+                }
+            });
+        }
+
         public async Task AddMediaToTeam(IMedia image, IContent team, string propertyAlias)
         {
             if (team != null)
