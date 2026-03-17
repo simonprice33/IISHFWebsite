@@ -206,7 +206,7 @@ namespace IISHF.Core.Services
                 var team = _contentService.GetById(nmaTeam.Id);
                 if (team != null)
                 {
-                    team.SetValue(propertyAlias, null);
+                    team.SetValue(propertyAlias, string.Empty);
                     _contentService.SaveAndPublish(team);
                 }
             });

@@ -945,8 +945,8 @@
                 url: '/api/events/team-submission/team/' + teamKey + '/photo',
                 type: 'DELETE',
                 success: function () {
-                    $('#teamPhoto').attr('src', '');
                     $('#teamPhotoContainer').hide();
+                    location.reload();
                 },
                 error: function () {
                     $btn.prop('disabled', false);
@@ -962,8 +962,8 @@
                 url: '/api/events/team-submission/team/' + teamKey + '/logo',
                 type: 'DELETE',
                 success: function () {
-                    $('#teamLogo').attr('src', '');
                     $('#teamLogoContainer').hide();
+                    location.reload();
                 },
                 error: function () {
                     $btn.prop('disabled', false);
