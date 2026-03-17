@@ -108,10 +108,11 @@
                                 <th>Team</th>
                                 <th>Age Group</th>
                                 <th>Tournament team (current year)</th>
+                                <th style="width:90px;"></th>
                             </tr>
                         </thead>
                         <tbody id="umEditTeams">
-                            <tr><td colspan="5">Loading...</td></tr>
+                            <tr><td colspan="6">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -119,6 +120,54 @@
             </div>
 
             <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Team Submission Details Modal -->
+<div class="modal fade" id="umTeamDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Tournament Team Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <div id="umTeamDetailError" class="alert alert-danger d-none"></div>
+                <div id="umTeamDetailSuccess" class="alert alert-success d-none"></div>
+
+                <input type="hidden" id="umTeamDetailKey" />
+
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Tournament team</dt>
+                    <dd class="col-sm-8" id="tdTeamName">—</dd>
+
+                    <dt class="col-sm-4">Event</dt>
+                    <dd class="col-sm-8" id="tdEventName">—</dd>
+
+                    <dt class="col-sm-4">ITC status</dt>
+                    <dd class="col-sm-8"><span id="tdItcStatus" class="badge bg-secondary">—</span></dd>
+
+                    <dt class="col-sm-4">Team info submitted</dt>
+                    <dd class="col-sm-8"><span id="tdSubmitted" class="badge">—</span></dd>
+
+                    <dt class="col-sm-4">Submission date</dt>
+                    <dd class="col-sm-8" id="tdSubmissionDate">—</dd>
+
+                    <dt class="col-sm-4">Submitted by</dt>
+                    <dd class="col-sm-8" id="tdSubmittedBy">—</dd>
+                </dl>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" id="umResetSubmission" class="btn btn-warning d-none">Reset Submission</button>
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
             </div>
 
@@ -259,35 +308,115 @@
             var $tbody = $("#umEditTeams");
 
             if (!rows || rows.length === 0) {
-                $tbody.html('<tr><td colspan="5">No teams found for this member.</td></tr>');
+                $tbody.html('<tr><td colspan="6">No teams found for this member.</td></tr>');
                 return;
             }
 
             var html = "";
             rows.forEach(function (t) {
                 var tourneys = t.currentYearTournamentTeams || [];
-                var tourneyCell = "—";
 
-                if (tourneys.length > 0) {
-                    tourneyCell = tourneys.map(function (x) {
+                if (tourneys.length === 0) {
+                    html += "<tr>";
+                    html += "<td>" + escapeHtml(t.nmaName || "") + "</td>";
+                    html += "<td>" + escapeHtml(t.clubName || "") + "</td>";
+                    html += "<td>" + escapeHtml(t.teamName || "") + "</td>";
+                    html += "<td>" + escapeHtml(t.ageGroup || "") + "</td>";
+                    html += "<td>—</td>";
+                    html += "<td></td>";
+                    html += "</tr>";
+                } else {
+                    tourneys.forEach(function (x, idx) {
                         var nm = x.tournamentTeamName || "";
                         var ev = x.eventName ? (" (" + x.eventName + ")") : "";
-                        var tn = x.tournamentName ? (" - " + x.tournamentName) : "";
-                        return escapeHtml(nm + ev + tn);
-                    }).join("<br/>");
-                }
+                        var teamDetail = JSON.stringify(x).replace(/"/g, "&quot;");
+                        var viewBtn = '<button type="button" class="btn btn-sm btn-outline-secondary umViewTeamDetail" '
+                            + 'data-team="' + teamDetail + '">View</button>';
 
-                html += "<tr>";
-                html += "<td>" + escapeHtml(t.nmaName || "") + "</td>";
-                html += "<td>" + escapeHtml(t.clubName || "") + "</td>";
-                html += "<td>" + escapeHtml(t.teamName || "") + "</td>";
-                html += "<td>" + escapeHtml(t.ageGroup || "") + "</td>";
-                html += "<td>" + tourneyCell + "</td>";
-                html += "</tr>";
+                        html += "<tr>";
+                        if (idx === 0) {
+                            html += '<td rowspan="' + tourneys.length + '">' + escapeHtml(t.nmaName || "") + "</td>";
+                            html += '<td rowspan="' + tourneys.length + '">' + escapeHtml(t.clubName || "") + "</td>";
+                            html += '<td rowspan="' + tourneys.length + '">' + escapeHtml(t.teamName || "") + "</td>";
+                            html += '<td rowspan="' + tourneys.length + '">' + escapeHtml(t.ageGroup || "") + "</td>";
+                        }
+                        html += "<td>" + escapeHtml(nm + ev) + "</td>";
+                        html += "<td>" + viewBtn + "</td>";
+                        html += "</tr>";
+                    });
+                }
             });
 
             $tbody.html(html);
         }
+
+        function openTeamDetailModal(teamData) {
+            $("#umTeamDetailError").addClass("d-none").text("");
+            $("#umTeamDetailSuccess").addClass("d-none").text("");
+
+            $("#umTeamDetailKey").val(teamData.eventTeamKey || "");
+            $("#tdTeamName").text(teamData.tournamentTeamName || "—");
+            $("#tdEventName").text((teamData.eventName || "") + (teamData.categoryName ? " · " + teamData.categoryName : ""));
+
+            // ITC status badge
+            var itcStatus = teamData.itcStatus || "Unknown";
+            var itcClass = "bg-secondary";
+            if (itcStatus === "Not submitted") itcClass = "bg-secondary";
+            else if (itcStatus === "Pending NMA Approval") itcClass = "bg-warning text-dark";
+            else if (itcStatus === "NMA Approved - Pending IISHF Approval") itcClass = "bg-info text-dark";
+            else if (itcStatus === "Changes required") itcClass = "bg-danger";
+            else if (itcStatus === "Changes made") itcClass = "bg-primary";
+            $("#tdItcStatus").text(itcStatus).attr("class", "badge " + itcClass);
+
+            // Submission status
+            var submitted = teamData.teamInformationSubmitted === true;
+            $("#tdSubmitted")
+                .text(submitted ? "Yes" : "No")
+                .attr("class", submitted ? "badge bg-success" : "badge bg-secondary");
+            $("#tdSubmissionDate").text(teamData.teamInformationSubmissionDate || "—");
+            $("#tdSubmittedBy").text(teamData.teamInformationSubmittedBy || "—");
+
+            // Show/hide reset button
+            if (submitted) {
+                $("#umResetSubmission").removeClass("d-none");
+            } else {
+                $("#umResetSubmission").addClass("d-none");
+            }
+
+            var modalEl = document.getElementById("umTeamDetailModal");
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+
+        $(document).on("click", ".umViewTeamDetail", function () {
+            var raw = $(this).attr("data-team").replace(/&quot;/g, '"');
+            var teamData = JSON.parse(raw);
+            openTeamDetailModal(teamData);
+        });
+
+        $("#umResetSubmission").on("click", function () {
+            if (!confirm("Reset this team's submission status? This will clear the submission date and submitted-by fields.")) return;
+
+            var teamKey = $("#umTeamDetailKey").val();
+            var $btn = $(this);
+            $btn.prop("disabled", true).text("Resetting…");
+
+            $.ajax({
+                url: "/umbraco/api/accountusers/tournament-teams/" + encodeURIComponent(teamKey) + "/submission-status",
+                method: "DELETE"
+            }).then(function () {
+                $("#tdSubmitted").text("No").attr("class", "badge bg-secondary");
+                $("#tdSubmissionDate").text("—");
+                $("#tdSubmittedBy").text("—");
+                $("#umResetSubmission").addClass("d-none").prop("disabled", false).text("Reset Submission");
+                $("#umTeamDetailSuccess").text("Submission status reset successfully.").removeClass("d-none");
+                setTimeout(function () { $("#umTeamDetailSuccess").addClass("d-none"); }, 4000);
+            }).fail(function (xhr) {
+                $btn.prop("disabled", false).text("Reset Submission");
+                $("#umTeamDetailError")
+                    .text(xhr && xhr.responseText ? xhr.responseText : "Failed to reset submission status.")
+                    .removeClass("d-none");
+            });
+        });
 
         function loadMemberTeams(userId) {
             $("#umEditTeams").html('<tr><td colspan="5">Loading...</td></tr>');

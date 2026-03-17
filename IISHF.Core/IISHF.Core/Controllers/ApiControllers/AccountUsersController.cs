@@ -1,5 +1,8 @@
-﻿using IISHF.Core.Interfaces;
+﻿using IISHF.Core.Extensions;
+using IISHF.Core.Interfaces;
 using IISHF.Core.Models;
+using IISHF.Core.State;
+using Umbraco.Cms.Core.Models.PublishedContent;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -29,6 +32,7 @@ namespace IISHF.Web.Controllers
         private readonly IMediaService _iishfMediaService;
         private readonly IEmailService _emailService;
         private readonly IPublishedContentQuery _contentQuery;
+        private readonly ITournamentService _tournamentService;
 
         public AccountUsersController(
             IMemberManager memberManager,
@@ -39,7 +43,8 @@ namespace IISHF.Web.Controllers
             IHttpContextAccessor httpContextAccessor,
             IMediaService iishfMediaService,
             IEmailService emailService,
-            IPublishedContentQuery contentQuery)
+            IPublishedContentQuery contentQuery,
+            ITournamentService tournamentService)
         {
             _memberManager = memberManager;
             _memberService = memberService;
@@ -51,6 +56,7 @@ namespace IISHF.Web.Controllers
             _iishfMediaService = iishfMediaService;
             _emailService = emailService;
             _contentQuery = contentQuery;
+            _tournamentService = tournamentService;
         }
 
         // -----------------------------
@@ -363,6 +369,23 @@ namespace IISHF.Web.Controllers
             });
         }
 
+        // -----------------------------
+        // DELETE /umbraco/api/accountusers/tournament-teams/{teamKey}/submission-status
+        // Resets team information submission status back to unsubmitted.
+        // -----------------------------
+        [HttpDelete("tournament-teams/{teamKey:guid}/submission-status")]
+        public async Task<IActionResult> ResetTeamSubmissionStatus([FromRoute] Guid teamKey)
+        {
+            await EnsureCanManageUsersAsync();
+
+            var team = _contentQuery.Content(teamKey);
+            if (team == null) return NotFound("Tournament team not found.");
+
+            await _tournamentService.ResetTeamInformationSubmission(team);
+
+            return NoContent();
+        }
+
         private Dictionary<string, List<object>> BuildCurrentYearTournamentTeamLookup(string currentYear)
         {
             var map = new Dictionary<string, List<object>>(StringComparer.OrdinalIgnoreCase);
@@ -424,6 +447,11 @@ namespace IISHF.Web.Controllers
                         }
 
                         // tournament team name = node name
+                        var itcEval = ItcStateMachine.Evaluate(eventTeam);
+                        var submittedByRef = eventTeam.Value<IPublishedContent>("teamInformationSubmittedBy");
+                        var submittedByName = submittedByRef?.Name;
+                        var submissionDate = eventTeam.Value<DateTime?>("teamInformationSubmissionDate");
+
                         list.Add(new
                         {
                             tournamentTeamName = eventTeam.Name, // e.g. "Copenhagen Vikings"
@@ -431,7 +459,13 @@ namespace IISHF.Web.Controllers
                             categoryName = category.Name,        // e.g. "European Cups"
                             year = currentYear,
                             eventTeamKey = eventTeam.Key,
-                            yearNodeKey = yearNode.Key
+                            yearNodeKey = yearNode.Key,
+                            teamInformationSubmitted = eventTeam.Value<bool>("teamInformationSubmitted"),
+                            teamInformationSubmissionDate = submissionDate.HasValue && submissionDate.Value != DateTime.MinValue
+                                ? submissionDate.Value.ToString("dd MMM yyyy HH:mm") + " UTC"
+                                : (string)null,
+                            teamInformationSubmittedBy = submittedByName,
+                            itcStatus = itcEval.State.GetDescription()
                         });
                     }
                 }
