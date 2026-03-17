@@ -83,9 +83,17 @@ namespace IISHF.Core.Controllers.ApiControllers
         [Route("invite-user")]
         public async Task<AcceptedResult> InviteUser(UserInvitationModel model)
         {
-            await _userInvitationService.InviteUser(model);
+            try
+            {
+                await _userInvitationService.InviteUser(model);
 
-            return Accepted();
+                return Accepted();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
     }
 }

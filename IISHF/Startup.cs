@@ -1,9 +1,12 @@
+using System.Configuration;
 using IISHF.Core.Configurations;
 using IISHF.Core.Hubs;
+using IISHF.Core.Infrastructure.Mail;
 using IISHF.Core.Interfaces;
 using IISHF.Core.Services;
 using IISHF.Core.Settings;
 using IISHF.ExcelToPdf.Interfaces;
+using Umbraco.Cms.Core.Mail;
 using Umbraco.Cms.Core.Services;
 using Umbraco.StorageProviders.AzureBlob;
 using FileService = IISHF.Core.Services.FileService;
@@ -38,7 +41,6 @@ namespace IISHF
 
             // Dependency injection for services
             services.AddScoped<IHttpClient, HttpClient>();
-            services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IApprovals, ApprovalService>();
             services.AddScoped<ITournamentService, TournamentService>();
             services.AddScoped<IEventResultsService, EventResultsService>();
@@ -54,6 +56,21 @@ namespace IISHF
             services.AddScoped<Core.Interfaces.IFileService, FileService>();
             services.AddScoped<IExcelToPdf, ExcelToPdf.Services.ExcelToPdf>();
 
+
+            services.AddTransient<IEmailService>(sp =>
+            {
+                var config = sp.GetRequiredService<IConfiguration>();
+                var provider = config.GetValue<string>("EmailProvider");
+
+                return provider?.ToUpper() switch
+                {
+                    "SMTP" => ActivatorUtilities.CreateInstance<SmtpEmailService>(sp),
+                    "SENDGRID" => ActivatorUtilities.CreateInstance<EmailService>(sp),
+                    _ => throw new InvalidOperationException("Invalid EmailProvider setting.")
+                };
+            });
+
+
             // Umbraco and Azure Blob integration
             services.AddUmbraco(_env, _config)
                 .AddBackOffice()
@@ -63,6 +80,9 @@ namespace IISHF
                 //.AddAzureBlobMediaFileSystem()
                 //.AddAzureBlobImageSharpCache()
                 .Build();
+
+            services.AddSingleton<IEmailSender, UmbracoMailSender>();
+
 
             // MVC and SignalR
             services.AddControllersWithViews();

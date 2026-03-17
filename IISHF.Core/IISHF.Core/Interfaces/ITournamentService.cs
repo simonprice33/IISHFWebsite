@@ -34,6 +34,8 @@ namespace IISHF.Core.Interfaces
 
         Task SetTeamInformationSubmissionDate(IPublishedContent team);
 
+        Task ResetTeamInformationSubmission(IPublishedContent team);
+
         Task SetTeamItcSubmissionDateFromTeam(IPublishedContent team);
 
         Task SetSelectTeamCreator(IPublishedContent team);
@@ -67,5 +69,7 @@ namespace IISHF.Core.Interfaces
         Task<ScheduleAndResultsViewModel> GetScheduleAndResults(int year, string titleEvent, int limit, int offset, bool todayOnly = false);
         
         Task SetTeamsInGroup(GroupInformation model, IPublishedContent tournament);
+
+        Task LinkNmaTeamToTournamentTeam(IPublishedContent tournament, int teamId, int tournamentTeamId);
     }
 }

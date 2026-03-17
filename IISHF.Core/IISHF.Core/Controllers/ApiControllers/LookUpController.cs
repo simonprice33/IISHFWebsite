@@ -1,4 +1,5 @@
-﻿using IISHF.Core.Interfaces;
+﻿using System.Runtime.InteropServices.JavaScript;
+using IISHF.Core.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core;
@@ -79,8 +80,14 @@ namespace IISHF.Core.Controllers.ApiControllers
             // Ok for immediate use, will be an issue for next season
             // When carried forward
 
-            var clubs = GetContent("club")
-                .Where(x => x.Parent.Parent.Key == nmaKey && x.Name.Contains(searchText, StringComparison.InvariantCultureIgnoreCase))
+            var foundList = GetContent("club")
+                .Where(x => x.Parent.Parent.Key == nmaKey &&
+                            x.Name.Contains(searchText, StringComparison.InvariantCultureIgnoreCase)).ToList();
+
+            var year = DateTime.Now.AddYears(-1).Year.ToString();
+
+            var clubs = foundList
+                .Where(x => x.Parent.Name == year)
                 .Select(x => new
                 {
                     Id = x.Id,

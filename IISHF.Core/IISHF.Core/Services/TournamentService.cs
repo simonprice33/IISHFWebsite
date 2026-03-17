@@ -487,6 +487,19 @@ namespace IISHF.Core.Services
             _contentService.SaveAndPublish(tournamentTeam);
         }
 
+        public Task ResetTeamInformationSubmission(IPublishedContent team)
+        {
+            var tournamentTeam = _contentService.GetById(team.Id);
+            if (tournamentTeam != null)
+            {
+                tournamentTeam.SetValue("teamInformationSubmissionDate", null);
+                tournamentTeam.SetValue("teamInformationSubmitted", false);
+                tournamentTeam.SetValue("teamInformationSubmittedBy", null);
+                _contentService.SaveAndPublish(tournamentTeam);
+            }
+            return Task.CompletedTask;
+        }
+
         public async Task SubmitTeamInformationToHost(IPublishedContent tournament, IPublishedContent nmaTeam, IPublishedContent team)
         {
             // Logos from nma team - done
@@ -944,6 +957,25 @@ namespace IISHF.Core.Services
                 _contentService.SaveAndPublish(team);
 
             }
+        }
+
+        public async Task LinkNmaTeamToTournamentTeam(IPublishedContent tournament, int teamId, int tournamentTeamId)
+        {
+            var tournamentTeam = _contentService.GetById(tournamentTeamId);
+            var nmaTeam = _contentService.GetById(teamId);
+
+            if (tournament == null || nmaTeam == null)
+            {
+                throw new ArgumentNullException("NMA or Tournament team cannot be null");
+            }
+
+            var nma = _contentQuery.Content(teamId).Parent.Parent;
+
+            tournamentTeam.SetValue("teamId", nmaTeam.Id);
+            tournamentTeam.SetValue("nMATeamKey", nmaTeam.Key);
+            tournamentTeam.SetValue("nmaKey", nma.Key);
+
+            _contentService.SaveAndPublish(tournamentTeam);
         }
 
         private static List<IPublishedContent> FilterData(int year, string titleEvent, List<IPublishedContent> rootContent)

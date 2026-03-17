@@ -15,6 +15,7 @@ using Umbraco.Cms.Web.Common.Filters;
 using Umbraco.Cms.Web.Common.Models;
 using Umbraco.Cms.Web.Common.Security;
 using Umbraco.Cms.Web.Website.Controllers;
+using IMediaService = IISHF.Core.Interfaces.IMediaService;
 using IUserService = IISHF.Core.Interfaces.IUserService;
 
 namespace IISHF.Core.Controllers.SurfaceControllers
@@ -28,6 +29,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
         private readonly IUserService _userService;
         private readonly ITwoFactorLoginService _twoFactorLoginService;
         private readonly IEmailService _emailService;
+        private readonly IMediaService _iishfMediaService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         public UserController(
@@ -44,6 +46,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
             IUserService userService,
             ITwoFactorLoginService twoFactorLoginService,
             IEmailService emailService,
+            IMediaService iishfMediaService,
             IHttpContextAccessor httpContextAccessor)
             : base(umbracoContextAccessor, databaseFactory, services, appCaches, profilingLogger, publishedUrlProvider)
         {
@@ -54,6 +57,7 @@ namespace IISHF.Core.Controllers.SurfaceControllers
             _userService = userService;
             _twoFactorLoginService = twoFactorLoginService;
             _emailService = emailService;
+            _iishfMediaService = iishfMediaService;
             _httpContextAccessor = httpContextAccessor;
         }
 
@@ -78,13 +82,15 @@ namespace IISHF.Core.Controllers.SurfaceControllers
 
             var member = Services.MemberService.GetByUsername(model.EmailAddress);
 
+            var template = _iishfMediaService.GetMediaTemplate("PasswordReset");
+            var templateUri = _iishfMediaService.GetTemplateUrl(template);
             await _emailService.SendRegistrationConfirmation(new Member()
             {
                 Name = member.Name,
                 EmailAddress = model.EmailAddress,
                 Token = token,
                 TokenUrl = new Uri($"{_httpContextAccessor.HttpContext.Request.Scheme}://{_httpContextAccessor.HttpContext.Request.Host}/reset-password?token={token}")
-            }, "PasswordReset.html", "IISHF Password Reset Request");
+            }, templateUri, "IISHF Password Reset Request");
 
             member.SetValue("resetExpiryDate", DateTime.UtcNow.AddHours(1));
             member.SetValue("resetToken", token);

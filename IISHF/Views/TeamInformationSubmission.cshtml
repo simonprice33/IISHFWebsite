@@ -409,7 +409,13 @@
                                 var photo = nmaTeam.Value<IPublishedContent>("teamPhoto");
                                 if (photo != null)
                                 {
-                                    <img id="teamPhoto" class="img img-fluid" src="@photo.Url()" />
+                                    <div id="teamPhotoContainer" class="position-relative d-inline-block mt-3">
+                                        <img id="teamPhoto" class="img img-fluid" src="@photo.Url()" onerror="document.getElementById('teamPhotoContainer').style.display='none';" />
+                                        @if (!isSubmitted)
+                                        {
+                                            <button id="removeTeamPhoto" type="button" class="btn btn-danger btn-sm" style="position:absolute;top:5px;right:5px;" title="Remove photo">&times;</button>
+                                        }
+                                    </div>
                                 }
                                 else
                                 {
@@ -438,7 +444,13 @@
                                 var logo = nmaTeam.Value<IPublishedContent>("teamLogo");
                                 if (logo != null)
                                 {
-                                    <img id="teamLogo" class="img img-fluid" src="@logo.Url()" />
+                                    <div id="teamLogoContainer" class="position-relative d-inline-block mt-3">
+                                        <img id="teamLogo" class="img img-fluid" src="@logo.Url()" onerror="document.getElementById('teamLogoContainer').style.display='none';" />
+                                        @if (!isSubmitted)
+                                        {
+                                            <button id="removeTeamLogo" type="button" class="btn btn-danger btn-sm" style="position:absolute;top:5px;right:5px;" title="Remove logo">&times;</button>
+                                        }
+                                    </div>
                                 }
                                 else
                                 {
@@ -497,10 +509,12 @@
                         }
                         else
                         {
-                            <button id="submitDraft" class="btn btn-light">Save Draft</button>
-                            <button id="submit" class="btn btn-secondary">Submit</button>
+                            <div class="d-flex justify-content-center gap-2 mt-3">
+                                <button id="submitDraft" class="btn btn-light">Save Draft</button>
+                                <button id="submit" class="btn" style="background-color:#0095DA;color:#fff;">Submit</button>
+                            </div>
 
-                            <div id="saveMessage"></div>
+                            <div id="saveMessage" class="mt-3 text-center"></div>
                         }
                     }
                 </div>
@@ -551,7 +565,7 @@
                     </div>
                     <div class="form-group">
                         <label for="dateOfBirth">Date of Birth: <span>- optional</span></label>
-                        <input type="text" class="form-control" id="dateOfBirth" name="dateOfBirth">
+                        <input type="text" class="form-control" id="dateOfBirth" name="dateOfBirth" placeholder="DD/MM/YYYY" autocomplete="off" readonly>
                     </div>
                     <div class="form-group">
                         <label for="nationality">Nationality: <span>- optional</span></label>
@@ -592,9 +606,12 @@
 
 <!-- Summernote JS used for rich text editor-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.18/summernote-bs4.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script>
     var countries = @Html.Raw(Json.Serialize(@countries));
+    var deletedLicenseNumbers = [];
     Dropzone.autoDiscover = false; // Prevent auto initialization
 
     function deleteRow(button) {
@@ -635,7 +652,7 @@
             return;
         }
 
-        var url = `/api/events/itc/team/titel-event/${titleEvent}/championship/${isChampionship}/year/${eventYear}/team/${teamName}/roster-member/${rosterId}`
+        var url = `/api/events/itc/team/title-event/${titleEvent}/championship/${isChampionship}/year/${eventYear}/team/${teamName}/roster-member/${rosterId}`
         var encodedUrl = encodeURI(url);
         $.ajax({
             url: encodedUrl,
@@ -674,7 +691,7 @@
 
         var teamName = $("#teamName").val()
 
-        var url = `/api/events/team-submission/team/titel-event/${titleEvent}/championship/${isChampionship}/year/${eventYear}/team/${teamName}/sponsor/${id}/media/${mediaId}`
+        var url = `/api/events/team-submission/team/title-event/${titleEvent}/championship/${isChampionship}/year/${eventYear}/team/${teamName}/sponsor/${id}/media/${mediaId}`
         var encodedUrl = encodeURI(url);
         $.ajax({
             url: encodedUrl,
@@ -717,7 +734,35 @@
         }
     }
 
-            if ($("#teamPhotoDropzone").length) {
+            var dobPicker = flatpickr("#dateOfBirth", {
+            dateFormat: "d.m.Y",
+            allowInput: false,
+            disableMobile: true
+        });
+
+        // Re-set the picker value when the modal is shown (populated from table row)
+        $('#editModal').on('shown.bs.modal', function () {
+            var currentVal = $('#dateOfBirth').val();
+            if (currentVal) {
+                dobPicker.setDate(currentVal, false, "d.m.Y");
+            }
+        });
+
+            var dobPicker = flatpickr("#dateOfBirth", {
+            dateFormat: "d.m.Y",
+            allowInput: false,
+            disableMobile: true
+        });
+
+        // Re-set the picker value when the modal is shown (populated from table row)
+        $('#editModal').on('shown.bs.modal', function () {
+            var currentVal = $('#dateOfBirth').val();
+            if (currentVal) {
+                dobPicker.setDate(currentVal, false, "d.m.Y");
+            }
+        });
+
+        if ($("#teamPhotoDropzone").length) {
             var teamPhotoDropzone = new Dropzone("#teamPhotoDropzone", {
                 url: "/upload-team-photo",
                 autoProcessQueue: false,
@@ -758,6 +803,19 @@
                         // If an image doesn't meet the size criteria, reject it
                         if (file.type.match(/image.*/) && (file.width < 1920 || file.height < 1080)) {
                             file.rejectDimensions();
+                        } else if (file.type.match(/image.*/) && file.dataURL) {
+                            // Show a preview of the valid image
+                            $('#teamPhotoContainer').hide();
+                            $('#teamPhotoDropzonePreview').remove();
+                            var $preview = $('<div id="teamPhotoDropzonePreview" class="mt-3"><img class="img img-fluid" src="' + file.dataURL + '" />' +
+                                '<small class="text-muted d-block mt-1">' + file.name + ' — pending upload</small></div>');
+                            $('#teamPhotoDropzone').after($preview);
+                        }
+                    });
+                    this.on("removedfile", function (file) {
+                        $('#teamPhotoDropzonePreview').remove();
+                        if ($('#teamPhoto').attr('src')) {
+                            $('#teamPhotoContainer').show();
                         }
                     });
                     this.on("addedfile", function (file) {
@@ -770,6 +828,15 @@
                                 teamPhotoDropzone.removeFile(file);
                             });
                         }
+                    });
+                    this.on("error", function (file, errorMessage) {
+                        $('#teamPhotoError').remove();
+                        var $alert = $('<div id="teamPhotoError" class="alert alert-danger alert-dismissible mt-2" role="alert">' +
+                            '<strong>Upload Error:</strong> ' + errorMessage +
+                            ' <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>');
+                        $('#teamPhotoDropzone').after($alert);
+                        var self = this;
+                        setTimeout(function () { self.removeFile(file); }, 100);
                     });
                 }
             });
@@ -817,6 +884,25 @@
                         // If an image doesn't meet the size criteria, reject it
                         if (file.type.match(/image.*/) && (file.width < 1920 || file.height < 1080)) {
                             file.rejectDimensions();
+                        } else if (file.type.match(/image.*/) && file.dataURL) {
+                            // Show a preview of the valid image
+                            $('#teamLogoContainer').hide();
+                            $('#teamLogoDropzonePreview').remove();
+                            var $preview = $('<div id="teamLogoDropzonePreview" class="mt-3"><img class="img img-fluid" src="' + file.dataURL + '" />' +
+                                '<small class="text-muted d-block mt-1">' + file.name + ' — pending upload</small></div>');
+                            $('#teamLogoDropzone').after($preview);
+                        }
+                    });
+                    this.on("removedfile", function (file) {
+                        $('#teamLogoDropzonePreview').remove();
+                        if ($('#teamLogo').attr('src')) {
+                            $('#teamLogoContainer').show();
+                        }
+                    });
+                    this.on("removedfile", function (file) {
+                        $('#teamLogoDropzonePreview').remove();
+                        if ($('#teamLogo').attr('src')) {
+                            $('#teamLogoContainer').show();
                         }
                     });
                     this.on("addedfile", function (file) {
@@ -827,7 +913,15 @@
                             });
                         }
                     });
-
+                    this.on("error", function (file, errorMessage) {
+                        $('#teamLogoError').remove();
+                        var $alert = $('<div id="teamLogoError" class="alert alert-danger alert-dismissible mt-2" role="alert">' +
+                            '<strong>Upload Error:</strong> ' + errorMessage +
+                            ' <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>');
+                        $('#teamLogoDropzone').after($alert);
+                        var self = this;
+                        setTimeout(function () { self.removeFile(file); }, 100);
+                    });
                 }
             });
         }
@@ -841,6 +935,79 @@
                 dictDefaultMessage: "Drag and drop multiple files here or click",
             });
         }
+
+        // Get the team key from the URL query string for image removal API calls
+        var teamKey = new URLSearchParams(window.location.search).get('team');
+
+        $('#removeTeamPhoto').on('click', function () {
+            var $btn = $(this);
+            $btn.prop('disabled', true);
+            $.ajax({
+                url: '/api/events/team-submission/team/' + teamKey + '/photo',
+                type: 'DELETE',
+                success: function () {
+                    $('#teamPhotoContainer').hide();
+                    location.reload();
+                },
+                error: function () {
+                    $btn.prop('disabled', false);
+                    alert('Could not remove the team photo. Please try again.');
+                }
+            });
+        });
+
+        $('#removeTeamLogo').on('click', function () {
+            var $btn = $(this);
+            $btn.prop('disabled', true);
+            $.ajax({
+                url: '/api/events/team-submission/team/' + teamKey + '/logo',
+                type: 'DELETE',
+                success: function () {
+                    $('#teamLogoContainer').hide();
+                    location.reload();
+                },
+                error: function () {
+                    $btn.prop('disabled', false);
+                    alert('Could not remove the team logo. Please try again.');
+                }
+            });
+        });
+
+        // Hide image containers if the image fails to load or has no meaningful src
+        function checkImageContainer(imgId, containerId) {
+            var img = document.getElementById(imgId);
+            var container = document.getElementById(containerId);
+            if (!img || !container) return;
+            // Hide immediately if the src attribute is absent or empty
+            var src = img.getAttribute('src');
+            if (!src || src === '') {
+                container.style.display = 'none';
+                return;
+            }
+            // Hide if the image fails to load (broken URL / 404)
+            img.addEventListener('error', function () { container.style.display = 'none'; });
+            // Check naturalWidth only after the browser has finished loading the image
+            if (img.complete) {
+                if (img.naturalWidth === 0) { container.style.display = 'none'; }
+            } else {
+                img.addEventListener('load', function () {
+                    if (img.naturalWidth === 0) { container.style.display = 'none'; }
+                });
+            }
+        }
+        checkImageContainer('teamPhoto', 'teamPhotoContainer');
+        checkImageContainer('teamLogo', 'teamLogoContainer');
+
+        // Scroll to top of tab content when a tab is clicked, accounting for fixed navbar
+        $('.nav-pills-custom .nav-link[data-bs-toggle="pill"]').on('click', function () {
+            setTimeout(function () {
+                var $tabContent = $('#v-pills-tabContent');
+                if ($tabContent.length) {
+                    var navbarHeight = $('nav.navbar').outerHeight(true) || 70;
+                    $('html, body').animate({ scrollTop: $tabContent.offset().top - navbarHeight - 10 }, 300);
+                }
+            }, 50);
+        });
 
         $('#submitDraft').click(function (e) {
             e.preventDefault();
@@ -881,18 +1048,19 @@
                 errors.push("No players found")
             }
 
-            var dzInstance = Dropzone.forElement("#teamLogoDropzone");
-            var teamLogoCount = dzInstance.files.length;
-            if ($.trim($("#teamLogo").attr("src")) === "" && teamLogoCount === 0) {
-                errors.push("Team Logo not found")
-            }
+            // Photo and logo are only required on final submit, not draft saves
+            if (!isDraft) {
+                var dzLogoInstance = Dropzone.forElement("#teamLogoDropzone");
+                var teamLogoCount = dzLogoInstance.files.length;
+                if ($.trim($("#teamLogo").attr("src")) === "" && teamLogoCount === 0) {
+                    errors.push("Team Logo not found")
+                }
 
-
-            var dzInstance = Dropzone.forElement("#teamPhotoDropzone");
-            var teamPhotoCount = dzInstance.files.length;
-
-            if ($.trim($("#teamPhoto").attr("src")) === "" && teamPhotoCount === 0) {
-                errors.push("Team Photo not found")
+                var dzPhotoInstance = Dropzone.forElement("#teamPhotoDropzone");
+                var teamPhotoCount = dzPhotoInstance.files.length;
+                if ($.trim($("#teamPhoto").attr("src")) === "" && teamPhotoCount === 0) {
+                    errors.push("Team Photo not found")
+                }
             }
 
             if (errors.length > 0) {
@@ -937,11 +1105,11 @@
                     console.log(result.sponsorPaths)
 
                     if (isDraft) {
-                        var html = '<div id="saveSuccess" class="col-12 col-sm-12 col-md-4 col-lg-4 alert alert-success">Save as draft successfully completed</div>'
+                        var html = '<div id="saveSuccess" class="col-12 col-sm-12 col-md-12 col-lg-12 alert alert-success">Save as draft successfully completed</div>'
                         $('#saveMessage').html(html)
                         setTimeout(function () {
                             $('#saveMessage').slideUp()
-                        }, 500)
+                        }, 2000)
                     }
                     else {
                         var html = '<div class="alert alert-success">Team Information has been submitted to the host. </br>You should receive an email with a copy of the submitted information within the next 10 minutes.  If not received, please check your spam folder. </br> If you have any issues, please contact <a href="mailto:webmaster@iishf.com">IISHF Webmaster</a> </div>'
@@ -1147,7 +1315,7 @@
             $('#edit-form #firstName').val(firstName);
             $('#edit-form #lastName').val(lastName);
             $('#edit-form #jerseyNumber').val(jerseyNumber);
-            $('#edit-form #dateOfBirth').val(dateOfBirth);
+            dobPicker.setDate(dateOfBirth || null, false, "d.m.Y");
             $('#edit-form #nationality').val(nationality);
             $('#edit-form #gender').val(gender);
         }
@@ -1197,7 +1365,7 @@
             $('#edit-form #role').val(role);
             $('#edit-form #firstName').val(firstName);
             $('#edit-form #lastName').val(lastName);
-            $('#edit-form #dateOfBirth').val(dateOfBirth);
+            dobPicker.setDate(dateOfBirth || null, false, "d.m.Y");
             $('#edit-form #nationality').val(nationality);
             $('#edit-form #gender').val(gender);
 
@@ -1331,6 +1499,7 @@
 
         function clearModalFields() {
             $('#edit-form').find('input[type="text"], select').val('');
+            dobPicker.clear();
         }
 
         function validatePlayerFields(validateJerseyNumber) {
@@ -1614,7 +1783,7 @@
                      setTimeout(function(){
                      $('#colourTwo').val('@(team?.Value<string>("jerseyTwoColour"))').change();}, 500)
 
-                            </text>
+                </text>
 
             }
     }

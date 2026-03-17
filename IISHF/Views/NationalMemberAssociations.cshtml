@@ -50,16 +50,16 @@
                                     relaventStoryUrl = child.Value<IPublishedContent>("relaventCommunicationLetter").Url();
                                 }
                                 var alt = $"{@child.Name} - Logo";
-                                if (child.Children.Any(x => x.ContentType.Alias == "nMAContactsAndTeams"))
-                                {
-                                    var path = $"{child.UrlSegment}/nma-contact-and-teams/";
+                                // if (child.Children.Any(x => x.ContentType.Alias == "nMAContactsAndTeams"))
+                                // {
+                                //     var path = $"{child.UrlSegment}/nma-contact-and-teams/";
 
-                                    <a href="@path"><img src="@child.GetProperty("image").GetValue()" class="card-img-top p-2" alt="@alt"></a>
-                                }
-                                else
-                                {
+                                //     <a href="@path"><img src="@child.GetProperty("image").GetValue()" class="card-img-top p-2" alt="@alt"></a>
+                                // }
+                                // else
+                                // {
                                     <img src="@child.GetProperty("image").GetValue()" class="card-img-top p-2" alt="@alt">
-                                }
+                                // }
                             }
                             <div class="card-body">
                                
@@ -124,13 +124,14 @@
                                         </a>
 
                                     }
-                                    @{if (child.Children.Any(x => x.ContentType.Alias == "nMAContactsAndTeams"))
-                                      {
-                                          var path = $"{child.UrlSegment}/nma-contact-and-teams/";
-                                          <a href="@path" style="text-decoration: none;">
-                                              <i class="fa-duotone fa-solid fa-hockey-sticks text-black fa-lg m-2"></i>
-                                          </a>
-                                      }
+                                    @{
+                                      //if (child.Children.Any(x => x.ContentType.Alias == "nMAContactsAndTeams"))
+                                      //{
+                                      //    var path = $"{child.UrlSegment}/nma-contact-and-teams/";
+                                      //    <a href="@path" style="text-decoration: none;">
+                                      //        <i class="fa-duotone fa-solid fa-hockey-sticks text-black fa-lg m-2"></i>
+                                      //    </a>
+                                      //}
                                     }
 
                                 </div>

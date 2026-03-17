@@ -193,9 +193,22 @@ namespace IISHF.Core.Services
             {
                 var content = _contentService.GetById(sponsorId);
                 var media = _umbracoMediaService.GetById(mediaId);
-
+                
                 _contentService.Delete(content);
                 _umbracoMediaService.Delete(media);
+            });
+        }
+
+        public async Task RemoveImageFromTeam(IPublishedContent nmaTeam, string propertyAlias)
+        {
+            await Task.Run(() =>
+            {
+                var team = _contentService.GetById(nmaTeam.Id);
+                if (team != null)
+                {
+                    team.SetValue(propertyAlias, string.Empty);
+                    _contentService.SaveAndPublish(team);
+                }
             });
         }
 

@@ -31,9 +31,9 @@ namespace IISHF.Core.Services
 
         }
 
-        public async Task SendRegistrationConfirmation(Member member, string templateName, string subject)
+        public async Task SendRegistrationConfirmation(Member member, string templateContent, string subject)
         {
-            var renderedEmail = await GetHtmlTemplate(member, templateName);
+            var renderedEmail = await GetHtmlTemplate(member, templateContent);
             //var htmlPath = $"https://localhost:44322/verify?token={registration.Token}";
             //var renderedEmail = $"<a href=\"{htmlPath}\">Click here</a> to verify your email address and complete registration of your IISHF Account";
 
@@ -48,7 +48,7 @@ namespace IISHF.Core.Services
             await SendEmail(string.Empty, renderedEmail, sender, recipients, subject);
         }
 
-        public async Task SendUserInvitation(IMember member, string email, string recipientName, Uri uri, string templateName, string subject)
+        public async Task SendUserInvitation(IMember member, string email, string recipientName, Uri uri, string templateContent, string subject)
         {
 
             var invitationObject = new
@@ -58,7 +58,7 @@ namespace IISHF.Core.Services
                 MemberName = member.Name,
             };
 
-            var renderedEmail = await GetHtmlTemplate(invitationObject, templateName);
+            var renderedEmail = await GetHtmlTemplate(invitationObject, templateContent);
 
             var sender = new EmailAddress(_iishfOptions.NoReplyEmailAdddress, _iishfOptions.DisplayName);
 
