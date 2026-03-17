@@ -107,6 +107,16 @@ namespace IISHF.Core.Services
             return newMember;
         }
 
+        public Task ApplyInvitationToExistingMember(IMember member, RegisterViewModel model)
+        {
+            var invitation = _contentQuery.Content(model.InvitationKey);
+            if (invitation != null)
+            {
+                SetMemberInvitationValues(model, invitation, member);
+            }
+            return Task.CompletedTask;
+        }
+
         private void SetMemberInvitationValues(RegisterViewModel model, IPublishedContent? invitation, IMember newMember)
         {
             newMember.SetValue("isNMA", invitation.Value<bool>("isNma"));

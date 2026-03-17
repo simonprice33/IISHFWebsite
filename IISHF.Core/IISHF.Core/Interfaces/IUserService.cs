@@ -8,6 +8,8 @@ namespace IISHF.Core.Interfaces
     {
         Task<IMember> RegisterUser(RegisterViewModel model);
 
+        Task ApplyInvitationToExistingMember(IMember member, RegisterViewModel model);
+
         Guid GetVerificationKey(IMember member, Guid token, bool redirectToPasswordReset);
 
         IMember GetMembersByPropertyValue(string token, string property);

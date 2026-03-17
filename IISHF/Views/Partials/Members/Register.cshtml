@@ -38,6 +38,12 @@
             <br/>
             <h4 class="mt-5">Please check your inbox and follow the instructions. If you do not see the email after 10 minutes please see your spam folder.</h4>
         }
+        else if ((string)TempData["status"] == "Invitation Applied")
+        {
+            <h4 class="mt-5">Your account has been updated with your invitation.</h4>
+            <br/>
+            <h4 class="mt-5">Please <a href="/login">log in</a> to access your account.</h4>
+        }
         else
         {
             <div class="col-12 col-sm-12 col-md-12 col-lg-12">
