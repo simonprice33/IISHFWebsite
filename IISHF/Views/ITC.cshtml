@@ -864,6 +864,8 @@
     </div>
 </div>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
 
     var countries = @Html.Raw(Json.Serialize(countries));
@@ -2017,18 +2019,25 @@
 
     })
 
-$('#dateOfBirth').datepicker({
-        format: 'dd.mm.yyyy',
-        autoclose: true,
-        todayHighlight: true,
-        endDate: new Date(), // Prevents selecting future dates
-        minViewMode: 0, // 0: days, 1: months, 2: years
-        todayBtn: true // Show "Today" button to quickly navigate to today's date
+    var dobPicker = flatpickr("#dateOfBirth", {
+        dateFormat: "d.m.Y",
+        allowInput: true,        // User can type the date directly
+        maxDate: "today",        // Cannot select future dates
+        minDate: "1900-01-01",   // Sensible lower bound for DOB
+        disableMobile: false     // Use native picker on mobile
     });
 
-    // Show datepicker when clicking on the icon
-    $('#dateOfBirthicon').on('click', function() {
-        $('#dateOfBirth').datepicker('show');
+    // Re-open calendar when clicking the icon
+    $('#dateOfBirthicon').on('click', function () {
+        dobPicker.open();
+    });
+
+    // Re-set the picker value when the modal is shown (populated from table row)
+    $('#editModal').on('shown.bs.modal', function () {
+        var currentVal = $('#dateOfBirth').val();
+        if (currentVal) {
+            dobPicker.setDate(currentVal, false, "d.m.Y");
+        }
     });
 
         function GetRejectionReasons(queryString) {
@@ -2334,6 +2343,8 @@ $('#dateOfBirth').datepicker({
 
             // Clear existing role options and add options for bench officials
             var rolesForBenchOfficial = [
+                "Manager",
+                "Assistant Manager",
                 "Head Coach",
                 "Assistant Coach",
                 "Bench Staff",

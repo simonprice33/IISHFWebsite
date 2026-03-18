@@ -736,22 +736,10 @@
 
             var dobPicker = flatpickr("#dateOfBirth", {
             dateFormat: "d.m.Y",
-            allowInput: false,
-            disableMobile: true
-        });
-
-        // Re-set the picker value when the modal is shown (populated from table row)
-        $('#editModal').on('shown.bs.modal', function () {
-            var currentVal = $('#dateOfBirth').val();
-            if (currentVal) {
-                dobPicker.setDate(currentVal, false, "d.m.Y");
-            }
-        });
-
-            var dobPicker = flatpickr("#dateOfBirth", {
-            dateFormat: "d.m.Y",
-            allowInput: false,
-            disableMobile: true
+            allowInput: true,        // User can type the date directly
+            maxDate: "today",        // Cannot select future dates
+            minDate: "1900-01-01",   // Sensible lower bound for DOB
+            disableMobile: false     // Use native picker on mobile
         });
 
         // Re-set the picker value when the modal is shown (populated from table row)
@@ -947,7 +935,8 @@
                 type: 'DELETE',
                 success: function () {
                     $('#teamPhotoContainer').hide();
-                    location.reload();
+                    $('#teamPhoto').attr('src', '');
+                     $btn.hide();
                 },
                 error: function () {
                     $btn.prop('disabled', false);
@@ -963,8 +952,9 @@
                 url: '/api/events/team-submission/team/' + teamKey + '/logo',
                 type: 'DELETE',
                 success: function () {
-                    $('#teamLogoContainer').hide();
-                    location.reload();
+                     $('#teamLogo').attr('src', '');
+                     $('#teamLogoContainer').hide();
+                     $btn.hide();
                 },
                 error: function () {
                     $btn.prop('disabled', false);
@@ -1482,6 +1472,8 @@
 
             // Clear existing role options and add options for bench officials
             var rolesForBenchOfficial = [
+                "Manager",
+                "Assistant Manager",
                 "Head Coach",
                 "Assistant Coach",
                 "Bench Staff",
