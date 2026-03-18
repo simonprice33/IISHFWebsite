@@ -1071,9 +1071,8 @@
                     html += '<li>' + error + '</li>'
                 })
                 html += '</ul>'
-
                 html += '</div>'
-                $('#saveMessage').html(html)
+                $('#saveMessage').stop(true).show().html(html)
                 return;
             }
 
@@ -1128,8 +1127,7 @@
                 error: function (error) {
                     console.log("Error", error);
                     var html = '<div id="saveSuccess" class="col-12 col-sm-12 col-md-12 col-lg-12 alert alert-danger text-center">There was a problem saving your data. </br>If the problem persists, please contact <a href="mailto:webmaster@iishf.com">IISHF Webmaster</a> </div>'
-                    $('#saveMessage').html(html)
-
+                    $('#saveMessage').stop(true).show().html(html)
                 }
             });
 
