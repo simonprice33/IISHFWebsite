@@ -1,5 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Office2010.Excel;
 using IISHF.Core.Models;
+using IISHF.Core.State;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Amqp.Encoding;
@@ -498,6 +499,15 @@ namespace IISHF.Core.Controllers.ApiControllers
             var links = team.Value<Link[]>("teamWebsite");
             var websiteUrl = (links != null && links.Length > 0) ? (links[0]?.Url ?? "") : "";
 
+            // ITC status
+            var itcEval = ItcStateMachine.Evaluate(team);
+            var itcStatus = itcEval.State.GetDescription();
+
+            // Team information submission status
+            var teamInfoSubmitted = team.Value<bool>("teamInformationSubmitted");
+            var submissionDate = team.Value<DateTime?>("teamInformationSubmissionDate");
+            var submittedByRef = team.Value<IPublishedContent>("teamInformationSubmittedBy");
+
             return Ok(new
             {
                 key = team.Key,
@@ -516,7 +526,14 @@ namespace IISHF.Core.Controllers.ApiControllers
                     id = logoId,
                     key = logoKey,
                     url = logoUrl
-                }
+                },
+
+                itcStatus = itcStatus,
+                teamInformationSubmitted = teamInfoSubmitted,
+                teamInformationSubmissionDate = submissionDate.HasValue && submissionDate.Value != DateTime.MinValue
+                    ? submissionDate.Value.ToString("dd MMM yyyy HH:mm") + " UTC"
+                    : (string)null,
+                teamInformationSubmittedBy = submittedByRef?.Name
             });
         }
 

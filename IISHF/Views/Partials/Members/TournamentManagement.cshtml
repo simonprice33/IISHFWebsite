@@ -159,9 +159,32 @@
                     </div>
 
                 </div>
+
+                <hr class="mt-4" />
+
+                <h6 class="text-muted mb-3">Submission Status</h6>
+
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">ITC status</dt>
+                    <dd class="col-sm-8"><span id="tmItcStatus" class="badge bg-secondary">—</span></dd>
+
+                    <dt class="col-sm-4">Team info submitted</dt>
+                    <dd class="col-sm-8"><span id="tmSubmitted" class="badge bg-secondary">—</span></dd>
+
+                    <dt class="col-sm-4">Submission date</dt>
+                    <dd class="col-sm-8" id="tmSubmissionDate">—</dd>
+
+                    <dt class="col-sm-4">Submitted by</dt>
+                    <dd class="col-sm-8" id="tmSubmittedBy">—</dd>
+                </dl>
+
+                <div id="tmResetSuccess" class="alert alert-success d-none mt-3"></div>
+                <div id="tmResetError" class="alert alert-danger d-none mt-3"></div>
+
             </div>
 
             <div class="modal-footer">
+                <button type="button" id="tmResetSubmission" class="btn btn-warning d-none">Reset Submission</button>
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="tmSaveTeamBtn">Save</button>
             </div>
@@ -517,9 +540,15 @@
             $("#tmEditTeamWebsite").val("");
             $("#tmEditClearLogo").prop("checked", false);
             $("#tmEditLogoFile").val("");
-
             $("#tmEditLogoPreview").hide().attr("src", "");
             $("#tmEditNoLogo").show();
+            $("#tmItcStatus").text("—").attr("class", "badge bg-secondary");
+            $("#tmSubmitted").text("—").attr("class", "badge bg-secondary");
+            $("#tmSubmissionDate").text("—");
+            $("#tmSubmittedBy").text("—");
+            $("#tmResetSubmission").addClass("d-none");
+            $("#tmResetSuccess").addClass("d-none").text("");
+            $("#tmResetError").addClass("d-none").text("");
 
             // Load team
             return $.ajax({
@@ -532,6 +561,29 @@
                 $("#tmEditCountryIso3").val(res && res.countryIso3 ? res.countryIso3 : "");
                 $("#tmEditGroup").val(res && res.group ? res.group : "");
                 $("#tmEditTeamWebsite").val(res && res.teamWebsite ? res.teamWebsite : "");
+
+                // ITC status badge
+                var itcStatus = (res && res.itcStatus) ? res.itcStatus : "Unknown";
+                var itcClass = "bg-secondary";
+                if (itcStatus === "Not submitted") itcClass = "bg-secondary";
+                else if (itcStatus === "Pending NMA Approval") itcClass = "bg-warning text-dark";
+                else if (itcStatus === "NMA Approved - Pending IISHF Approval") itcClass = "bg-info text-dark";
+                else if (itcStatus === "Changes required") itcClass = "bg-danger";
+                else if (itcStatus === "Changes made") itcClass = "bg-primary";
+                $("#tmItcStatus").text(itcStatus).attr("class", "badge " + itcClass);
+
+                // Submission status
+                var submitted = res && res.teamInformationSubmitted === true;
+                $("#tmSubmitted").text(submitted ? "Yes" : "No").attr("class", submitted ? "badge bg-success" : "badge bg-secondary");
+                $("#tmSubmissionDate").text((res && res.teamInformationSubmissionDate) ? res.teamInformationSubmissionDate : "—");
+                $("#tmSubmittedBy").text((res && res.teamInformationSubmittedBy) ? res.teamInformationSubmittedBy : "—");
+
+                // Show reset button only if submitted
+                if (submitted) {
+                    $("#tmResetSubmission").removeClass("d-none");
+                } else {
+                    $("#tmResetSubmission").addClass("d-none");
+                }
 
                 var logoKey = (res && res.logo && res.logo.key) ? res.logo.key : "";
                 var logoUrl = (res && res.logo && res.logo.url) ? res.logo.url : "";
@@ -884,6 +936,31 @@
 
     $("#tmSaveTeamBtn").on("click", function () {
         saveTournamentTeam();
+    });
+
+    $("#tmResetSubmission").on("click", function () {
+        if (!confirm("Reset this team's submission status? This will clear the submission date and submitted-by fields.")) return;
+
+        var teamKey = $("#tmEditTeamKey").val();
+        var $btn = $(this);
+        $btn.prop("disabled", true).text("Resetting…");
+
+        $.ajax({
+            url: "/umbraco/api/accountusers/tournament-teams/" + encodeURIComponent(teamKey) + "/submission-status",
+            method: "DELETE"
+        }).then(function () {
+            $("#tmSubmitted").text("No").attr("class", "badge bg-secondary");
+            $("#tmSubmissionDate").text("—");
+            $("#tmSubmittedBy").text("—");
+            $btn.addClass("d-none").prop("disabled", false).text("Reset Submission");
+            $("#tmResetSuccess").text("Submission status reset successfully.").removeClass("d-none");
+            setTimeout(function () { $("#tmResetSuccess").addClass("d-none"); }, 4000);
+        }).fail(function (xhr) {
+            $btn.prop("disabled", false).text("Reset Submission");
+            $("#tmResetError")
+                .text(xhr && xhr.responseText ? xhr.responseText : "Failed to reset submission status.")
+                .removeClass("d-none");
+        });
     });
 
     // Optional: when selecting an existing logo, update preview
