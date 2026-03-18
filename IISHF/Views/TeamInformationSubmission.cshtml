@@ -1319,7 +1319,7 @@
             $('#edit-form #firstName').val(firstName);
             $('#edit-form #lastName').val(lastName);
             $('#edit-form #jerseyNumber').val(jerseyNumber);
-            dobPicker.setDate(dateOfBirth || null, false, "d.m.Y");
+            $('#dateOfBirth').datepicker('update', dateOfBirth || '');
             $('#edit-form #nationality').val(nationality);
             $('#edit-form #gender').val(gender);
         }
@@ -1369,7 +1369,7 @@
             $('#edit-form #role').val(role);
             $('#edit-form #firstName').val(firstName);
             $('#edit-form #lastName').val(lastName);
-            dobPicker.setDate(dateOfBirth || null, false, "d.m.Y");
+            $('#dateOfBirth').datepicker('update', dateOfBirth || '');
             $('#edit-form #nationality').val(nationality);
             $('#edit-form #gender').val(gender);
 
@@ -1507,7 +1507,7 @@
 
         function clearModalFields() {
             $('#edit-form').find('input[type="text"], select').val('');
-            dobPicker.clear();
+            $('#dateOfBirth').datepicker('update', '');
         }
 
         function validatePlayerFields(validateJerseyNumber) {
