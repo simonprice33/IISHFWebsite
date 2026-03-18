@@ -750,6 +750,15 @@
             }
         });
 
+        // Allow typing with / - or . as separator e.g. 03/04/1983, 03-04-1983, 03.04.1983
+        $('#dateOfBirth').on('blur', function () {
+            var val = $(this).val().replace(/[\/\-]/g, '.');
+            if (val !== $(this).val()) {
+                $(this).val(val);
+                $(this).datepicker('update', val);
+            }
+        });
+
         if ($("#teamPhotoDropzone").length) {
             var teamPhotoDropzone = new Dropzone("#teamPhotoDropzone", {
                 url: "/upload-team-photo",
