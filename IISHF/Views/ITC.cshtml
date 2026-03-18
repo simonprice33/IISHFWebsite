@@ -726,8 +726,8 @@
         if (!isSubmitted)
         {
                     <button class="btn btn-light m-1" type="submit" onclick="validateForms()">Validate</button>
-                    <button class="btn btn-custom-draft m-1" onclick="submit(true)">Save Draft</button>
-                    <button class="btn btn-custom-save m-1" onclick="submit(false)">Submit</button>
+                    <button id="itcSaveDraft" class="btn btn-custom-draft m-1" onclick="submit(true, this)">Save Draft</button>
+                    <button id="itcSubmit" class="btn btn-custom-save m-1" onclick="submit(false, this)">Submit</button>
         }
 
         if (isNmaApprover && !isNmaApprover)
@@ -1501,10 +1501,14 @@
         return true
     }
 
-    function submit(isDraft) {
+    function submit(isDraft, btnEl) {
+        var $btn = $(btnEl);
+        $btn.prop('disabled', true).data('original-text', $btn.html());
+        $btn.html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> ' + $btn.data('original-text'));
 
         if (!isDraft && !validateForms()) {
-            return
+            $btn.prop('disabled', false).html($btn.data('original-text'));
+            return;
         }
 
         var json = generateJson(isDraft);
@@ -1517,6 +1521,7 @@
             contentType: "application/json; charset=utf-8",
             dataType: "json",
             success: function (result) {
+                $btn.prop('disabled', false).html($btn.data('original-text'));
                 console.log("Sending results to update row ids");
                 updateRowIds(result);
 
@@ -1524,11 +1529,12 @@
                 // only needed if not title event
                 UploadFiles(result.TeamId)
 
-                if (!isDraft) { 
-                window.location = '/my-account'
+                if (!isDraft) {
+                    window.location = '/my-account'
                 }
             },
             error: function (result) {
+                $btn.prop('disabled', false).html($btn.data('original-text'));
                 console.log(result);
             }
         });

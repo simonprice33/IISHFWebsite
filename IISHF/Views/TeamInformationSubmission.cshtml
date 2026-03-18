@@ -1010,15 +1010,26 @@
 
         $('#submitDraft').click(function (e) {
             e.preventDefault();
-            submit(true)
+            submit(true, this)
         });
 
         $('#submit').click(function (e) {
             e.preventDefault();
-            submit(false)
+            submit(false, this)
         });
 
-        function submit(isDraft) {
+        function setButtonLoading($btn) {
+            $btn.prop('disabled', true).data('original-text', $btn.html());
+            $btn.html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> ' + $btn.data('original-text'));
+        }
+
+        function resetButton($btn) {
+            $btn.prop('disabled', false).html($btn.data('original-text'));
+        }
+
+        function submit(isDraft, btnEl) {
+            var $btn = $(btnEl);
+            setButtonLoading($btn);
 
             // Create a FormData object
             var formData = new FormData();
@@ -1079,6 +1090,7 @@
                 html += '</ul>'
                 html += '</div>'
                 $('#saveMessage').stop(true).show().html(html)
+                resetButton($btn);
                 return;
             }
 
@@ -1109,6 +1121,7 @@
                     UpdateSponsors(result.sponsorPaths)
                     console.log(result.sponsorPaths)
 
+                    resetButton($btn);
                     if (isDraft) {
                         var html = '<div id="saveSuccess" class="col-12 col-sm-12 col-md-12 col-lg-12 alert alert-success">Save as draft successfully completed</div>'
                         $('#saveMessage').stop(true).show().html(html)
@@ -1127,11 +1140,11 @@
                         $(".dropzone").hide();
                         $('.input-group.mb-3').find('button, input').prop('disabled', true);
                         $('#teamHistory').summernote('disable');
-
                     }
                 },
                 error: function (error) {
                     console.log("Error", error);
+                    resetButton($btn);
                     var html = '<div id="saveSuccess" class="col-12 col-sm-12 col-md-12 col-lg-12 alert alert-danger text-center">There was a problem saving your data. </br>If the problem persists, please contact <a href="mailto:webmaster@iishf.com">IISHF Webmaster</a> </div>'
                     $('#saveMessage').stop(true).show().html(html)
                 }
