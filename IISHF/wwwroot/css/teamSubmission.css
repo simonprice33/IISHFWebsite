@@ -31,3 +31,111 @@
     color: white;
     padding: 10px;
 }
+
+/* ── Bootstrap Datepicker styling ─────────────────────────────────── */
+.datepicker {
+    font-size: 0.9rem;
+    padding: 8px;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    border: 1px solid #dee2e6;
+}
+
+.datepicker table {
+    width: 100%;
+}
+
+.datepicker table tr td,
+.datepicker table tr th {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    text-align: center;
+    vertical-align: middle;
+    padding: 4px;
+}
+
+/* Header row (Su Mo Tu We Th Fr Sa) */
+.datepicker table tr th {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+}
+
+/* Navigation arrows and month/year title */
+.datepicker .datepicker-switch,
+.datepicker .prev,
+.datepicker .next {
+    font-weight: 600;
+    color: #0095DA;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.datepicker .datepicker-switch:hover,
+.datepicker .prev:hover,
+.datepicker .next:hover {
+    background-color: #e8f4fb;
+    color: #006fa3;
+}
+
+/* Normal day cells */
+.datepicker table tr td.day {
+    color: #343a40;
+    transition: background 0.15s, color 0.15s;
+}
+
+.datepicker table tr td.day:hover {
+    background-color: #e8f4fb;
+    color: #0095DA;
+    cursor: pointer;
+}
+
+/* Selected / active day */
+.datepicker table tr td.active,
+.datepicker table tr td.active:hover,
+.datepicker table tr td.active.highlighted {
+    background-color: #0095DA !important;
+    color: #fff !important;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+/* Today highlight */
+.datepicker table tr td.today,
+.datepicker table tr td.today:hover {
+    background-color: #e8f4fb;
+    color: #0095DA;
+    font-weight: 600;
+}
+
+/* Greyed-out days from prev/next month */
+.datepicker table tr td.old,
+.datepicker table tr td.new {
+    color: #ced4da;
+}
+
+/* Month/year picker grids */
+.datepicker table tr td span {
+    border-radius: 6px;
+    padding: 6px 4px;
+    display: inline-block;
+    width: 48px;
+    transition: background 0.15s;
+}
+
+.datepicker table tr td span:hover {
+    background-color: #e8f4fb;
+    color: #0095DA;
+    cursor: pointer;
+}
+
+.datepicker table tr td span.active,
+.datepicker table tr td span.active:hover {
+    background-color: #0095DA !important;
+    color: #fff !important;
+    font-weight: 600;
+}
