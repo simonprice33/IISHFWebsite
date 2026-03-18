@@ -29,7 +29,7 @@ namespace IISHF.Core.Controllers.ApiControllers
     {
         private readonly IPublishedContentQuery _contentQuery;
         private readonly IContentService _contentService;
-        private readonly IMediaService _mediaService;
+        private readonly Umbraco.Cms.Core.Services.IMediaService _mediaService;
         private readonly MediaFileManager _mediaFileManager;
         private readonly MediaUrlGeneratorCollection _mediaUrlGenerators;
         private readonly IShortStringHelper _shortStringHelper;
@@ -39,7 +39,7 @@ namespace IISHF.Core.Controllers.ApiControllers
         public TournamentManagementController(
             IPublishedContentQuery contentQuery,
             IContentService contentService,
-            IMediaService mediaService,
+            Umbraco.Cms.Core.Services.IMediaService mediaService,
             MediaFileManager mediaFileManager,
             MediaUrlGeneratorCollection mediaUrlGenerators,
             IShortStringHelper shortStringHelper,
