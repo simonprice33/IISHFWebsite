@@ -71,11 +71,12 @@
                     <thead>
                         <tr>
                             <th>Tournament team</th>
-                            <th >ISO3</th>
-                            <th >Mapped?</th>
-                            <th >Select</th>
-                            <th >Edit</th>
-                            <th >Remove</th>
+                            <th>ISO3</th>
+                            <th>Mapped?</th>
+                            <th>Select</th>
+                            <th>Edit</th>
+                            <th>Reset</th>
+                            <th>Remove</th>
                         </tr>
                     </thead>
                     <tbody id="tmTournamentRows">
@@ -452,6 +453,7 @@
                 html += '  <td>' + (isMapped ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>') + '</td>';
                 html += '  <td><input type="radio" name="tmTeamSelect" class="form-check-input tmTournamentSelect" value="' + escapeHtml(t.key) + '"></td>';
                 html += '  <td><button type="button" class="btn btn-sm btn-outline-dark tmEditTeam" data-teamkey="' + escapeHtml(t.key) + '">Edit</button></td>';
+                html += '  <td><button type="button" class="btn btn-sm btn-outline-warning tmResetTeamSubmission" data-teamkey="' + escapeHtml(t.key) + '" data-teamname="' + escapeHtml(t.name) + '">Reset</button></td>';
                 html += '  <td><button type="button" class="btn btn-sm btn-outline-danger tmRemoveTeam" data-teamkey="' + escapeHtml(t.key) + '">Remove</button></td>';
                 html += '</tr>';
             });
@@ -921,6 +923,31 @@
             $(document).on("click", ".tmEditTeam", function () {
         var key = $(this).data("teamkey");
         openEditTeamModal(key);
+    });
+
+    $(document).on("click", ".tmResetTeamSubmission", function () {
+        clearError();
+        clearSuccess();
+
+        var teamKey = $(this).data("teamkey");
+        var teamName = $(this).data("teamname") || "this team";
+        if (!teamKey) { showError("Missing team key."); return; }
+
+        if (!confirm("Reset submission status for " + teamName + "? This will clear their submission date and submitted-by fields.")) return;
+
+        var $btn = $(this);
+        $btn.prop("disabled", true).text("Resetting…");
+
+        $.ajax({
+            url: "/umbraco/api/accountusers/tournament-teams/" + encodeURIComponent(teamKey) + "/submission-status",
+            method: "DELETE"
+        }).then(function () {
+            $btn.prop("disabled", false).text("Reset");
+            showSuccess(teamName + " submission status has been reset.");
+        }).fail(function (xhr) {
+            $btn.prop("disabled", false).text("Reset");
+            showError(xhr && xhr.responseText ? xhr.responseText : "Failed to reset submission status.");
+        });
     });
 
     $(document).on("click", ".tmRemoveTeam", function () {
