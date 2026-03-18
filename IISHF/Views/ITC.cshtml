@@ -807,7 +807,7 @@
                     <div class="form-group">
                         <label for="dateOfBirth">Date of Birth:</label>
                         <div class="input-group mb-3" id="datepicker">
-                            <input type="text" class="form-control" id="dateOfBirth" name="dateOfBirth" placeholder="dd.mm.yyyy" aria-label="dateOfBirth" aria-describedby="dateOfBirthicon">
+                            <input type="text" class="form-control" id="dateOfBirth" name="dateOfBirth" placeholder="DD.MM.YYYY" autocomplete="off" aria-label="dateOfBirth" aria-describedby="dateOfBirthicon">
                             <span class="input-group-text" id="dateOfBirthicon">
                                 <i class="fa-solid fa-calendar-days"></i>
                             </span>
@@ -864,7 +864,6 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/inputmask/dist/inputmask.min.js"></script>
 <script>
 
     var countries = @Html.Raw(Json.Serialize(countries));
@@ -2042,8 +2041,6 @@
         }
     });
 
-    // Apply dd/mm/yyyy input mask so field shows __/__/____ as user types
-    Inputmask({ mask: '99/99/9999', placeholder: '__/__/____', clearMaskOnLostFocus: false }).mask(document.getElementById('dateOfBirth'));
 
         function GetRejectionReasons(queryString) {
 
