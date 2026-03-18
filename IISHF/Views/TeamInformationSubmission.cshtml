@@ -941,17 +941,19 @@
         $('#removeTeamPhoto').on('click', function () {
             var $btn = $(this);
             $btn.prop('disabled', true);
+            $('#teamPhotoError').remove();
             $.ajax({
                 url: '/api/events/team-submission/team/' + teamKey + '/photo',
                 type: 'DELETE',
                 success: function () {
                     $('#teamPhotoContainer').hide();
                     $('#teamPhoto').attr('src', '');
-                     $btn.hide();
+                    $btn.hide();
                 },
                 error: function () {
                     $btn.prop('disabled', false);
-                    alert('Could not remove the team photo. Please try again.');
+                    var $alert = $('<div id="teamPhotoError" class="alert alert-danger alert-dismissible fade show mt-2" role="alert">Could not remove the team photo. Please try again.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>');
+                    $('#teamPhotoContainer').after($alert);
                 }
             });
         });
@@ -959,17 +961,19 @@
         $('#removeTeamLogo').on('click', function () {
             var $btn = $(this);
             $btn.prop('disabled', true);
+            $('#teamLogoError').remove();
             $.ajax({
                 url: '/api/events/team-submission/team/' + teamKey + '/logo',
                 type: 'DELETE',
                 success: function () {
-                     $('#teamLogo').attr('src', '');
-                     $('#teamLogoContainer').hide();
-                     $btn.hide();
+                    $('#teamLogo').attr('src', '');
+                    $('#teamLogoContainer').hide();
+                    $btn.hide();
                 },
                 error: function () {
                     $btn.prop('disabled', false);
-                    alert('Could not remove the team logo. Please try again.');
+                    var $alert = $('<div id="teamLogoError" class="alert alert-danger alert-dismissible fade show mt-2" role="alert">Could not remove the team logo. Please try again.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>');
+                    $('#teamLogoContainer').after($alert);
                 }
             });
         });

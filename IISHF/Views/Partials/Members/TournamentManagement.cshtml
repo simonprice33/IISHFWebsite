@@ -91,6 +91,25 @@
     </div>
 </div>
 
+<!-- Shared confirm modal -->
+<div class="modal fade" id="tmConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tmConfirmModalTitle">Confirm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="tmConfirmMessage" class="mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="tmConfirmBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="tmEditModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
@@ -877,21 +896,25 @@
 
         $("#tmResetAllSubmissionsBtn").on("click", function () {
             if (!state.selectedEventYearKey) { showError("Select an event first."); return; }
-            if (!confirm("Reset submission status for ALL teams in this event? This will clear submitted dates and submitted-by fields for every team.")) return;
 
             var $btn = $(this);
-            $btn.prop("disabled", true).text("Resetting…");
-
-            $.ajax({
-                url: "/umbraco/api/tournamentmanagement/events/" + encodeURIComponent(state.selectedEventYearKey) + "/teams/submission-status",
-                method: "DELETE"
-            }).then(function (res) {
-                $btn.prop("disabled", false).text("Reset All Submissions");
-                showSuccess("Submission status reset for " + (res && res.resetCount != null ? res.resetCount : "all") + " team(s).");
-            }).fail(function (xhr) {
-                $btn.prop("disabled", false).text("Reset All Submissions");
-                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to reset submission statuses.");
-            });
+            tmConfirm(
+                "Reset submission status for ALL teams in this event? This will clear submitted dates and submitted-by fields for every team.",
+                function () {
+                    $btn.prop("disabled", true).text("Resetting…");
+                    $.ajax({
+                        url: "/umbraco/api/tournamentmanagement/events/" + encodeURIComponent(state.selectedEventYearKey) + "/teams/submission-status",
+                        method: "DELETE"
+                    }).then(function (res) {
+                        $btn.prop("disabled", false).text("Reset All Submissions");
+                        showSuccess("Submission status reset for " + (res && res.resetCount != null ? res.resetCount : "all") + " team(s).");
+                    }).fail(function (xhr) {
+                        $btn.prop("disabled", false).text("Reset All Submissions");
+                        showError(xhr && xhr.responseText ? xhr.responseText : "Failed to reset submission statuses.");
+                    });
+                },
+                "Reset All Submissions"
+            );
         });
 
         $("#tmTeamSearchBtn").on("click", function () {
@@ -932,24 +955,24 @@
         var teamKey = $(this).data("teamkey");
         if (!teamKey) { showError("Missing team key."); return; }
 
-        if (!confirm("Remove this team from the event? This will delete the tournament team node.")) {
-            return;
-        }
-
-            $.ajax({
-        url: "/umbraco/api/tournamentmanagement/events/"
-            + encodeURIComponent(state.selectedEventYearKey)
-            + "/teams/"
-            + encodeURIComponent(teamKey),
-        method: "DELETE"
-    })
-    .then(function (res) {
-        showSuccess((res && res.message) ? res.message : "Removed.");
-        return loadTournamentTeams();
-    })
-    .fail(function (xhr) {
-        showError(xhr && xhr.responseText ? xhr.responseText : "Failed to remove team.");
-    });
+        tmConfirm(
+            "Remove this team from the event? This will delete the tournament team node.",
+            function () {
+                $.ajax({
+                    url: "/umbraco/api/tournamentmanagement/events/"
+                        + encodeURIComponent(state.selectedEventYearKey)
+                        + "/teams/"
+                        + encodeURIComponent(teamKey),
+                    method: "DELETE"
+                }).then(function (res) {
+                    showSuccess((res && res.message) ? res.message : "Removed.");
+                    return loadTournamentTeams();
+                }).fail(function (xhr) {
+                    showError(xhr && xhr.responseText ? xhr.responseText : "Failed to remove team.");
+                });
+            },
+            "Remove Team"
+        );
     });
 
     $("#tmUploadLogoBtn").on("click", function () {
@@ -961,28 +984,32 @@
     });
 
     $("#tmResetSubmission").on("click", function () {
-        if (!confirm("Reset this team's submission status? This will clear the submission date and submitted-by fields.")) return;
-
-        var teamKey = $("#tmEditTeamKey").val();
         var $btn = $(this);
-        $btn.prop("disabled", true).text("Resetting…");
+        tmConfirm(
+            "Reset this team's submission status? This will clear the submission date and submitted-by fields.",
+            function () {
+                var teamKey = $("#tmEditTeamKey").val();
+                $btn.prop("disabled", true).text("Resetting…");
 
-        $.ajax({
-            url: "/umbraco/api/accountusers/tournament-teams/" + encodeURIComponent(teamKey) + "/submission-status",
-            method: "DELETE"
-        }).then(function () {
-            $("#tmSubmitted").text("No").attr("class", "badge bg-secondary");
-            $("#tmSubmissionDate").text("—");
-            $("#tmSubmittedBy").text("—");
-            $btn.addClass("d-none").prop("disabled", false).text("Reset Submission");
-            $("#tmResetSuccess").text("Submission status reset successfully.").removeClass("d-none");
-            setTimeout(function () { $("#tmResetSuccess").addClass("d-none"); }, 4000);
-        }).fail(function (xhr) {
-            $btn.prop("disabled", false).text("Reset Submission");
-            $("#tmResetError")
-                .text(xhr && xhr.responseText ? xhr.responseText : "Failed to reset submission status.")
-                .removeClass("d-none");
-        });
+                $.ajax({
+                    url: "/umbraco/api/accountusers/tournament-teams/" + encodeURIComponent(teamKey) + "/submission-status",
+                    method: "DELETE"
+                }).then(function () {
+                    $("#tmSubmitted").text("No").attr("class", "badge bg-secondary");
+                    $("#tmSubmissionDate").text("—");
+                    $("#tmSubmittedBy").text("—");
+                    $btn.addClass("d-none").prop("disabled", false).text("Reset Submission");
+                    $("#tmResetSuccess").text("Submission status reset successfully.").removeClass("d-none");
+                    setTimeout(function () { $("#tmResetSuccess").addClass("d-none"); }, 4000);
+                }).fail(function (xhr) {
+                    $btn.prop("disabled", false).text("Reset Submission");
+                    $("#tmResetError")
+                        .text(xhr && xhr.responseText ? xhr.responseText : "Failed to reset submission status.")
+                        .removeClass("d-none");
+                });
+            },
+            "Reset Submission"
+        );
     });
 
     // Optional: when selecting an existing logo, update preview
@@ -1236,6 +1263,23 @@
     $("#tmUploadHostLogoBtn").on("click", function () {
         uploadHostLogoForAddEvent();
     });
+
+    // ── Shared confirm modal helper ──────────────────────────────────────────
+    function tmConfirm(message, onConfirm, title) {
+        var $modal = $("#tmConfirmModal");
+        $("#tmConfirmMessage").text(message);
+        $("#tmConfirmModalTitle").text(title || "Confirm");
+
+        var $btn = $("#tmConfirmBtn");
+        // Remove any previous one-time handler to avoid stacking
+        $btn.off("click.tmConfirm");
+        $btn.on("click.tmConfirm", function () {
+            bootstrap.Modal.getOrCreateInstance($modal[0]).hide();
+            onConfirm();
+        });
+
+        bootstrap.Modal.getOrCreateInstance($modal[0]).show();
+    }
 
     })();
 </script>
