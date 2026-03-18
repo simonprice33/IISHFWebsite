@@ -60,7 +60,10 @@
 
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <div class="fw-semibold">Tournament teams in selected event</div>
-                <button type="button" id="tmReloadTeamsBtn" class="btn btn-outline-secondary btn-sm">Reload</button>
+                <div class="d-flex gap-2">
+                    <button type="button" id="tmResetAllSubmissionsBtn" class="btn btn-outline-warning btn-sm">Reset All Submissions</button>
+                    <button type="button" id="tmReloadTeamsBtn" class="btn btn-outline-secondary btn-sm">Reload</button>
+                </div>
             </div>
 
             <div class="table-responsive">
@@ -870,6 +873,25 @@
             clearError();
             clearSuccess();
             loadTournamentTeams();
+        });
+
+        $("#tmResetAllSubmissionsBtn").on("click", function () {
+            if (!state.selectedEventYearKey) { showError("Select an event first."); return; }
+            if (!confirm("Reset submission status for ALL teams in this event? This will clear submitted dates and submitted-by fields for every team.")) return;
+
+            var $btn = $(this);
+            $btn.prop("disabled", true).text("Resetting…");
+
+            $.ajax({
+                url: "/umbraco/api/tournamentmanagement/events/" + encodeURIComponent(state.selectedEventYearKey) + "/teams/submission-status",
+                method: "DELETE"
+            }).then(function (res) {
+                $btn.prop("disabled", false).text("Reset All Submissions");
+                showSuccess("Submission status reset for " + (res && res.resetCount != null ? res.resetCount : "all") + " team(s).");
+            }).fail(function (xhr) {
+                $btn.prop("disabled", false).text("Reset All Submissions");
+                showError(xhr && xhr.responseText ? xhr.responseText : "Failed to reset submission statuses.");
+            });
         });
 
         $("#tmTeamSearchBtn").on("click", function () {

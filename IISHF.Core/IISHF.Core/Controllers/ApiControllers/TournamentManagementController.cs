@@ -1,4 +1,5 @@
 ﻿using DocumentFormat.OpenXml.Office2010.Excel;
+using IISHF.Core.Interfaces;
 using IISHF.Core.Models;
 using IISHF.Core.State;
 using Microsoft.AspNetCore.Http;
@@ -10,6 +11,7 @@ using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using IISHF.Core.Extensions;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.IO;
 using Umbraco.Cms.Core.Models;
@@ -32,6 +34,7 @@ namespace IISHF.Core.Controllers.ApiControllers
         private readonly MediaUrlGeneratorCollection _mediaUrlGenerators;
         private readonly IShortStringHelper _shortStringHelper;
         private readonly IContentTypeBaseServiceProvider _contentTypeBaseServiceProvider;
+        private readonly ITournamentService _tournamentService;
 
         public TournamentManagementController(
             IPublishedContentQuery contentQuery,
@@ -40,7 +43,8 @@ namespace IISHF.Core.Controllers.ApiControllers
             MediaFileManager mediaFileManager,
             MediaUrlGeneratorCollection mediaUrlGenerators,
             IShortStringHelper shortStringHelper,
-            IContentTypeBaseServiceProvider contentTypeBaseServiceProvider)
+            IContentTypeBaseServiceProvider contentTypeBaseServiceProvider,
+            ITournamentService tournamentService)
         {
             _contentQuery = contentQuery;
             _contentService = contentService;
@@ -49,6 +53,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             _mediaUrlGenerators = mediaUrlGenerators;
             _shortStringHelper = shortStringHelper;
             _contentTypeBaseServiceProvider = contentTypeBaseServiceProvider;
+            _tournamentService = tournamentService;
         }
 
         // -----------------------------
@@ -535,6 +540,29 @@ namespace IISHF.Core.Controllers.ApiControllers
                     : (string)null,
                 teamInformationSubmittedBy = submittedByRef?.Name
             });
+        }
+
+        // -----------------------------
+        // DELETE /umbraco/api/tournamentmanagement/events/{eventYearNodeKey}/teams/submission-status
+        // Resets teamInformationSubmitted, teamInformationSubmissionDate and teamInformationSubmittedBy
+        // for every team under the given event year node in one go.
+        // -----------------------------
+        [HttpDelete("events/{eventYearNodeKey:guid}/teams/submission-status")]
+        public async Task<IActionResult> ResetAllTeamSubmissionStatuses([FromRoute] Guid eventYearNodeKey)
+        {
+            var yearNode = _contentQuery.Content(eventYearNodeKey);
+            if (yearNode == null) return NotFound("Event year node not found.");
+
+            var teams = yearNode.Children()
+                .Where(x => x.ContentType.Alias.Equals("team", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            foreach (var team in teams)
+            {
+                await _tournamentService.ResetTeamInformationSubmission(team);
+            }
+
+            return Ok(new { resetCount = teams.Count });
         }
 
         // -----------------------------
