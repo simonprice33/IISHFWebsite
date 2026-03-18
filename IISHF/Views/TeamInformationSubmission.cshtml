@@ -1061,6 +1061,12 @@
                     errors.push("Team Photo not found")
                 }
 
+                var historyHtml = $("#teamHistory").summernote("code");
+                var historyText = $("<div>").html(historyHtml).text().trim();
+                if (!historyText || historyHtml === "<br>" || historyHtml === "<p><br></p>") {
+                    errors.push("Team History is required")
+                }
+
             }
 
             if (errors.length > 0) {
