@@ -816,6 +816,7 @@
                         }
                     });
                     this.on("addedfile", function (file) {
+                        $('#teamPhotoError').remove(); // clear previous error when user tries a new file
                         if (file.accepted === false) {
                             var errorMark = file.previewElement.querySelector('.dz-error-mark');
                             errorMark.style.display = 'block';
@@ -903,6 +904,7 @@
                         }
                     });
                     this.on("addedfile", function (file) {
+                        $('#teamLogoError').remove(); // clear previous error when user tries a new file
                         if (file.accepted === false) {
                             var errorMark = file.previewElement.querySelector('.dz-error-mark');
                             errorMark.addEventListener('click', function () {
@@ -1179,6 +1181,9 @@
         function clearDropzoneById(dropzoneId) {
             var myDropzone = Dropzone.forElement('#' + dropzoneId);
             myDropzone.removeAllFiles(true);
+            // Remove any upload error alert associated with this dropzone
+            var errorId = '#' + dropzoneId.replace('Dropzone', 'Error');
+            $(errorId).remove();
         }
 
         function showOverlay() {
