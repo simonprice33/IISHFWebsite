@@ -864,6 +864,7 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/inputmask/dist/inputmask.min.js"></script>
 <script>
 
     var countries = @Html.Raw(Json.Serialize(countries));
@@ -2040,6 +2041,9 @@
             $(this).datepicker('update', val);
         }
     });
+
+    // Apply dd/mm/yyyy input mask so field shows __/__/____ as user types
+    Inputmask({ mask: '99/99/9999', placeholder: '__/__/____', clearMaskOnLostFocus: false }).mask(document.getElementById('dateOfBirth'));
 
         function GetRejectionReasons(queryString) {
 
