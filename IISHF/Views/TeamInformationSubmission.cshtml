@@ -1033,13 +1033,13 @@
 
             var errors = []
 
-            if (!hasPlayers) {
-                console.log("");
-                errors.push("No players found")
-            }
-
-            // Photo and logo are only required on final submit, not draft saves
+            // All validation only runs on final submit, not draft saves
             if (!isDraft) {
+
+                if (!hasPlayers) {
+                    errors.push("No players found")
+                }
+
                 var dzLogoInstance = Dropzone.forElement("#teamLogoDropzone");
                 var teamLogoCount = dzLogoInstance.files.length;
                 if ($.trim($("#teamLogo").attr("src")) === "" && teamLogoCount === 0) {
@@ -1051,6 +1051,7 @@
                 if ($.trim($("#teamPhoto").attr("src")) === "" && teamPhotoCount === 0) {
                     errors.push("Team Photo not found")
                 }
+
             }
 
             if (errors.length > 0) {
