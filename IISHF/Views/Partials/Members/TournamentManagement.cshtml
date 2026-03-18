@@ -1278,7 +1278,22 @@
             onConfirm();
         });
 
-        bootstrap.Modal.getOrCreateInstance($modal[0]).show();
+        var modalInstance = bootstrap.Modal.getOrCreateInstance($modal[0]);
+
+        // Ensure the confirm modal sits above any already-open modal
+        $modal[0].addEventListener('show.bs.modal', function () {
+            $modal[0].style.zIndex = '1070';
+        }, { once: true });
+
+        $modal[0].addEventListener('shown.bs.modal', function () {
+            // Bump the most recently added backdrop above the underlying modal
+            var backdrops = document.querySelectorAll('.modal-backdrop');
+            if (backdrops.length) {
+                backdrops[backdrops.length - 1].style.zIndex = '1065';
+            }
+        }, { once: true });
+
+        modalInstance.show();
     }
 
     })();
