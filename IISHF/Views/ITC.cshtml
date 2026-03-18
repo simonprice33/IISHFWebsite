@@ -864,8 +864,6 @@
     </div>
 </div>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
 
     var countries = @Html.Raw(Json.Serialize(countries));
@@ -2019,25 +2017,19 @@
 
     })
 
-    var dobPicker = flatpickr("#dateOfBirth", {
-        dateFormat: "d.m.Y",
-        allowInput: true,        // User can type the date directly
-        maxDate: "today",        // Cannot select future dates
-        minDate: "1900-01-01",   // Sensible lower bound for DOB
-        disableMobile: false     // Use native picker on mobile
+    $('#dateOfBirth').datepicker({
+        format: 'dd.mm.yyyy',
+        autoclose: true,
+        endDate: new Date(),        // Cannot select future dates
+        startDate: '01/01/1900',    // Allow full DOB range
+        todayHighlight: false,
+        container: '#editModal',    // Render inside modal to avoid z-index issues
+        orientation: 'bottom auto'
     });
 
-    // Re-open calendar when clicking the icon
+    // Open datepicker when clicking the calendar icon
     $('#dateOfBirthicon').on('click', function () {
-        dobPicker.open();
-    });
-
-    // Re-set the picker value when the modal is shown (populated from table row)
-    $('#editModal').on('shown.bs.modal', function () {
-        var currentVal = $('#dateOfBirth').val();
-        if (currentVal) {
-            dobPicker.setDate(currentVal, false, "d.m.Y");
-        }
+        $('#dateOfBirth').datepicker('show');
     });
 
         function GetRejectionReasons(queryString) {
