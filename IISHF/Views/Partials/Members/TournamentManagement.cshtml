@@ -429,7 +429,7 @@
 
             var html = '<option value="">-- Select event --</option>';
             state.events.forEach(function (e) {
-                var label = (e.category || "") + " - " + (e.tournamentName || "") + (e.year ? " (" + e.year + ")" : "");
+                var label = e.year ? (e.category || "") + " - " + (e.tournamentName || "") + " (" + e.year + ")" : (e.tournamentName || "");
                 html += '<option value="' + escapeHtml(e.eventYearNodeKey) + '" data-year="' + escapeHtml(e.year) + '" data-agegroup="' + escapeHtml(e.ageGroup) + '">' + escapeHtml(label) + '</option>';
             });
 
