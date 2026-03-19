@@ -126,6 +126,26 @@ namespace IISHF.Core.Controllers.ApiControllers
                 .ThenBy(x => x.TournamentName)
                 .ToList();
 
+            // Non-title events: direct children of the "None Title Events" container
+            var nonTitleContainer = tournamentsRoot.Children()
+                .FirstOrDefault(x => x.Name.Equals("None Title Events", StringComparison.OrdinalIgnoreCase));
+
+            if (nonTitleContainer != null)
+            {
+                var nonTitleItems = nonTitleContainer.Children()
+                    .Select(e => new CurrentYearEventItem
+                    {
+                        Category = "Non-Title Events",
+                        TournamentName = e.Name,
+                        Year = 0,
+                        AgeGroup = e.Value<string>("ageGroup") ?? "",
+                        EventYearNodeKey = e.Key
+                    })
+                    .OrderBy(x => x.TournamentName);
+
+                items.AddRange(nonTitleItems);
+            }
+
             return Ok(new { items });
         }
 

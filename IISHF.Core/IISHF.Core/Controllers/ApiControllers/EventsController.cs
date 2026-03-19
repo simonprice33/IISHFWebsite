@@ -836,6 +836,7 @@ namespace IISHF.Core.Controllers.ApiControllers
         [Route("search")]
         public async Task<IActionResult> Search(string searchText = "", string ageGroup = "")
         {
+            // Empty ageGroup means no event has been selected yet
             if (string.IsNullOrWhiteSpace(ageGroup))
             {
                 var json = new
@@ -848,9 +849,13 @@ namespace IISHF.Core.Controllers.ApiControllers
                 return Ok(new List<object> { json });
             }
 
+            // "any" is passed by non-title events that have no age group restriction
+            bool filterByAgeGroup = !ageGroup.Equals("any", StringComparison.OrdinalIgnoreCase);
+
             var teams = _contentQuery.ContentAtRoot()
                 .DescendantsOrSelfOfType("clubTeam")
-                .Where(x => x.Value<string>("ageGroup") == ageGroup && x.Name.Contains(searchText, StringComparison.InvariantCultureIgnoreCase))
+                .Where(x => (!filterByAgeGroup || x.Value<string>("ageGroup") == ageGroup)
+                            && x.Name.Contains(searchText, StringComparison.InvariantCultureIgnoreCase))
                 .Select(x => new
                 {
                     Id = x.Id,

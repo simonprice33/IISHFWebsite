@@ -2179,13 +2179,20 @@
 
 
     var query = $(this).val();
-    var selectedAgeGroup = $('#ageGroup').text();
+    var selectedEvent = $('#eventSelect').val();
+    var selectedAgeGroup = $('#ageGroup').text().trim();
+
+    // Don't search if no event has been selected
+    if (!selectedEvent) return;
+
+    // Non-title events may have no age group — pass 'any' so all teams are searchable
+    var ageGroupParam = selectedAgeGroup || 'any';
 
     if (query.length >= 3) { // Trigger search when 3 or more characters are typed
         $.ajax({
             url: '/api/events/search',
             type: 'GET',
-            data: { searchText: query, ageGroup: selectedAgeGroup },
+            data: { searchText: query, ageGroup: ageGroupParam },
             success: function(data) {
                 console.log(data);
                 $('#suggestionsContainer').empty();
