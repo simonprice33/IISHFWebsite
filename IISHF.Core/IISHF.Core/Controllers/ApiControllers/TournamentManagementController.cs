@@ -533,6 +533,11 @@ namespace IISHF.Core.Controllers.ApiControllers
             var submissionDate = team.Value<DateTime?>("teamInformationSubmissionDate");
             var submittedByRef = team.Value<IPublishedContent>("teamInformationSubmittedBy");
 
+            // ITC submission status
+            var itcSubmitted = team.Value<bool>("iTCSubmitted");
+            var itcSubmissionDate = team.Value<DateTime?>("iTCSubmissionDate");
+            var itcSubmittedByRef = team.Value<IPublishedContent>("iTCSubmittedBy");
+
             return Ok(new
             {
                 key = team.Key,
@@ -558,7 +563,13 @@ namespace IISHF.Core.Controllers.ApiControllers
                 teamInformationSubmissionDate = submissionDate.HasValue && submissionDate.Value != DateTime.MinValue
                     ? submissionDate.Value.ToString("dd MMM yyyy HH:mm") + " UTC"
                     : (string)null,
-                teamInformationSubmittedBy = submittedByRef?.Name
+                teamInformationSubmittedBy = submittedByRef?.Name,
+
+                itcSubmitted = itcSubmitted,
+                itcSubmissionDate = itcSubmissionDate.HasValue && itcSubmissionDate.Value != DateTime.MinValue
+                    ? itcSubmissionDate.Value.ToString("dd MMM yyyy HH:mm") + " UTC"
+                    : (string)null,
+                itcSubmittedBy = itcSubmittedByRef?.Name
             });
         }
 
@@ -580,6 +591,28 @@ namespace IISHF.Core.Controllers.ApiControllers
             foreach (var team in teams)
             {
                 await _tournamentService.ResetTeamInformationSubmission(team);
+            }
+
+            return Ok(new { resetCount = teams.Count });
+        }
+
+        // -----------------------------
+        // DELETE /umbraco/api/tournamentmanagement/events/{eventYearNodeKey}/teams/itc-submission-status
+        // Resets iTCSubmitted, iTCSubmissionDate and iTCSubmittedBy for every team under the event year.
+        // -----------------------------
+        [HttpDelete("events/{eventYearNodeKey:guid}/teams/itc-submission-status")]
+        public async Task<IActionResult> ResetAllTeamItcSubmissionStatuses([FromRoute] Guid eventYearNodeKey)
+        {
+            var yearNode = _contentQuery.Content(eventYearNodeKey);
+            if (yearNode == null) return NotFound("Event year node not found.");
+
+            var teams = yearNode.Children()
+                .Where(x => x.ContentType.Alias.Equals("team", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            foreach (var team in teams)
+            {
+                await _tournamentService.UnsubmitItc(team);
             }
 
             return Ok(new { resetCount = teams.Count });

@@ -386,6 +386,23 @@ namespace IISHF.Web.Controllers
             return NoContent();
         }
 
+        // -----------------------------
+        // DELETE /umbraco/api/accountusers/tournament-teams/{teamKey}/itc-submission-status
+        // Resets ITC submission status back to unsubmitted.
+        // -----------------------------
+        [HttpDelete("tournament-teams/{teamKey:guid}/itc-submission-status")]
+        public async Task<IActionResult> ResetTeamItcSubmissionStatus([FromRoute] Guid teamKey)
+        {
+            await EnsureCanManageUsersAsync();
+
+            var team = _contentQuery.Content(teamKey);
+            if (team == null) return NotFound("Tournament team not found.");
+
+            await _tournamentService.UnsubmitItc(team);
+
+            return NoContent();
+        }
+
         private Dictionary<string, List<object>> BuildCurrentYearTournamentTeamLookup(string currentYear)
         {
             var map = new Dictionary<string, List<object>>(StringComparer.OrdinalIgnoreCase);
