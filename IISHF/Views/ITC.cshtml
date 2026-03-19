@@ -1642,7 +1642,9 @@
             "IssuingCountry" : $("#issuingCountry").val(),
             "nmaTeamId": $("#teamName").attr('data-id'),
             "nmaTeamKey": $("#teamName").attr('data-key'),
-        };
+            "nmaKey":     $('#teamName').attr('data-nmakey')
+
+            };
 
         var processRow = function (currentRow, isBench) {
 
@@ -2206,7 +2208,8 @@
                         $('#teamName').val(item.name); // Set the name in the input field
                         $('#teamName').attr('data-id', item.id); // Set the id as a data attribute on the input
                         $('#teamName').attr('data-key', item.key); // Set the key as a data attribute on the input
-                        $('#issuingCountry').val(item.country)
+                            $('#teamName').attr('data-nmakey', item.nmaKey);
+                            $('#issuingCountry').val(item.country);
                         $('#suggestionsContainer').empty();
                     });
                 });
