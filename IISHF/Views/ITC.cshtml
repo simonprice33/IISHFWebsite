@@ -96,7 +96,7 @@
         }).ToList();
 
 
-    foreach (var nonTitleEvent in nonTitle)
+    foreach (var nonTitleEvent in nonTitle.Where(x => x.Value<DateTime>("EventStartDate").Year == DateTime.Now.Year).ToList())
     {
         allEvents.Add(new { EventName = nonTitleEvent.Name, nonTitleEvent.Id });
     }
@@ -321,7 +321,7 @@
         @{
             var teamName = team?.Name ?? string.Empty;
         }
-        <input type="text" class="form-control" placeholder="Team Name" id="teamName" value="@teamName"/>
+        <input type="text" class="form-control" placeholder="Team Name - As reported by your NMA" id="teamName" value="@teamName"/>
         <div id="suggestionsContainer"></div>
     </div>
 </div>
@@ -1252,8 +1252,8 @@
             }
         }
 
-        // Adjust the age based on the additional age adjustment
-        age += additionalAgeAdjustment;
+        // Subtract the adjustment so older players appear within the age group window
+        age -= additionalAgeAdjustment;
 
         switch (ageGroup) {
             case 'U19':
@@ -1267,7 +1267,7 @@
                 }
                 break;
             case 'U13':
-                if ((isFemale && age >= 10 && age <= 13) || (!isFemale && age >= 10 && age <= 12)) {
+                if ((isFemale && age >= 10 && age <= 13) || (!isFemale && age >= 10 && age <= 13)) {
                     return true; // Valid age
                 }
                 break;
