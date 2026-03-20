@@ -666,62 +666,94 @@ namespace IISHF.Core.Services
             if (isNmaApprover)
             {
                 var itcSubmittedBy = team.Value<IPublishedContent>("iTCSubmittedBy");
-                
-                // Always try to include the original submitter
+                if (itcSubmittedBy == null)
+                {
+                    _logger.LogWarning("NotifyTeamOfRejection: iTCSubmittedBy not set on team {TeamKey}. No email sent.", team.Key);
+                    return;
+                }
+
                 var submittedByUser = _memberService.GetById(itcSubmittedBy.Id);
+                if (submittedByUser == null)
+                {
+                    _logger.LogWarning("NotifyTeamOfRejection: member not found for iTCSubmittedBy id {Id}. No email sent.", itcSubmittedBy.Id);
+                    return;
+                }
+
+                var teamApprover = new ITCApprover { Name = itcSubmittedBy.Name, Email = submittedByUser.Email };
 
                 var itcInfo = new ITCRejection
                 {
-                    TeamName = team.Name,
+                    TeamName        = team.Name,
                     SubmittedByName = user.Name,
-                    IISHFEvent = eventName,
-                    TeamApprover = new ITCApprover { Name = itcSubmittedBy.Name, Email = submittedByUser.Email },
+                    IISHFEvent      = eventName,
+                    TeamApprover    = teamApprover,
+                    ItcApprovers    = new List<ITCApprover> { teamApprover }
                 };
 
-                var rosterMembers = team.Children().Where(x => x.ContentType.Alias == "roster").Where(x => !string.IsNullOrWhiteSpace(x.Value<string>("comments"))).ToList();
+                var rosterMembers = team.Children()
+                    .Where(x => x.ContentType.Alias == "roster" && !string.IsNullOrWhiteSpace(x.Value<string>("comments")))
+                    .ToList();
 
                 foreach (var rosterMember in rosterMembers)
-                {
-
                     itcInfo.RejectionReasons.Add($"{rosterMember.Value<string>("playerName")} - {rosterMember.Value<string>("comments")}");
-                }
 
-                var iishfTemplate = _iishfMediaService.GetMediaTemplate("ItcRejectedByNma");
-                var iishfTemplateUri = _iishfMediaService.GetTemplateUrl(iishfTemplate);
-                await _emailService.SendItcLinkForApproval(itcInfo, iishfTemplateUri);
+                var nmaTemplate    = _iishfMediaService.GetMediaTemplate("ItcRejectedByNma");
+                var nmaTemplateUri = _iishfMediaService.GetTemplateUrl(nmaTemplate);
+                await _emailService.SendItcRejectionEmail(itcInfo, nmaTemplateUri);
             }
 
             if (isIishfApprover)
             {
                 var itcSubmittedBy = team.Value<IPublishedContent>("iTCSubmittedBy");
-                var nmaApprover = team.Value<IPublishedContent>("iTCNMAApprover");
+                var nmaApprover    = team.Value<IPublishedContent>("iTCNMAApprover");
 
-                // Always try to include the original submitter
+                if (itcSubmittedBy == null)
+                {
+                    _logger.LogWarning("NotifyTeamOfRejection: iTCSubmittedBy not set on team {TeamKey}. No email sent.", team.Key);
+                    return;
+                }
+
                 var submittedByUser = _memberService.GetById(itcSubmittedBy.Id);
+                if (submittedByUser == null)
+                {
+                    _logger.LogWarning("NotifyTeamOfRejection: member not found for iTCSubmittedBy id {Id}. No email sent.", itcSubmittedBy.Id);
+                    return;
+                }
 
-                // Also include the NMA approver
+                var teamApprover = new ITCApprover { Name = itcSubmittedBy.Name, Email = submittedByUser.Email };
+                var recipients   = new List<ITCApprover> { teamApprover };
+
+                ITCApprover nmaiItcApprover = null;
+                if (nmaApprover != null)
+                {
                     var nmaUser = _memberService.GetById(nmaApprover.Id);
+                    if (nmaUser != null)
+                    {
+                        nmaiItcApprover = new ITCApprover { Name = nmaApprover.Name, Email = nmaUser.Email };
+                        recipients.Add(nmaiItcApprover);
+                    }
+                }
 
                 var itcInfo = new ITCRejection
                 {
-                    TeamName = team.Name,
+                    TeamName        = team.Name,
                     SubmittedByName = user.Name,
-                    IISHFEvent = eventName,
-                    TeamApprover = new ITCApprover { Name = itcSubmittedBy.Name, Email = submittedByUser.Email },
-                    NmaiItcApprover = new ITCApprover { Email = nmaUser.Email, Name = nmaApprover.Name }
+                    IISHFEvent      = eventName,
+                    TeamApprover    = teamApprover,
+                    NmaiItcApprover = nmaiItcApprover,
+                    ItcApprovers    = recipients
                 };
 
-                var rosterMembers = team.Children().Where(x => x.ContentType.Alias == "roster").Where(x => !string.IsNullOrWhiteSpace(x.Value<string>("comments"))).ToList();
+                var rosterMembers = team.Children()
+                    .Where(x => x.ContentType.Alias == "roster" && !string.IsNullOrWhiteSpace(x.Value<string>("comments")))
+                    .ToList();
 
                 foreach (var rosterMember in rosterMembers)
-                {
-
                     itcInfo.RejectionReasons.Add($"{rosterMember.Value<string>("playerName")} - {rosterMember.Value<string>("comments")}");
-                }
 
-                var iishfTemplate = _iishfMediaService.GetMediaTemplate("ItcRejectedByIISHF");
+                var iishfTemplate    = _iishfMediaService.GetMediaTemplate("ItcRejectedByIISHF");
                 var iishfTemplateUri = _iishfMediaService.GetTemplateUrl(iishfTemplate);
-                await _emailService.SendItcLinkForApproval(itcInfo, iishfTemplateUri);
+                await _emailService.SendItcRejectionEmail(itcInfo, iishfTemplateUri);
             }
         }
 
