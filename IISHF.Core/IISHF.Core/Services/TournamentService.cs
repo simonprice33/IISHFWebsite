@@ -1,25 +1,26 @@
-﻿using IISHF.Core.Interfaces;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Wordprocessing;
+using IISHF.Core.Interfaces;
 using IISHF.Core.Models;
 using IISHF.Core.Models.ServiceBusMessage;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 using NPoco;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.IO;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Models.PublishedContent;
+using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Strings;
 using Umbraco.Cms.Infrastructure.Examine;
 using IFileService = IISHF.Core.Interfaces.IFileService;
 using IMediaService = Umbraco.Cms.Core.Services.IMediaService;
-using DocumentFormat.OpenXml.Wordprocessing;
-using System.Text.RegularExpressions;
-using Umbraco.Cms.Core.IO;
-using Umbraco.Cms.Core.PropertyEditors;
-using Umbraco.Cms.Core.Strings;
 
 namespace IISHF.Core.Services
 {
@@ -37,6 +38,8 @@ namespace IISHF.Core.Services
         private readonly INMAService _nmaService;
         private readonly IShortStringHelper _shortStringHelper;
         private readonly IContentTypeBaseServiceProvider _contentTypeBaseServiceProvider;
+        private readonly IEmailService _emailService;
+        private readonly Interfaces.IMediaService _iishfMediaService;
         private readonly MediaFileManager _mediaFileManager;
         private readonly MediaUrlGeneratorCollection _mediaUrlGeneratorCollection;
         private readonly ILogger<TournamentService> _logger;
@@ -54,6 +57,9 @@ namespace IISHF.Core.Services
             INMAService nmaService,
             IShortStringHelper shortStringHelper,
             IContentTypeBaseServiceProvider contentTypeBaseServiceProvider,
+            IEmailService emailService,
+            IISHF.Core.Interfaces.IMediaService iishfMediaService,
+
             MediaFileManager mediaFileManager,
             MediaUrlGeneratorCollection mediaUrlGeneratorCollection,
             ILogger<TournamentService> logger)
@@ -70,6 +76,8 @@ namespace IISHF.Core.Services
             _nmaService = nmaService;
             _shortStringHelper = shortStringHelper;
             _contentTypeBaseServiceProvider = contentTypeBaseServiceProvider;
+            _emailService = emailService;
+            _iishfMediaService = iishfMediaService;
             _mediaFileManager = mediaFileManager;
             _mediaUrlGeneratorCollection = mediaUrlGeneratorCollection;
             _logger = logger;
@@ -647,11 +655,21 @@ namespace IISHF.Core.Services
             }
             else
             {
-                nma = _contentQuery.ContentAtRoot()
-                   .DescendantsOrSelfOfType("nationalMemberAssociations")
-                   .FirstOrDefault()
-                   .Children()
-                   .FirstOrDefault(x => x.Value<string>("iSO3") == team.Value<string>("countryIso3"));
+                var nmaRoot = _contentQuery.ContentAtRoot()
+                    .DescendantsOrSelfOfType("nationalMemberAssociations")
+                    .FirstOrDefault();
+
+                if (nmaRoot != null)
+                {
+                    nma = nmaRoot.Children()
+                        .FirstOrDefault(x => x.Value<string>("iSO3") == team.Value<string>("countryIso3"));
+                }
+            }
+
+            if (nma == null)
+            {
+                _logger.LogWarning("NotifyNmaApprover: could not resolve NMA for team {TeamName} (key {TeamKey}). No email sent.", team.Name, team.Key);
+                return;
             }
 
             var itcApprovers = await _nmaService.GetNMAITCApprovers(nma.Key);
@@ -661,21 +679,58 @@ namespace IISHF.Core.Services
             var route = $"itc";
             var queryString = $"team={team.Key.ToString()}";
 
-            var serviceBusMessage = new SubmittedITCInformation
+            var submittedItcInformation = new SubmittedITCInformation
             {
                 ItcApprovers = itcApprovers.ToList(),
                 ITCApprovalUri = new Uri($"{protocol}://{baseUrl}/{route}?{queryString}"),
-                TemplateName = "NmaItcApproval",
                 TeamName = team.Name,
-                SubmittedByName = user.Name
+                SubmittedByName = user.Name,
+                IISHFEvent = tournament.Name
             };
 
-            await _messageSender.SendMessage(serviceBusMessage, "itc-submission");
+            var templateName = "NmaItcApproval.html";
+
+            var template = _iishfMediaService.GetMediaTemplate(templateName);
+            var templateUri = _iishfMediaService.GetTemplateUrl(template);
+
+            await _emailService.SendItcLinkForApproval(submittedItcInformation, templateUri);
+
+            await _messageSender.SendMessage(submittedItcInformation, "itc-submission");
         }
 
-        public Task NotifyIISHFApprover(IPublishedContent tournament, IPublishedContent nmaTeam, IPublishedContent team)
+        public async Task NotifyIISHFApprover(IPublishedContent tournament, IPublishedContent nmaTeam, IPublishedContent team)
         {
-            throw new NotImplementedException();
+            var user = await _memberManager.GetCurrentMemberAsync();
+            if (user == null)
+            {
+                return;
+            }
+
+            var itcApprovers = await _nmaService.GetIISHFITCApprovers();
+
+            var protocol = _httpContextAccessor.HttpContext.Request.Scheme;
+            var baseUrl = _httpContextAccessor.HttpContext.Request.Host;
+            var route = $"itc";
+            var queryString = $"team={team.Key.ToString()}";
+
+            var submittedItcInformation = new SubmittedITCInformation
+            {
+                ItcApprovers = itcApprovers.ToList(),
+                ITCApprovalUri = new Uri($"{protocol}://{baseUrl}/{route}?{queryString}"),
+                TeamName = team.Name,
+                SubmittedByName = user.Name,
+                IISHFEvent = tournament.Name
+            };
+
+            var templateName = "NmaItcApproved.html";
+
+            var template = _iishfMediaService.GetMediaTemplate(templateName);
+            var templateUri = _iishfMediaService.GetTemplateUrl(template);
+
+            await _emailService.SendItcLinkForApproval(submittedItcInformation, templateUri);
+
+            await _messageSender.SendMessage(submittedItcInformation, "itc-submission");
+
         }
 
         public async Task<RejectedRosterMembersModel> GetRejectedRosterMembers(int[] playerIds)

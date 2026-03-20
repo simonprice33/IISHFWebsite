@@ -523,6 +523,11 @@ namespace IISHF.Core.Controllers.ApiControllers
             if (isNma && setAsApproved)
             {
                 await _tournamentService.SetTeamItcNmaApprovalDate(team);
+
+                var nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
+                team = _contentQuery.Content(team.Id);
+
+                await _tournamentService.NotifyIISHFApprover(tournament, nmaTeam, team);
                 return NoContent();
             }
 
@@ -531,9 +536,9 @@ namespace IISHF.Core.Controllers.ApiControllers
                 await _tournamentService.SetTeamItcIISHFApprovalDate(team);
 
                 var pdfFileName =
-                    $"ITC_${tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-hhmmss")}.pdf";
+                    $"ITC_{tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-HHmmss")}.pdf";
                 var excelFileName =
-                    $"ITC_${tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-hhmmss")}.pdf";
+                    $"ITC_{tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-HHmmss")}.xlsx";
 
                 var template = _iishfMediaService.GetMediaTemplate("ITCApprovedInternalInternalTemplate");
                 var templateUri = _iishfMediaService.GetTemplateUrl(template);
@@ -543,7 +548,7 @@ namespace IISHF.Core.Controllers.ApiControllers
                     $"{tournament.Name} ITC Approved - {team.Name}", team.Name, itcExcel, excelFileName);
 
                 var excelStream = new MemoryStream(itcExcel);
-                await _teamService.AddItcToTeam(excelStream, $"ITC_${tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-hhmmss")}.xlsx", team);
+                await _teamService.AddItcToTeam(excelStream, $"ITC_{tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-HHmmss")}.xlsx", team);
 
 
                 var itcPdf = _tournamentService.GenerateItcAsPdfFile(itcExcel);
@@ -551,15 +556,16 @@ namespace IISHF.Core.Controllers.ApiControllers
 
                 await _teamService.AddItcToTeam(pfdStream, pdfFileName, team);
 
-                var nmaKey = team.Value<string>("nmaKey");
-                var itcApprovers = await _nmaService.GetNMAITCApprovers(Guid.Parse(nmaKey));
-
                 var cc = new List<string>()
                 {
                     "itc@iishf.com"
                 };
 
-                cc.AddRange(itcApprovers.Select(itcApprover => itcApprover.NmaApproverEmail));
+                if (Guid.TryParse(team.Value<string>("nmaKey"), out var nmaGuid))
+                {
+                    var itcApprovers = await _nmaService.GetNMAITCApprovers(nmaGuid);
+                    cc.AddRange(itcApprovers.Select(itcApprover => itcApprover.NmaApproverEmail));
+                }
 
                 template = _iishfMediaService.GetMediaTemplate("ITCApprovedSendToHost");
                 templateUri = _iishfMediaService.GetTemplateUrl(template);
