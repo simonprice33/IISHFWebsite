@@ -730,20 +730,16 @@
                     <button id="itcSubmit" class="btn btn-custom-save m-1" onclick="submit(false, this)">Submit</button>
         }
 
-        if (isNmaApprover && !isNmaApprover)
-        {
-        }
-
         if (isNmaApprover)
         {
-                    <button class="btn btn-danger m-1">Reject with reasons</button>
+                    <button id="rejectWithReasons" class="btn btn-danger m-1">Reject with reasons</button>
                     <button id="nmaApprove" class="btn btn-custom-save m-1" data-approver="nma">Approve and send to IISHF</button>
         }
 
         if (isIsshfApprover)
         {
-                    <button id="rejectWithReasons"class="btn btn-danger m-1">Reject with reasons</button>
-                    <button id="iishfApprove" class="btn btn-custom-save m-1" data-approver="nma">Approve ITC</button>
+                    <button id="rejectWithReasons" class="btn btn-danger m-1">Reject with reasons</button>
+                    <button id="iishfApprove" class="btn btn-custom-save m-1" data-approver="iishf">Approve ITC</button>
         }
 
         if (isNmaApprover || isIsshfApprover)
