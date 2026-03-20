@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using NPoco;
+using System.Runtime;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Umbraco.Cms.Core;
@@ -638,6 +639,92 @@ namespace IISHF.Core.Services
             await _messageSender.SendMessage(serviceBusMessage, "team-submission");
         }
 
+        public async Task NotifyTeamOfRejection(IPublishedContent team, IPublishedContent namTeam)
+        {
+            var user = await _memberManager.GetCurrentMemberAsync();
+
+            if (user == null)
+            {
+                throw new NullReferenceException("User cannot be null");
+            }
+
+            var memberIdOk = int.TryParse(user.Id, out var memberId);
+            var member = memberIdOk ? _memberService.GetById(memberId) : null;
+
+            if (member == null)
+            {
+                _logger.LogWarning("NotifyTeamOfRejection: could not resolve current member. No email sent.");
+                return;
+            }
+
+            var isNmaApprover = member.GetValue<bool>("nMAITCApprover");
+            var isIishfApprover = member.GetValue<bool>("iISHFITCApprover");
+
+            // Build event name from content tree: team -> year -> tournament
+            var eventName = $"{team.Parent?.Parent?.Name} {team.Parent?.Name}".Trim();
+
+            if (isNmaApprover)
+            {
+                var itcSubmittedBy = team.Value<IPublishedContent>("iTCSubmittedBy");
+                
+                // Always try to include the original submitter
+                var submittedByUser = _memberService.GetById(itcSubmittedBy.Id);
+
+                var itcInfo = new ITCRejection
+                {
+                    TeamName = team.Name,
+                    SubmittedByName = user.Name,
+                    IISHFEvent = eventName,
+                    TeamApprover = new ITCApprover { Name = itcSubmittedBy.Name, Email = submittedByUser.Email },
+                };
+
+                var rosterMembers = team.Children().Where(x => x.ContentType.Alias == "roster").Where(x => !string.IsNullOrWhiteSpace(x.Value<string>("comments"))).ToList();
+
+                foreach (var rosterMember in rosterMembers)
+                {
+
+                    itcInfo.RejectionReasons.Add($"{rosterMember.Value<string>("playerName")} - {rosterMember.Value<string>("comments")}");
+                }
+
+                var iishfTemplate = _iishfMediaService.GetMediaTemplate("ItcRejectedByNma");
+                var iishfTemplateUri = _iishfMediaService.GetTemplateUrl(iishfTemplate);
+                await _emailService.SendItcLinkForApproval(itcInfo, iishfTemplateUri);
+            }
+
+            if (isIishfApprover)
+            {
+                var itcSubmittedBy = team.Value<IPublishedContent>("iTCSubmittedBy");
+                var nmaApprover = team.Value<IPublishedContent>("iTCNMAApprover");
+
+                // Always try to include the original submitter
+                var submittedByUser = _memberService.GetById(itcSubmittedBy.Id);
+
+                // Also include the NMA approver
+                    var nmaUser = _memberService.GetById(nmaApprover.Id);
+
+                var itcInfo = new ITCRejection
+                {
+                    TeamName = team.Name,
+                    SubmittedByName = user.Name,
+                    IISHFEvent = eventName,
+                    TeamApprover = new ITCApprover { Name = itcSubmittedBy.Name, Email = submittedByUser.Email },
+                    NmaiItcApprover = new ITCApprover { Email = nmaUser.Email, Name = nmaApprover.Name }
+                };
+
+                var rosterMembers = team.Children().Where(x => x.ContentType.Alias == "roster").Where(x => !string.IsNullOrWhiteSpace(x.Value<string>("comments"))).ToList();
+
+                foreach (var rosterMember in rosterMembers)
+                {
+
+                    itcInfo.RejectionReasons.Add($"{rosterMember.Value<string>("playerName")} - {rosterMember.Value<string>("comments")}");
+                }
+
+                var iishfTemplate = _iishfMediaService.GetMediaTemplate("ItcRejectedByIISHF");
+                var iishfTemplateUri = _iishfMediaService.GetTemplateUrl(iishfTemplate);
+                await _emailService.SendItcLinkForApproval(itcInfo, iishfTemplateUri);
+            }
+        }
+
         public async Task NotifyNmaApprover(IPublishedContent tournament, IPublishedContent nmaTeam, IPublishedContent team)
         {
             var user = await _memberManager.GetCurrentMemberAsync();
@@ -647,24 +734,7 @@ namespace IISHF.Core.Services
             }
 
 
-            IPublishedContent nma = null;
-
-            if (nmaTeam != null)
-            {
-                nma = nmaTeam.Parent.Parent.Parent;
-            }
-            else
-            {
-                var nmaRoot = _contentQuery.ContentAtRoot()
-                    .DescendantsOrSelfOfType("nationalMemberAssociations")
-                    .FirstOrDefault();
-
-                if (nmaRoot != null)
-                {
-                    nma = nmaRoot.Children()
-                        .FirstOrDefault(x => x.Value<string>("iSO3") == team.Value<string>("countryIso3"));
-                }
-            }
+            IPublishedContent nma = _contentQuery.Content(team.Value<Guid>("nmaKey")); ;
 
             if (nma == null)
             {
@@ -685,17 +755,16 @@ namespace IISHF.Core.Services
                 ITCApprovalUri = new Uri($"{protocol}://{baseUrl}/{route}?{queryString}"),
                 TeamName = team.Name,
                 SubmittedByName = user.Name,
-                IISHFEvent = tournament.Name
+                IISHFEvent = tournament.Parent.Name
             };
 
-            var templateName = "NmaItcApproval.html";
+            var templateName = "Nmaitcapproval";
 
             var template = _iishfMediaService.GetMediaTemplate(templateName);
             var templateUri = _iishfMediaService.GetTemplateUrl(template);
 
             await _emailService.SendItcLinkForApproval(submittedItcInformation, templateUri);
 
-            await _messageSender.SendMessage(submittedItcInformation, "itc-submission");
         }
 
         public async Task NotifyIISHFApprover(IPublishedContent tournament, IPublishedContent nmaTeam, IPublishedContent team)
@@ -722,7 +791,7 @@ namespace IISHF.Core.Services
                 IISHFEvent = tournament.Name
             };
 
-            var templateName = "NmaItcApproved.html";
+            var templateName = "NmaItcApproved";
 
             var template = _iishfMediaService.GetMediaTemplate(templateName);
             var templateUri = _iishfMediaService.GetTemplateUrl(template);
