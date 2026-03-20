@@ -54,14 +54,17 @@ public class FileService : IFileService
         // First, find the specific folder
         var existingFolder = _umbracoMediaService.GetRootMedia().FirstOrDefault(x => x.Name == "Documents" && x.ContentType.Alias == Umbraco.Cms.Core.Constants.Conventions.MediaTypes.Folder);
 
-        MemoryStream itcFile = null!;
+        if (existingFolder == null)
+            throw new InvalidOperationException("Could not locate the 'Documents' media folder. Ensure it exists at the root of the media library.");
 
-        if (existingFolder != null)
-        {
-            // Query the children of the found folder for a media item with the specific name
-            var mediaItems = _umbracoMediaService.GetPagedChildren(existingFolder.Id, 0, int.MaxValue, out long totalRecords).FirstOrDefault(x => x.Name == "ITC");
-            itcFile = await GetFileAsStreamAsync(mediaItems.Id);
-        }
+        // Query the children of the found folder for a media item with the specific name (case-insensitive)
+        var mediaItems = _umbracoMediaService.GetPagedChildren(existingFolder.Id, 0, int.MaxValue, out long totalRecords)
+            .FirstOrDefault(x => x.Name.Equals("ITC", StringComparison.OrdinalIgnoreCase));
+
+        if (mediaItems == null)
+            throw new InvalidOperationException("Could not locate the 'ITC' template file inside the 'Documents' media folder.");
+
+        var itcFile = await GetFileAsStreamAsync(mediaItems.Id);
 
         using var workbook = new XLWorkbook(itcFile);
         var worksheet = workbook.Worksheet("ITC");
