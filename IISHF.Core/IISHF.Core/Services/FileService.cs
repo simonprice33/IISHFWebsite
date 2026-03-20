@@ -70,14 +70,26 @@ public class FileService : IFileService
         using var workbook = new XLWorkbook(itcFile);
         var worksheet = workbook.Worksheet("ITC");
 
+        var eventStartDate = tournament.Value<DateTime?>("eventStartDate");
+        var eventEndDate = tournament.Value<DateTime?>("eventEndDate");
+        var eventDateRange = eventStartDate.HasValue && eventEndDate.HasValue
+            ? $"{eventStartDate.Value.ToString("dd.MM.yyyy")} - {eventEndDate.Value.ToString("dd.MM.yyyy")}"
+            : eventStartDate.HasValue
+                ? eventStartDate.Value.ToString("dd.MM.yyyy")
+                : string.Empty;
+
         var mergeRanges = new List<EventInformation> {
             new EventInformation { Range = "F2:K2", Value = $"{team.Id}-{tournament.Id}" }, // ITC Reference Number
             new EventInformation { Range = "F3:K3", Value = tournament.Value<string>("sanctionNumber") }, // Sanction Number
             new EventInformation { Range = "F4:K4", Value = tournament.Parent.Value<string>("ageGroup") }, // Age Group
             new EventInformation { Range = "F5:K5", Value = tournament.Parent.Name }, // Event Name
+            new EventInformation { Range = "F6:K6", Value = eventDateRange }, // Start & End Event Date
+            new EventInformation { Range = "F7:K7", Value = tournament.Value<string>("venueAddress") }, // Event Location
+            new EventInformation { Range = "F8:K8", Value = tournament.Value<string>("hostClub") }, // Name of Hosting Club
+            new EventInformation { Range = "F9:K9", Value = tournament.Value<string>("hostCountry") }, // Hosting Country
             new EventInformation { Range = "F10:K10", Value = team.Value<string>("teamSignatory") }, // Team Signatory
-            new EventInformation { Range = "F11:K11", Value = tournament.Value<string>("hostCountry") }, // Hosting Country
-            new EventInformation { Range = "F12:K12", Value = team.Value<string>("jerseyOneColour") }, // Jersey Colour one
+            new EventInformation { Range = "F11:K11", Value = team.Value<string>("countryIso3") }, // Issuing Country
+            new EventInformation { Range = "F12:K12", Value = team.Value<string>("jerseyOneColour") }, // Jersey Colour One
             new EventInformation { Range = "F13:K13", Value = team.Value<string>("jerseyTwoColour") }, // Jersey Colour Two
             new EventInformation { Range = "C15:E15", Value = $"{team.Name}" } // Team Name
         };
@@ -89,8 +101,14 @@ public class FileService : IFileService
 
             // Write to the merged cell (the top-left cell of the merged range)
             // For example, if the range is "F2:K2", we write to "F2"
-            worksheet.Cell(range.Range.Split(':')[0]).Value = range.Value; // Replace "Your Value Here" with your actual value
+            worksheet.Cell(range.Range.Split(':')[0]).Value = range.Value;
         }
+
+        // F15:K15 contains a formula that classifies the event as Title or Non-Title based on
+        // the sanction number in F3. ClosedXML may not retain template formulas when saving back
+        // to a stream, so we explicitly re-apply the merge and formula here.
+        worksheet.Range("F15:K15").Merge();
+        worksheet.Cell("F15").FormulaA1 = "=IF(LEFT(F3, 1) = \"A\",\"IISHF Title-Event\", \"IISHF Non-Title-Event\")";
 
         // Assume we have a DataTable
         DataTable playersDataTable = CreatePlayersDataTable(team, tournament);
@@ -99,7 +117,15 @@ public class FileService : IFileService
 
         AddToItc(playersDataTable, worksheet, 19, 2);
         AddToItc(officialsDataTable, worksheet, 50, 2);
-        AddToItc(signOffsDataTable, worksheet, 61, 6);
+        // Signoffs: DATE is a merged F:G cell (col 6); NAME starts at H (col 8) — not col 7 which is inside the merge
+        AddToItc(signOffsDataTable, worksheet, 61, new[] { 6, 8 });
+
+        // Explicitly re-assert the print area so that the PDF converter always uses the full
+        // A1:L70 region as the render boundary. Without this, ClosedXML may not carry the
+        // Print_Area named range through to the saved stream, causing SautinSoft to infer
+        // per-row widths from cell content — which clips the signoff rows at column K.
+        worksheet.PageSetup.PrintAreas.Clear();
+        worksheet.PageSetup.PrintAreas.Add("A1:L70");
 
         var ms = new MemoryStream();
         workbook.SaveAs(ms);
@@ -109,68 +135,61 @@ public class FileService : IFileService
 
     private DataTable GetItcSignApprovals(IPublishedContent team)
     {
-
-        var submittedDate = team.Value<DateTime>("iTCSubmissionDate");
-        var submittedBy = team.Value<IPublishedContent>("iTCSubmittedBy");
-        var nmaApprovedDateTime = team.Value<DateTime>("nMAApprovedDate");
-        var nmaApprover = team.Value<IPublishedContent>("iTCNMAApprover");
-        var iishfApprovedDate = team.Value<DateTime>("iISHFApprovedDate");
-        var iishfApprover = team.Value<IPublishedContent>("iISHFITCApprover");
+        var submittedDate        = team.Value<DateTime>("iTCSubmissionDate");
+        var submittedByName      = team.Value<IPublishedContent>("iTCSubmittedBy")?.Name ?? string.Empty;
+        var nmaApprovedDateTime  = team.Value<DateTime>("nMAApprovedDate");
+        var nmaApproverName      = team.Value<IPublishedContent>("iTCNMAApprover")?.Name ?? string.Empty;
+        var iishfApprovedDate    = team.Value<DateTime>("iISHFApprovedDate");
+        var iishfApproverName    = team.Value<IPublishedContent>("iISHFITCApprover")?.Name ?? string.Empty;
 
         var dt = new DataTable();
         dt.Columns.Add("Date", typeof(DateTime));
-        dt.Columns.Add("Person");
+        dt.Columns.Add("Person", typeof(string));
 
-        // ToDo
-        // Add approvals to Responsibilities and dates
-        dt.Rows.Add(submittedDate, submittedBy.Name);
-        dt.Rows.Add(submittedDate, nmaApprover.Name);
-        dt.Rows.Add(nmaApprovedDateTime, nmaApprover.Name);
-        dt.Rows.Add(nmaApprovedDateTime, iishfApprover.Name);
-        dt.Rows.Add(iishfApprovedDate, iishfApprover.Name);
-        dt.Rows.Add(iishfApprovedDate, iishfApprover.Name);
+        // Row 61: Team submitted
+        dt.Rows.Add(submittedDate, submittedByName);
+        // Row 62: NMA received from team
+        dt.Rows.Add(submittedDate, nmaApproverName);
+        // Row 63: NMA sent to IISHF
+        dt.Rows.Add(nmaApprovedDateTime, nmaApproverName);
+        // Row 64: IISHF received from NMA
+        dt.Rows.Add(nmaApprovedDateTime, iishfApproverName);
+        // Row 65: IISHF checked and approved
+        dt.Rows.Add(iishfApprovedDate, iishfApproverName);
+        // Row 66: IISHF sent approved ITC to NMA + Host
+        dt.Rows.Add(iishfApprovedDate, iishfApproverName);
 
         return dt;
     }
 
     private static void AddToItc(DataTable playersDataTable, IXLWorksheet worksheet, int startRow, int startColumn)
     {
-
         for (int row = 0; row < playersDataTable.Rows.Count; row++)
         {
             for (int column = 0; column < playersDataTable.Columns.Count; column++)
             {
+                // Column 6 (year of birth) is driven by a formula — skip writing a value to it
+                if (column == 6)
+                    continue;
+
                 var cell = worksheet.Cell(startRow + row, startColumn + column);
                 var value = playersDataTable.Rows[row][column];
 
-                if (column == 5)
+                if (value is DateTime dateTimeValue)
                 {
-                    if (value is DateTime dateTimeValue)
-                    {
-                        cell.Value = dateTimeValue;
-                        cell.Style.DateFormat.Format = "dd.MM.yyyy";
-                    }
+                    cell.Value = dateTimeValue;
+                    cell.Style.DateFormat.Format = "dd.MM.yyyy";
                 }
-
-                if (column != 6)
+                else if (value is int intValue)
                 {
-                    if (value is DateTime)
-                    {
-                        cell.SetValue((DateTime)value);
-                    }
-                    else if (value is int)
-                    {
-                        cell.SetValue((int)value);
-                    }
-                    else if (value != null)
-                    {
-                        cell.SetValue(value.ToString());
-                    }
-                    else
-                    {
-                        cell.Clear();
-                    }
+                    cell.SetValue(intValue);
                 }
+                else if (value != null && value != DBNull.Value)
+                {
+                    cell.SetValue(value.ToString());
+                }
+                // For null/DBNull: leave the cell value blank but do NOT call cell.Clear(),
+                // which would strip template background colours (e.g. signoff rows)
             }
 
             if (startRow + row <= 48)
@@ -178,6 +197,39 @@ public class FileService : IFileService
                 string dateOfBirthCellAddress = worksheet.Cell(startRow + row, startColumn + 5).Address.ToString();
                 worksheet.Cell(startRow + row, startColumn + 6).FormulaA1 =
                     $"=IF(LEN({dateOfBirthCellAddress}) = 0, 0, YEAR({dateOfBirthCellAddress}))";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Overload for sections where DataTable columns do not map to contiguous Excel columns —
+    /// e.g. the signoff rows where the DATE cell is a merged F:G range and the NAME cell
+    /// starts at H, meaning column indices are [6, 8] rather than [6, 7].
+    /// </summary>
+    private static void AddToItc(DataTable dataTable, IXLWorksheet worksheet, int startRow, int[] excelColumns)
+    {
+        for (int row = 0; row < dataTable.Rows.Count; row++)
+        {
+            for (int column = 0; column < dataTable.Columns.Count && column < excelColumns.Length; column++)
+            {
+                var cell = worksheet.Cell(startRow + row, excelColumns[column]);
+                var value = dataTable.Rows[row][column];
+
+                if (value is DateTime dateTimeValue)
+                {
+                    cell.Value = dateTimeValue;
+                    cell.Style.DateFormat.Format = "dd.MM.yyyy";
+                }
+                else if (value is int intValue)
+                {
+                    cell.SetValue(intValue);
+                }
+                else if (value != null && value != DBNull.Value)
+                {
+                    cell.SetValue(value.ToString());
+                }
+                // For null/DBNull: leave the cell value blank, do NOT call cell.Clear()
+                // as that would strip template background colours
             }
         }
     }
@@ -231,10 +283,10 @@ public class FileService : IFileService
             var rosterMember = sortedRoster[i];
             var nmaApproved = rosterMember.Value<bool>("nmaCheck");
 
-            var dobRaw = rosterMember.Value<string>("dateOfBirth") ?? string.Empty;
-            DateTime? dob = null;
-            if (DateTime.TryParseExact(dobRaw, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDob))
-                dob = parsedDob;
+            // Use Value<DateTime?> to let Umbraco handle the date parsing, same as officials
+            var dobRaw = rosterMember.Value<DateTime?>("dateOfBirth");
+            // 1753-01-01 is the Umbraco "no date" default — treat as missing
+            DateTime? dob = dobRaw.HasValue && dobRaw.Value.Year > 1753 ? dobRaw : null;
 
             table.Rows.Add(
                 rosterMember.Value<string>("licenseNumber"),

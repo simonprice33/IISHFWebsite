@@ -679,15 +679,14 @@ namespace IISHF.Core.Services
                     return;
                 }
 
-                var teamApprover = new ITCApprover { Name = itcSubmittedBy.Name, Email = submittedByUser.Email };
-
                 var itcInfo = new ITCRejection
                 {
                     TeamName        = team.Name,
-                    SubmittedByName = user.Name,
+                    SubmittedByName = itcSubmittedBy.Name,
                     IISHFEvent      = eventName,
-                    TeamApprover    = teamApprover,
-                    ItcApprovers    = new List<ITCApprover> { teamApprover }
+                    TeamApprover    = new ITCApprover { Name = itcSubmittedBy.Name, Email = submittedByUser.Email },
+                    NmaiItcApprover = new ITCApprover { Name = member.Name, Email = member.Email },
+                    ItcApprovers = new List<ITCApprover>() { new ITCApprover { Name = submittedByUser.Name, Email = submittedByUser.Email }, new ITCApprover { Name = member.Name, Email = member.Email } }
                 };
 
                 var rosterMembers = team.Children()
@@ -720,8 +719,10 @@ namespace IISHF.Core.Services
                     return;
                 }
 
-                var teamApprover = new ITCApprover { Name = itcSubmittedBy.Name, Email = submittedByUser.Email };
-                var recipients   = new List<ITCApprover> { teamApprover };
+                var recipients = new List<ITCApprover>()
+                {
+                    new ITCApprover{Email = "itc@iishf.com", Name = "IISHF ITC Manager"}
+                };
 
                 ITCApprover nmaiItcApprover = null;
                 if (nmaApprover != null)
@@ -739,7 +740,6 @@ namespace IISHF.Core.Services
                     TeamName        = team.Name,
                     SubmittedByName = user.Name,
                     IISHFEvent      = eventName,
-                    TeamApprover    = teamApprover,
                     NmaiItcApprover = nmaiItcApprover,
                     ItcApprovers    = recipients
                 };
@@ -820,7 +820,7 @@ namespace IISHF.Core.Services
                 ITCApprovalUri = new Uri($"{protocol}://{baseUrl}/{route}?{queryString}"),
                 TeamName = team.Name,
                 SubmittedByName = user.Name,
-                IISHFEvent = tournament.Name
+                IISHFEvent = tournament.Name,
             };
 
             var templateName = "NmaItcApproved";
@@ -829,9 +829,6 @@ namespace IISHF.Core.Services
             var templateUri = _iishfMediaService.GetTemplateUrl(template);
 
             await _emailService.SendItcLinkForApproval(submittedItcInformation, templateUri);
-
-            await _messageSender.SendMessage(submittedItcInformation, "itc-submission");
-
         }
 
         public async Task<RejectedRosterMembersModel> GetRejectedRosterMembers(int[] playerIds)
@@ -897,7 +894,15 @@ namespace IISHF.Core.Services
 
         public async Task<byte[]> GenerateItcAsExcelFile(IPublishedContent team, IPublishedContent tournament)
         {
-            return await _fileService.GenerateItcAsExcelFile(team, tournament);
+            try
+            {
+                return await _fileService.GenerateItcAsExcelFile(team, tournament);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
         public async Task ResetNmaApproval(IPublishedContent team)

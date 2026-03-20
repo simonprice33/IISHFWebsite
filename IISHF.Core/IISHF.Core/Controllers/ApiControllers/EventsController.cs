@@ -455,6 +455,22 @@ namespace IISHF.Core.Controllers.ApiControllers
 
             if (model.SubmitToHost)
             {
+                // All players (not bench officials) must have a valid date of birth before submission
+                var playersWithoutDob = model.ItcRosterMembers
+                    .Where(r => !r.IsBenchOfficial && (r.DateOfBirth == null || r.DateOfBirth == default))
+                    .Select(r => $"{r.FirstName} {r.LastName}".Trim())
+                    .ToList();
+
+                if (playersWithoutDob.Any())
+                {
+                    return BadRequest(new
+                    {
+                        error = "Missing date of birth",
+                        message = "All players must have a date of birth before the ITC can be submitted.",
+                        players = playersWithoutDob
+                    });
+                }
+
                 await _tournamentService.SetTeamItcSubmissionDateFromTeam(team);
                 var nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
                 team = _contentQuery.Content(team.Id);
@@ -534,13 +550,14 @@ namespace IISHF.Core.Controllers.ApiControllers
             if (isIISHF && setAsApproved)
             {
                 await _tournamentService.SetTeamItcIISHFApprovalDate(team);
-
+                // refresh team after save
+                team = _contentQuery.Content(team.Id);
                 var pdfFileName =
                     $"ITC_{tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-HHmmss")}.pdf";
                 var excelFileName =
                     $"ITC_{tournament.Parent.Name}_{team.Name}_{DateTime.Now.ToString("yyyyMMdd-HHmmss")}.xlsx";
 
-                var template = _iishfMediaService.GetMediaTemplate("ITCApprovedInternalInternalTemplate");
+                var template = _iishfMediaService.GetMediaTemplate("ITCApprovedInternalTemplate");
                 var templateUri = _iishfMediaService.GetTemplateUrl(template);
 
                 var itcExcel = await _tournamentService.GenerateItcAsExcelFile(team, tournament);

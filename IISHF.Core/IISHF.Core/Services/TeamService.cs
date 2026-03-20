@@ -107,8 +107,11 @@ namespace IISHF.Core.Services
                 try
                 {
                     int folderId = EnsureFolderExists(directory);
+                    // Use the generic File media type — NOT Image — so Umbraco does not
+                    // attempt image processing (dimension extraction, cropping etc.) on
+                    // non-image files such as .xlsx and .pdf.
                     IMedia media = _umbracoMediaService.CreateMedia(fileName, folderId,
-                        Constants.Conventions.MediaTypes.Image);
+                        Constants.Conventions.MediaTypes.File);
                     media.SetValue(_mediaFileManager, _mediaUrlGeneratorCollection, _shortStringHelper,
                         _contentTypeBaseServiceProvider,
                         Constants.Conventions.Media.File, fileName, stream);
@@ -159,8 +162,15 @@ namespace IISHF.Core.Services
             // Ensure the mediaItemId is converted to a UDI
             var media = _contentQuery.Media(mediaItem.Key);
             var udi = Udi.Create(Constants.UdiEntityType.Media, media.Key);
-            document.SetValue("supportingDocument", udi.ToString());
-            document.SetValue("mimeType", MimeTypes.GetMimeType(fileName.Split(".").Last()));
+            try
+            {
+                document.SetValue("supportingDocument", udi.ToString());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
             _contentService.SaveAndPublish(document);
 
             return document;

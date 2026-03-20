@@ -171,7 +171,11 @@ namespace IISHF.Core.Services
                     Email = x.Email
                 })
                 .ToList();
-
+            itcApprovers.Add(new ITCApprover()
+            {
+                Email = "itc@iishf.com",
+                Name = "IISHF ITC Manager"
+            });
             return itcApprovers;
         }
     }

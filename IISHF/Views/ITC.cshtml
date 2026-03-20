@@ -1551,9 +1551,27 @@
                     window.location = '/my-account'
                 }
             },
-            error: function (result) {
+            error: function (xhr) {
                 $btn.prop('disabled', false).html($btn.data('original-text'));
-                console.log(result);
+                console.log(xhr);
+
+                var errorMsg = 'An error occurred while submitting the ITC. Please try again.';
+                if (xhr.status === 400 && xhr.responseJSON) {
+                    var body = xhr.responseJSON;
+                    if (body.players && body.players.length > 0) {
+                        errorMsg = body.message + '<br><strong>Players missing date of birth:</strong><ul>'
+                            + body.players.map(function (p) { return '<li>' + p + '</li>'; }).join('')
+                            + '</ul>';
+                    } else if (body.message) {
+                        errorMsg = body.message;
+                    }
+                }
+
+                $('#submissionErrors')
+                    .removeClass('alert-success')
+                    .addClass('alert-danger')
+                    .html('<strong>Submission failed</strong><br>' + errorMsg)
+                    .show();
             }
         });
     }

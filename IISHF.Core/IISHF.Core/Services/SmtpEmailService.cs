@@ -292,7 +292,15 @@ namespace IISHF.Core.Services
             _logger.LogInformation(templateUri.ToString());
             var emailTemplate = await _httpClient.GetStringAsync(templateUri);
 
-            return Handlebars.Compile(emailTemplate)(data);
+            try
+            {
+                return Handlebars.Compile(emailTemplate)(data);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
         private static string StripHtml(string input)
