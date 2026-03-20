@@ -442,9 +442,16 @@
             <tbody id="formRows">
             @for (var i = 0; i < players.Count(); i++)
             {
-                <tr data-id="@players[i].Id">
+                var playerComment = players[i].Value<string>("comments") ?? "";
+                <tr data-id="@players[i].Id" data-comment="@playerComment">
                     <td>
                         <span>@players[i].Value("licenseNumber")</span>
+                        @if (!string.IsNullOrWhiteSpace(playerComment))
+                        {
+                            <span class="badge bg-warning text-dark ms-1" title="@playerComment">
+                                <i class="fas fa-exclamation-triangle"></i> Rejected
+                            </span>
+                        }
                     </td>
                     <td>
 
@@ -599,9 +606,16 @@
         <tbody id="formRowsBench">
         @for (var i = 0; i < benchOfficials.Count(); i++)
         {
-            <tr data-id="@benchOfficials[i].Id">
+                var officialComment = benchOfficials[i].Value<string>("comments") ?? "";
+            <tr data-id="@benchOfficials[i].Id" data-comment="@officialComment">
                 <td>
                     <span>@benchOfficials[i].Value("licenseNumber")</span>
+                    @if (!string.IsNullOrWhiteSpace(officialComment))
+                    {
+                        <span class="badge bg-warning text-dark ms-1" title="@officialComment">
+                            <i class="fas fa-exclamation-triangle"></i> Rejected
+                        </span>
+                    }
                 </td>
                 <td>
                     <span>@benchOfficials[i].Value("role")</span>
@@ -850,6 +864,14 @@
                     </div>
 
                     <!-- Add more input fields as necessary -->
+
+                    <div id="rejectionCommentGroup" class="form-group mt-3" style="display:none;">
+                        <label class="text-danger fw-bold">
+                            <i class="fas fa-exclamation-triangle me-1"></i> Rejection Comment
+                        </label>
+                        <div id="rejectionCommentText" class="alert alert-warning mb-0"></div>
+                    </div>
+
                 </form>
             </div>
             <div class="modal-footer">
@@ -1709,6 +1731,8 @@
 
     function clearModalFields() {
         $('#edit-form').find('input[type="text"], select').val('');
+        $('#rejectionCommentGroup').hide();
+        $('#rejectionCommentText').text('');
     }
 
     function populateModalFromRow(currentRow) {
@@ -1737,6 +1761,15 @@
         $('#edit-form #dateOfBirth').val(dateOfBirth);
         $('#edit-form #nationality').val(nationality);
         $('#edit-form #gender').val(gender);
+
+        var comment = currentRow.data('comment') || '';
+        if (comment) {
+            $('#rejectionCommentText').text(comment);
+            $('#rejectionCommentGroup').show();
+        } else {
+            $('#rejectionCommentGroup').hide();
+            $('#rejectionCommentText').text('');
+        }
     }
 
     function updateRowFromModal(row) {
@@ -1792,6 +1825,15 @@
 
         // Hide the jersey number field for bench officials
         $('#edit-form #jerseyNumber').closest('.form-group').hide();
+
+        var comment = currentRow.data('comment') || '';
+        if (comment) {
+            $('#rejectionCommentText').text(comment);
+            $('#rejectionCommentGroup').show();
+        } else {
+            $('#rejectionCommentGroup').hide();
+            $('#rejectionCommentText').text('');
+        }
     }
 
     function addNewRowFromModal() {
@@ -2340,15 +2382,10 @@
             $roleSelect.prepend($('<option>', { value: '', text: 'Select Role' }).attr('selected', 'selected'));
 
             populateModalFromRow(currentRow);
-            @{
-                if (!isSubmitted)
-                {
-                    <text>
-                        bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).show();
-                </text>
-                }
+            var hasRejectionComment = !!(currentRow.data('comment'));
+            if (@(!isSubmitted ? "true" : "false") || hasRejectionComment) {
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).show();
             }
-            
         });
 
         $("#benchOfficials tbody").on("click", "tr", function () {
@@ -2375,15 +2412,10 @@
             // Optionally, add a default option
             $roleSelect.prepend($('<option>', { value: '', text: 'Select Role' }).attr('selected', 'selected'));
             populateModalForBenchOfficial(currentRow);
-
-             @{
-                 if (!isSubmitted)
-                 {
-                                         <text>
-                                                                                                bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).show();
-                                                                                            </text>
-                 }
-             }
+            var hasRejectionComment = !!(currentRow.data('comment'));
+            if (@(!isSubmitted ? "true" : "false") || hasRejectionComment) {
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).show();
+            }
         });
 
         $("#saveChanges").on("click", function () {
