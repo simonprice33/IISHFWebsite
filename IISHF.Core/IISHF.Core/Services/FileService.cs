@@ -147,7 +147,7 @@ public class FileService : IFileService
                     if (value is DateTime dateTimeValue)
                     {
                         cell.Value = dateTimeValue;
-                        cell.Style.DateFormat.Format = "dd.mm.yyyy";
+                        cell.Style.DateFormat.Format = "dd.MM.yyyy";
                     }
                 }
 
@@ -237,7 +237,7 @@ public class FileService : IFileService
                 rosterMember.Value<string>("lastName").ToUpper(),
                 rosterMember.Value<string>("firstName"),
                 rosterMember.Value<int>("jerseyNumber"),
-                rosterMember.Value<DateTime>("dateOfBirth").ToString("dd.MM.yyyy"),
+                rosterMember.Value<DateTime>("dateOfBirth"),
                 rosterMember.Value<DateTime>("dateOfBirth").Year,
                 rosterMember.Value<string>("gender"),
                 rosterMember.Value<string>("iso3"),
