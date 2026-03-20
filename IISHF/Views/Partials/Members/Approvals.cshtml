@@ -48,7 +48,9 @@
                                         
                                         @{
                                             string itcSubmittedDate = "Pending Submission";
-                                            if (@invitation.ITCSubmittedDate != DateTime.MinValue && invitation.IISHFApproveDate != DateTime.Parse("1/1/1753"))
+                                            if (invitation.ITCSubmittedDate.HasValue
+                                                && invitation.ITCSubmittedDate.Value > DateTime.MinValue
+                                                && invitation.ITCSubmittedDate.Value > DateTime.Parse("1/1/1753"))
                                             {
                                                 itcSubmittedDate = invitation.ITCSubmittedDate.Value.ToString("dd.MM.yyyy");
                                             }
