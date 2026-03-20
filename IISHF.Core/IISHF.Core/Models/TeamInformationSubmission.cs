@@ -22,6 +22,8 @@ namespace IISHF.Core.Models
 
         public int NmaTeamId { get; set; }
 
-        public Guid nmaTeamKey { get; set; } = Guid.Empty;
+        public Guid NmaTeamKey { get; set; } = Guid.Empty;
+
+        public Guid NmaKey { get; set; } = Guid.Empty;
     }
 }

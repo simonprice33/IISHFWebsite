@@ -69,6 +69,8 @@ namespace IISHF.Core.Services
             var memberInvitation = _contentQuery.ContentAtRoot()
                 .DescendantsOrSelfOfType("memberInvitations").FirstOrDefault();
 
+            var nma = _contentQuery.Content(model.NmaKey);
+
             var invitation = _contentService.Create(model.Name, memberInvitation.Id, "memberInvitation", member.Id);
             invitation.SetValue("inviteeName", model.Name);
             invitation.SetValue("emailAddress", model.Email);
@@ -78,6 +80,7 @@ namespace IISHF.Core.Services
             invitation.SetValue("isIISHF", model.IsIISHF);
             invitation.SetValue("nMAKey", model.NmaKey);
             invitation.SetValue("clubKey", model.ClubKey);
+            invitation.SetValue("nma", nma.Name);
 
             _contentService.SaveAndPublish(invitation);
 

@@ -296,6 +296,10 @@ namespace IISHF.Core.Services
             team?.SetValue("countryIso3", model.CountryIso3);
             team?.SetValue("group", model.Group);
 
+            team?.SetValue("teamId", model.TeamId);
+            team?.SetValue("nMATeamKey", model.TeamKey);
+            team?.SetValue("nmaKey", model.NamKey);
+
             // Assuming you have a URL and a name for the link
             if (model.TeamUrl != null)
             {

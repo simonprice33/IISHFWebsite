@@ -405,6 +405,21 @@ namespace IISHF.Core.Controllers.ApiControllers
                     TeamUrl = null, // can try and get this from submitted information
                 };
 
+                if (model.NmaTeamId != 0)
+                {
+                    eventTeamModel.TeamId = model.NmaTeamId;
+                }
+
+                if (model.NmaKey != Guid.Empty)
+                {
+                    eventTeamModel.NamKey = model.NmaKey;
+                }
+
+                if (model.NmaTeamKey != Guid.Empty)
+                {
+                    eventTeamModel.TeamKey = model.NmaTeamKey;
+                }
+
                 var eventTeam = _tournamentService.CreateEventTeam(eventTeamModel, tournament);
 
                 // Get updated tournament information
@@ -843,29 +858,35 @@ namespace IISHF.Core.Controllers.ApiControllers
                 {
                     Id = 0,
                     Key = Guid.Empty,
-                    Name = "Event Selection required"
+                    Name = "Age group for this event event is required"
                 };
 
                 return Ok(new List<object> { json });
             }
 
-            // "any" is passed by non-title events that have no age group restriction
-            bool filterByAgeGroup = !ageGroup.Equals("any", StringComparison.OrdinalIgnoreCase);
+            // to do select by current year - 1 
 
-            var teams = _contentQuery.ContentAtRoot()
-                .DescendantsOrSelfOfType("clubTeam")
-                .Where(x => (!filterByAgeGroup || x.Value<string>("ageGroup") == ageGroup)
-                            && x.Name.Contains(searchText, StringComparison.InvariantCultureIgnoreCase))
-                .Select(x => new
+            var searchedTeams = _contentQuery.ContentAtRoot()
+                .DescendantsOrSelfOfType("clubTeam").ToList();
+                
+                
+                var decendents = searchedTeams.Where(x => (x.Value<string>("ageGroup") == ageGroup)
+                            && x.Parent.Parent.Parent.Name == DateTime.Now.AddYears(-1).Year.ToString()
+                            && x.Name.Contains(searchText, StringComparison.InvariantCultureIgnoreCase));
+            
+            Console.Write(decendents.ToList());
+
+                var teams = decendents.Select(x => new
                 {
                     Id = x.Id,
                     Key = x.Key,
                     Name = x.Name,
-                    Country = x.Parent.Parent.Parent.Parent.Value<string>("iSO3")
+                    Country = x.Parent.Parent.Parent.Parent.Value<string>("iSO3"),
+                    NmaKey = x.Parent.Parent.Parent.Parent.Key,
+                    
                 })
                 .ToList();
-            _logger.LogInformation(searchText);
-            return Ok(teams);
+            _logger.LogInformation(searchText); return Ok(teams);
         }
 
         [HttpPost]

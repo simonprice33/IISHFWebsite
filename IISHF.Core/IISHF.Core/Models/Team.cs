@@ -9,5 +9,11 @@
         public string Group { get; set; }
 
         public Uri? TeamUrl { get; set; }
+
+        public Guid NamKey { get; set; }
+
+        public int TeamId { get; set; }
+
+        public Guid TeamKey { get; set; }
     }
 }

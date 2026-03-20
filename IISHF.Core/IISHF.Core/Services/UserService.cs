@@ -122,6 +122,9 @@ namespace IISHF.Core.Services
             newMember.SetValue("isNMA", invitation.Value<bool>("isNma"));
             newMember.SetValue("isIISHF", invitation.Value<bool>("isIISHF"));
             newMember.SetValue("isClubContact", invitation.Value<bool>("isClubContact"));
+            newMember.SetValue("nationalMemberAssosiciation", invitation.Value<string>("nma"));
+
+            var roles = invitation.Children;
 
             if (invitation.Value<bool>("isClubContact"))
             {
@@ -191,6 +194,14 @@ namespace IISHF.Core.Services
                 nmaContact.SetValue("nMAContactEmail", model.EmailAddress);
                 var contactRoles = invitation.Children().Where(x => x.ContentType.Alias == "memberInvitionNmaRole");
                 nmaContact.SetValue("nmaContactRole", string.Join(", ", contactRoles.Select(x => x.Name).ToList()));
+
+                if (roles.Any())
+                {
+                    var nmaItcApprover = roles.SingleOrDefault(x => x.Name == "ITC Approver").Name ?? string.Empty;
+                    newMember.SetValue("nMAITCApprover", !string.IsNullOrWhiteSpace(nmaItcApprover));
+                    _services.MemberService.Save(newMember);
+                }
+
                 _contentService.SaveAndPublish(nmaContact);
             }
         }
