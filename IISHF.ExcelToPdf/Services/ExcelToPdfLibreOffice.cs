@@ -61,7 +61,7 @@ namespace IISHF.ExcelToPdf.Services
                 var stdout = process.StandardOutput.ReadToEnd();
                 var stderr = process.StandardError.ReadToEnd();
 
-                process.WaitForExit(timeoutMilliseconds: 60_000);
+                process.WaitForExit(60_000);
 
                 if (process.ExitCode != 0)
                     throw new InvalidOperationException(
