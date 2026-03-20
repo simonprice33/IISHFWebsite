@@ -78,6 +78,9 @@ namespace IISHF.Core.Services
             var approvalsList = new List<ITCApproval>();
 
             var iishfPublishedEvents = publishedEvents.Where(x => x.ContentType.Alias != "noneTitleEvents").ToList();
+
+            var iishfPublishedBClassEvents = publishedEvents.Where(x => x.ContentType.Alias == "noneTitleEvents").ToList();
+
             foreach (var publishedEvent in iishfPublishedEvents)
             {
                 foreach (var ageGroup in publishedEvent.Children().ToList())
@@ -94,6 +97,21 @@ namespace IISHF.Core.Services
                         AddIishfApprovals(approvalsList, titleEvents, ageGroup, nmaApprover, iishfItcApprover);
 
                     }
+                }
+            }
+
+            foreach (var tournament in iishfPublishedBClassEvents)
+            {
+                var nontitleEvents = tournament.Children().Where(x => x.Value<DateTime>("eventStartDate").Year == DateTime.Now.Year);
+
+                if (nmaApprover != null && nma != null)
+                {
+                    AddNmaApprovals(approvalsList, nontitleEvents, nma, tournament, nmaApprover, iishfItcApprover);
+                }
+
+                if (iishfItcApprover != null)
+                {
+                    AddIishfApprovals(approvalsList, nontitleEvents, tournament, nmaApprover, iishfItcApprover);
                 }
             }
 
@@ -233,29 +251,31 @@ namespace IISHF.Core.Services
 
         private bool CanApprove(IMember nmaApprover, IMember iishfItcApprover, IPublishedContent team)
         {
-            // If approved can not be approved again
-            if (nmaApprover != null && (team.Value<DateTime>("nMAApprovedDate") != null ||
-                                        team.Value<DateTime>("nMAApprovedDate") > DateTime.MinValue ||
-                                        team.Value<DateTime>("nMAApprovedDate") > DateTime.Parse("1/1/1753")))
-            {
+            var minSqlDate = DateTime.Parse("1/1/1753");
+
+            var itcSubmissionDate = team.Value<DateTime>("iTCSubmissionDate");
+            var nmaApprovedDate   = team.Value<DateTime>("nMAApprovedDate");
+            var iishfApprovedDate = team.Value<DateTime>("iISHFApprovedDate");
+
+            // ITC must be submitted before anyone can approve
+            if (itcSubmissionDate <= DateTime.MinValue || itcSubmissionDate <= minSqlDate)
                 return false;
+
+            // NMA approver: can approve if NMA has not yet approved
+            if (nmaApprover != null)
+            {
+                return nmaApprovedDate <= DateTime.MinValue || nmaApprovedDate <= minSqlDate;
             }
 
-            if (iishfItcApprover != null && (team.Value<DateTime>("iISHFApprovedDate") != null ||
-                                             team.Value<DateTime>("iISHFApprovedDate") > DateTime.MinValue ||
-                                             team.Value<DateTime>("iISHFApprovedDate") > DateTime.Parse("1/1/1753")))
+            // IISHF approver: can approve only after NMA has approved and IISHF hasn't yet
+            if (iishfItcApprover != null)
             {
-                return false;
+                var nmaHasApproved   = nmaApprovedDate > DateTime.MinValue && nmaApprovedDate > minSqlDate;
+                var iishfNotApproved = iishfApprovedDate <= DateTime.MinValue || iishfApprovedDate <= minSqlDate;
+                return nmaHasApproved && iishfNotApproved;
             }
 
-            if (team.Value<DateTime>("iTCSubmissionDate") != null ||
-                team.Value<DateTime>("iISHFApprovedDate") > DateTime.MinValue ||
-                team.Value<DateTime>("iISHFApprovedDate") > DateTime.Parse("1/1/1753"))
-            {
-                return false;
-            }
-
-            return true;
+            return false;
         }
     }
 }
