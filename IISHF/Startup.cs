@@ -54,7 +54,7 @@ namespace IISHF
             services.AddScoped<INMAService, NMAService>();
             services.AddScoped<IUserInvitationService, UserInvitationService>();
             services.AddScoped<Core.Interfaces.IFileService, FileService>();
-            services.AddScoped<IExcelToPdf, ExcelToPdf.Services.ExcelToPdf>();
+            services.AddScoped<IExcelToPdf, ExcelToPdf.Services.ExcelToPdfLibreOffice>();
 
 
             services.AddTransient<IEmailService>(sp =>
