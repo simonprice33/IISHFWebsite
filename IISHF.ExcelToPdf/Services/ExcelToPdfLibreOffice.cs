@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using IISHF.ExcelToPdf.Interfaces;
+using PdfSharp.Pdf;
+using PdfSharp.Pdf.IO;
 
 namespace IISHF.ExcelToPdf.Services
 {
@@ -71,12 +73,28 @@ namespace IISHF.ExcelToPdf.Services
                     throw new InvalidOperationException(
                         $"LibreOffice did not produce the expected output file '{tempOutput}'.\nstdout: {stdout}\nstderr: {stderr}");
 
-                return File.ReadAllBytes(tempOutput);
+                return ExtractFirstPage(File.ReadAllBytes(tempOutput));
             }
             finally
             {
                 try { Directory.Delete(tempDir, recursive: true); } catch { /* best effort */ }
             }
+        }
+
+        private static byte[] ExtractFirstPage(byte[] pdfBytes)
+        {
+            using var inputStream = new MemoryStream(pdfBytes);
+            using var source = PdfReader.Open(inputStream, PdfDocumentOpenMode.Import);
+
+            if (source.PageCount <= 1)
+                return pdfBytes;
+
+            using var output = new PdfDocument();
+            output.AddPage(source.Pages[0]);
+
+            using var outputStream = new MemoryStream();
+            output.Save(outputStream);
+            return outputStream.ToArray();
         }
 
         private static string ResolveSofficePath()

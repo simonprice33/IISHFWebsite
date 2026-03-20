@@ -127,6 +127,12 @@ public class FileService : IFileService
         worksheet.PageSetup.PrintAreas.Clear();
         worksheet.PageSetup.PrintAreas.Add("A1:L70");
 
+        // Scale to fit exactly 1 page wide × 1 page tall
+        worksheet.PageSetup.FitToPages(1, 1);
+
+        // Suppress cell comments from appearing in the PDF output
+        worksheet.PageSetup.ShowComments = XLShowCommentsValues.None;
+
         var ms = new MemoryStream();
         workbook.SaveAs(ms);
         ms.Position = 0;
