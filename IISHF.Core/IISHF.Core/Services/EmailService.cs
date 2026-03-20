@@ -84,6 +84,11 @@ namespace IISHF.Core.Services
             await SendEmail(string.Empty, renderedEmail, sender, recipients, subject, true);
         }
 
+        public Task SendItcRejectionEmail(SubmittedITCInformation itcInformation, string templateUri)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task SendItc(string email, List<string> ccEmails, string recipientName, string eventName,
             string templateName, string subject, string teamName, byte[] attachment, string fileName)
         {
