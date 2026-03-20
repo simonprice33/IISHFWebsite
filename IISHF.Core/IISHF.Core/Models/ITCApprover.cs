@@ -2,8 +2,8 @@
 {
     public class ITCApprover
     {
-        public string NmaApproverName { get; set; }
+        public string Name { get; set; }
 
-        public string NmaApproverEmail { get; set; }
+        public string Email { get; set; }
     }
 }

@@ -71,5 +71,7 @@ namespace IISHF.Core.Interfaces
         Task SetTeamsInGroup(GroupInformation model, IPublishedContent tournament);
 
         Task LinkNmaTeamToTournamentTeam(IPublishedContent tournament, int teamId, int tournamentTeamId);
+
+        Task NotifyTeamOfRejection(IPublishedContent team, IPublishedContent namTeam);
     }
 }

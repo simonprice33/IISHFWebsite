@@ -118,11 +118,32 @@ namespace IISHF.Core.Services
         {
             var sender = new EmailAddress(_iishfOptions.NoReplyEmailAdddress, _iishfOptions.DisplayName);
 
-            var recipients = itcInformation.ItcApprovers.Select(recipient => recipient.NmaApproverEmail).ToList();
+            var recipients = itcInformation.ItcApprovers.Select(recipient => recipient.Email).ToList();
 
             if (!recipients.Any()) return;
 
             var subject = $"An ITC has been submitted for review for {itcInformation.TeamName}";
+
+            var renderedEmail = await GetHtmlTemplate(itcInformation, templateUri);
+
+            await SendEmailAsync(
+                subject: subject,
+                htmlBody: renderedEmail,
+                textBody: string.Empty,
+                fromEmail: _iishfOptions.NoReplyEmailAdddress,
+                fromName: _iishfOptions.DisplayName,
+                toEmails: recipients);
+        }
+
+        public async Task SendItcRejectionEmail(SubmittedITCInformation itcInformation, string templateUri)
+        {
+            var sender = new EmailAddress(_iishfOptions.NoReplyEmailAdddress, _iishfOptions.DisplayName);
+
+            var recipients = itcInformation.ItcApprovers.Select(recipient => recipient.Email).ToList();
+
+            if (!recipients.Any()) return;
+
+            var subject = $"An ITC has been returned for modification for - {itcInformation.TeamName}";
 
             var renderedEmail = await GetHtmlTemplate(itcInformation, templateUri);
 

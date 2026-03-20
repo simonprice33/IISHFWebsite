@@ -153,8 +153,8 @@ namespace IISHF.Core.Services
                 .Where(x => x.GetValue<string>("nationalMemberAssosiciation") == nma.Name)
                 .Select(x => new ITCApprover
                 {
-                    NmaApproverName = x.Name,
-                    NmaApproverEmail = x.Email
+                    Name = x.Name,
+                    Email = x.Email
                 })
                 .ToList();
 
@@ -167,8 +167,8 @@ namespace IISHF.Core.Services
             var itcApprovers = _memberService.GetMembersByPropertyValue("iISHFITCApprover", true)
                 .Select(x => new ITCApprover
                 {
-                    NmaApproverName = x.Name,
-                    NmaApproverEmail = x.Email
+                    Name = x.Name,
+                    Email = x.Email
                 })
                 .ToList();
 

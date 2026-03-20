@@ -76,7 +76,7 @@ namespace IISHF.Core.Services
         {
             var sender = new EmailAddress(_iishfOptions.NoReplyEmailAdddress, _iishfOptions.DisplayName);
 
-            var recipients = itcInformation.ItcApprovers.Select(recipient => new EmailAddress(recipient.NmaApproverEmail, recipient.NmaApproverEmail)).ToList();
+            var recipients = itcInformation.ItcApprovers.Select(recipient => new EmailAddress(recipient.Email, recipient.Email)).ToList();
             var subject = $"An ITC has been submitted for review for {itcInformation.TeamName}";
 
             var renderedEmail = await GetHtmlTemplate(itcInformation, templateUri);

@@ -16,5 +16,7 @@ namespace IISHF.Core.Interfaces
             string subject, string teamName, byte[] attachment, string fileName);
 
         Task SendItcLinkForApproval(SubmittedITCInformation itcInformation, string templateUri);
+
+        Task SendItcRejectionEmail(SubmittedITCInformation itcInformation, string templateUri);
     }
 }

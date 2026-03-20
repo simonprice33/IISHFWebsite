@@ -512,6 +512,7 @@ namespace IISHF.Core.Controllers.ApiControllers
             }
 
             var team = _tournamentService.GetTournamentTeamByName(teamName, tournament);
+            var nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
 
             if (team == null)
             {
@@ -524,7 +525,6 @@ namespace IISHF.Core.Controllers.ApiControllers
             {
                 await _tournamentService.SetTeamItcNmaApprovalDate(team);
 
-                var nmaTeam = _contentQuery.Content(team.Value<Guid>("nMATeamKey"));
                 team = _contentQuery.Content(team.Id);
 
                 await _tournamentService.NotifyIISHFApprover(tournament, nmaTeam, team);
@@ -564,7 +564,7 @@ namespace IISHF.Core.Controllers.ApiControllers
                 if (Guid.TryParse(team.Value<string>("nmaKey"), out var nmaGuid))
                 {
                     var itcApprovers = await _nmaService.GetNMAITCApprovers(nmaGuid);
-                    cc.AddRange(itcApprovers.Select(itcApprover => itcApprover.NmaApproverEmail));
+                    cc.AddRange(itcApprovers.Select(itcApprover => itcApprover.Email));
                 }
 
                 template = _iishfMediaService.GetMediaTemplate("ITCApprovedSendToHost");
@@ -578,6 +578,8 @@ namespace IISHF.Core.Controllers.ApiControllers
 
             await _tournamentService.ResetNmaApproval(team);
             await _tournamentService.SetItcRejectionReason(team);
+
+            await _tournamentService.NotifyTeamOfRejection(team, nmaTeam);
 
             return NoContent();
         }
