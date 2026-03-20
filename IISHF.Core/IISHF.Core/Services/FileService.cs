@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Globalization;
 using ClosedXML.Excel;
 using IISHF.Core.Models.ServiceBusMessage;
 using IISHF.ExcelToPdf.Interfaces;
@@ -228,8 +229,12 @@ public class FileService : IFileService
         for (var i = 0; i < sortedRoster.Count; i++)
         {
             var rosterMember = sortedRoster[i];
-
             var nmaApproved = rosterMember.Value<bool>("nmaCheck");
+
+            var dobRaw = rosterMember.Value<string>("dateOfBirth") ?? string.Empty;
+            DateTime? dob = null;
+            if (DateTime.TryParseExact(dobRaw, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDob))
+                dob = parsedDob;
 
             table.Rows.Add(
                 rosterMember.Value<string>("licenseNumber"),
@@ -237,8 +242,8 @@ public class FileService : IFileService
                 rosterMember.Value<string>("lastName").ToUpper(),
                 rosterMember.Value<string>("firstName"),
                 rosterMember.Value<int>("jerseyNumber"),
-                rosterMember.Value<DateTime>("dateOfBirth"),
-                rosterMember.Value<DateTime>("dateOfBirth").Year,
+                dob.HasValue ? (object)dob.Value : DBNull.Value,
+                dob.HasValue ? (object)dob.Value.Year : DBNull.Value,
                 rosterMember.Value<string>("gender"),
                 rosterMember.Value<string>("iso3"),
                 nmaApproved ? "OK" : "Rejected",
