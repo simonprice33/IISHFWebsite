@@ -6,10 +6,11 @@ using MailKit;
 using MailKit.Net.Smtp;
 using Microsoft.AspNetCore.Builder.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
+using SendGrid.Helpers.Mail;
 using System.Threading;
-using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Models.ContentEditing;
 using IMember = Umbraco.Cms.Core.Models.IMember;
@@ -111,6 +112,27 @@ namespace IISHF.Core.Services
                 toEmails: new List<string> { email },
                 ccEmails: ccEmails,
                 attachments: attachments);
+        }
+
+        public async Task SendItcLinkForApproval(SubmittedITCInformation itcInformation, string templateUri)
+        {
+            var sender = new EmailAddress(_iishfOptions.NoReplyEmailAdddress, _iishfOptions.DisplayName);
+
+            var recipients = itcInformation.ItcApprovers.Select(recipient => recipient.NmaApproverEmail).ToList();
+
+            if (!recipients.Any()) return;
+
+            var subject = $"An ITC has been submitted for review for {itcInformation.TeamName}";
+
+            var renderedEmail = await GetHtmlTemplate(itcInformation, templateUri);
+
+            await SendEmailAsync(
+                subject: subject,
+                htmlBody: renderedEmail,
+                textBody: string.Empty,
+                fromEmail: _iishfOptions.NoReplyEmailAdddress,
+                fromName: _iishfOptions.DisplayName,
+                toEmails: recipients);
         }
 
         public async Task SendContactFormMessage(ContactFormViewModel contactModel)

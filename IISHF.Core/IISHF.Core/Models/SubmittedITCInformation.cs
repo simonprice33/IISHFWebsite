@@ -1,4 +1,4 @@
-﻿namespace IISHF.Core.Models.ServiceBusMessage
+﻿namespace IISHF.Core.Models
 {
     public class SubmittedITCInformation
     {
@@ -15,6 +15,6 @@
 
         public List<ITCApprover> ItcApprovers { get; set; }
 
-        public string TemplateName { get; set; }
+        public string IISHFEvent { get; set; }
     }
 }

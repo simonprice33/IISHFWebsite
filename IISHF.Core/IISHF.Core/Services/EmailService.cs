@@ -1,4 +1,5 @@
-﻿using HandlebarsDotNet;
+﻿using DocumentFormat.OpenXml.Wordprocessing;
+using HandlebarsDotNet;
 using IISHF.Core.Configurations;
 using IISHF.Core.Interfaces;
 using IISHF.Core.Models;
@@ -7,6 +8,7 @@ using SendGrid;
 using SendGrid.Helpers.Errors.Model;
 using SendGrid.Helpers.Mail;
 using System;
+using System.Net.Mail;
 using Umbraco.Cms.Core.Models;
 using Member = IISHF.Core.Models.Member;
 
@@ -68,6 +70,18 @@ namespace IISHF.Core.Services
             };
 
             await SendEmail(string.Empty, renderedEmail, sender, recipients, subject);
+        }
+
+        public async Task SendItcLinkForApproval(SubmittedITCInformation itcInformation, string templateUri)
+        {
+            var sender = new EmailAddress(_iishfOptions.NoReplyEmailAdddress, _iishfOptions.DisplayName);
+
+            var recipients = itcInformation.ItcApprovers.Select(recipient => new EmailAddress(recipient.NmaApproverEmail, recipient.NmaApproverEmail)).ToList();
+            var subject = $"An ITC has been submitted for review for {itcInformation.TeamName}";
+
+            var renderedEmail = await GetHtmlTemplate(itcInformation, templateUri);
+
+            await SendEmail(string.Empty, renderedEmail, sender, recipients, subject, true);
         }
 
         public async Task SendItc(string email, List<string> ccEmails, string recipientName, string eventName,

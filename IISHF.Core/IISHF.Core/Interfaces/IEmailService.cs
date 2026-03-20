@@ -14,5 +14,7 @@ namespace IISHF.Core.Interfaces
 
         Task SendItc(string email, List<string> ccEmails, string recipientName, string eventName, string templateName,
             string subject, string teamName, byte[] attachment, string fileName);
+
+        Task SendItcLinkForApproval(SubmittedITCInformation itcInformation, string templateUri);
     }
 }

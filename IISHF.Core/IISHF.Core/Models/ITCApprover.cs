@@ -1,4 +1,4 @@
-﻿namespace IISHF.Core.Models.ServiceBusMessage
+﻿namespace IISHF.Core.Models
 {
     public class ITCApprover
     {
